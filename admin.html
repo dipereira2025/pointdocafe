@@ -20,7 +20,7 @@
         <h2 class="text-2xl font-black mb-6 text-center text-amber-900">PAINEL POINT</h2>
         <input type="text" id="user-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-4 outline-none" placeholder="Usuário">
         <div class="relative mb-6">
-            <input type="password" id="pass-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-4 outline-none" placeholder="Senha">
+            <input type="password" id="pass-login" class="w-full p-4 border-2 border-amber-100 rounded-xl outline-none" placeholder="Senha">
         </div>
         <button onclick="fazerLogin()" class="w-full bg-amber-900 text-white py-4 rounded-xl font-bold hover:bg-amber-800 transition-all">ENTRAR NO PAINEL</button>
         <p class="text-[10px] text-gray-400 mt-4 text-center">Login inicial: admin / Root@8505</p>
@@ -100,9 +100,10 @@
     </div>
 
     <script>
-        // ATENÇÃO: COLOQUE A SUA URL DO FIREBASE ABAIXO!
-        const DB_BASE = "SUA_URL_DO_FIREBASE_AQUI/"; 
+        // CONFIGURAÇÃO DO SEU FIREBASE
+        const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/"; 
         
+        // Caminhos automáticos
         const DB_URL = DB_BASE + "produtos.json";
         const CAT_URL = DB_BASE + "categorias.json";
         const LOGO_URL = DB_BASE + "configuracao/logo.json";
@@ -110,18 +111,20 @@
 
         let imagemBase64 = "", logoBase64 = "", diasSelecionados = [];
 
-        // LOGIN
+        // LOGIN DINÂMICO
         async function fazerLogin() {
             const u = document.getElementById('user-login').value;
             const p = document.getElementById('pass-login').value;
             if(u === "admin" && p === "Root@8505") return permitirAcesso();
             
-            const res = await fetch(USER_URL);
-            const users = await res.json();
-            for(let id in users) {
-                if(users[id].user === u && users[id].pass === p) return permitirAcesso();
-            }
-            alert("Dados incorretos!");
+            try {
+                const res = await fetch(USER_URL);
+                const users = await res.json();
+                for(let id in users) {
+                    if(users[id].user === u && users[id].pass === p) return permitirAcesso();
+                }
+                alert("Dados incorretos!");
+            } catch(e) { alert("Erro de conexão. Verifique as regras do Firebase."); }
         }
 
         function permitirAcesso() {
@@ -171,7 +174,7 @@
             }
         }
 
-        // CATEGORIAS
+        // CATEGORIAS COM ARRASTE
         async function carregarCategorias() {
             const res = await fetch(CAT_URL);
             const data = await res.json() || ["Comum"];
@@ -200,7 +203,7 @@
         async function salvarOrdemCategorias() {
             const ordem = Array.from(document.querySelectorAll('#sortable-list > div')).map(i => i.dataset.id);
             await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(ordem) });
-            alert("Ordem salva!");
+            alert("Ordem iFood salva!");
         }
 
         async function removerCategoria(n) {
@@ -211,7 +214,7 @@
             carregarCategorias();
         }
 
-        // PRODUTOS
+        // PRODUTOS E EDIÇÃO
         document.querySelectorAll('.day-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const d = btn.dataset.day;
@@ -277,11 +280,12 @@
 
         async function removerProduto(id) { if(confirm("Excluir?")) { await fetch(PROD_URL.replace('.json', `/${id}.json`), { method: 'DELETE' }); listarProdutos(); } }
 
-        // USUÁRIOS
+        // EQUIPE (USUÁRIOS)
         async function cadastrarUsuario() {
             const u = document.getElementById('new-user').value, p = document.getElementById('new-pass').value;
-            if(!u || !p) return;
+            if(!u || !p) return alert("Preencha usuário e senha!");
             await fetch(USER_URL.replace('.json', `/${Date.now()}.json`), { method: 'PUT', body: JSON.stringify({user:u, pass:p}) });
+            document.getElementById('new-user').value = ""; document.getElementById('new-pass').value = "";
             listarUsuarios();
         }
 
