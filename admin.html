@@ -40,8 +40,18 @@
             </select>
             <input type="number" id="p" placeholder="Preço (ex: 15.50)" class="w-full p-4 rounded-xl bg-zinc-700 border-none">
             
-            <label class="block text-sm font-medium text-zinc-400 mb-1">Foto do Produto:</label>
-            <input type="file" id="fileInput" accept="image/*" class="w-full p-3 rounded-xl bg-zinc-700 text-sm">
+            <!-- ÁREA DE UPLOAD COM DESCRIÇÃO -->
+            <div class="space-y-2">
+                <label class="block text-sm font-bold text-amber-500 uppercase tracking-wider">Foto do Produto</label>
+                <p class="text-[11px] text-zinc-400 italic leading-tight mb-2">
+                    * O sistema ajustará automaticamente sua imagem para o padrão quadrado (**400x400px**) para manter o cardápio organizado.
+                </p>
+                <input type="file" id="fileInput" accept="image/*" class="w-full p-3 rounded-xl bg-zinc-700 text-sm border-2 border-dashed border-zinc-600 hover:border-amber-600 transition-colors cursor-pointer">
+                <div id="preview-container" class="hidden mt-2 flex justify-center">
+                    <img id="img-preview" class="w-24 h-24 object-cover rounded-lg border-2 border-amber-600">
+                </div>
+            </div>
+
             <canvas id="canvas" style="display:none;"></canvas>
             
             <button onclick="salvar()" id="btnSalvar" class="w-full bg-amber-600 text-white py-4 rounded-xl font-black shadow-lg hover:bg-amber-500 transition-all uppercase tracking-widest">Adicionar ao Cardápio</button>
@@ -55,45 +65,62 @@
         const DB_URL = "https://pointdocafe-default-rtdb.firebaseio.com/produtos.json";
         let imagemBase64 = "";
 
-        // Ver se a senha está correta
         function entrar() {
             const passInput = document.getElementById('pass').value;
             if(passInput === "Root@8505") { 
                 document.getElementById('login').classList.add('hidden');
                 document.getElementById('painel').classList.remove('hidden');
                 listar();
-            } else {
-                alert("Senha incorreta!");
-            }
+            } else { alert("Senha incorreta!"); }
         }
 
-        // Função para mostrar/esconder a senha
         function togglePassword() {
             const passField = document.getElementById('pass');
             const eyeIcon = document.getElementById('eye-icon');
             if (passField.type === "password") {
                 passField.type = "text";
-                eyeIcon.innerText = "🔒"; // Muda para ícone de trancar ao mostrar
+                eyeIcon.innerText = "🔒";
             } else {
                 passField.type = "password";
-                eyeIcon.innerText = "👁️"; // Muda para ícone de olho ao esconder
+                eyeIcon.innerText = "👁️";
             }
         }
 
-        // Processar Imagem
+        // AUTO-AJUSTE E CROP DA IMAGEM PARA 400x400
         document.getElementById('fileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
+            if (!file) return;
+
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.getElementById('canvas');
                     const ctx = canvas.getContext('2d');
-                    const scale = 400 / img.width;
-                    canvas.width = 400;
-                    canvas.height = img.height * scale;
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    imagemBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    const targetSize = 400;
+                    canvas.width = targetSize;
+                    canvas.height = targetSize;
+
+                    // Lógica de "Object-Fit: Cover" via Canvas
+                    let sourceX = 0, sourceY = 0, sourceWidth = img.width, sourceHeight = img.height;
+                    const aspect = img.width / img.height;
+
+                    if (aspect > 1) { // Paisagem
+                        sourceWidth = img.height;
+                        sourceX = (img.width - img.height) / 2;
+                    } else if (aspect < 1) { // Retrato
+                        sourceHeight = img.width;
+                        sourceY = (img.height - img.width) / 2;
+                    }
+
+                    ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetSize, targetSize);
+                    
+                    imagemBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                    
+                    // Mostrar Preview
+                    document.getElementById('img-preview').src = imagemBase64;
+                    document.getElementById('preview-container').classList.remove('hidden');
                 };
                 img.src = event.target.result;
             };
@@ -119,9 +146,11 @@
 
             await fetch(DB_URL.replace('.json', `/${Date.now()}.json`), { method: 'PUT', body: JSON.stringify(item) });
             
+            // Limpar
             document.getElementById('n').value = ""; 
             document.getElementById('p').value = "";
             document.getElementById('fileInput').value = "";
+            document.getElementById('preview-container').classList.add('hidden');
             imagemBase64 = "";
             btn.innerText = "ADICIONAR AO CARDÁPIO";
             btn.disabled = false;
@@ -141,13 +170,13 @@
                     lista.innerHTML += `
                         <div class="bg-zinc-800 p-4 flex justify-between items-center rounded-2xl border border-zinc-700">
                             <div class="flex items-center gap-3">
-                                <img src="${data[id].img}" class="w-10 h-10 object-cover rounded-lg">
+                                <img src="${data[id].img}" class="w-12 h-12 object-cover rounded-lg border border-zinc-600">
                                 <div>
                                     <p class="text-amber-500 text-[10px] font-bold uppercase">${data[id].categoria}</p>
-                                    <p class="font-bold">${data[id].nome}</p>
+                                    <p class="font-bold text-sm">${data[id].nome}</p>
                                 </div>
                             </div>
-                            <button onclick="remover('${id}')" class="bg-red-900/30 text-red-500 p-3 rounded-xl hover:bg-red-500 hover:text-white transition-all text-sm font-bold">EXCLUIR</button>
+                            <button onclick="remover('${id}')" class="bg-red-900/30 text-red-500 px-4 py-2 rounded-xl hover:bg-red-500 hover:text-white transition-all text-xs font-bold">EXCLUIR</button>
                         </div>`;
                 }
             }
