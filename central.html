@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Central Point do Café</title>
+    <title>Central do Point</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
@@ -15,16 +15,20 @@
             transform: translateY(-12px); 
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
         }
+        .logo-glow {
+            box-shadow: 0 0 20px rgba(217, 119, 6, 0.2);
+        }
     </style>
 </head>
-<body class="bg-[#fafafa] min-h-screen flex flex-col items-center justify-center p-6">
+<body class="bg-[#fafafa] min-h-screen flex flex-col items-center justify-center p-6 text-zinc-800">
 
     <!-- Cabeçalho da Central -->
     <header class="text-center mb-16">
-        <div class="w-24 h-24 bg-white mx-auto rounded-full mb-6 shadow-lg flex items-center justify-center border-4 border-[#d97706]">
-            <span class="text-4xl">☕</span>
+        <div id="logo-container" class="w-32 h-32 bg-white mx-auto rounded-full mb-6 flex items-center justify-center border-4 border-[#d97706] logo-glow overflow-hidden">
+            <img id="img-logo" src="" class="hidden w-full h-full object-cover">
+            <span id="placeholder-logo" class="text-4xl">☕</span>
         </div>
-        <h1 class="text-4xl font-black text-zinc-900 uppercase tracking-tighter">Central de Comando</h1>
+        <h1 class="text-4xl font-black text-zinc-900 uppercase tracking-tighter italic">Central do Point</h1>
         <p class="text-[10px] font-bold text-[#d97706] uppercase tracking-[5px] mt-2">Point do Café • Gestão Unificada</p>
     </header>
 
@@ -35,7 +39,7 @@
         <a href="pedidos.html" target="_blank" class="card-central bg-white p-10 rounded-[3rem] shadow-xl border-b-8 border-blue-500 flex flex-col items-center text-center">
             <div class="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center text-4xl mb-6 shadow-inner">📱</div>
             <h2 class="font-black uppercase text-zinc-800 text-lg mb-3">Cardápio Digital</h2>
-            <p class="text-[10px] text-zinc-400 font-bold uppercase leading-relaxed">Link oficial para os clientes fazerem pedidos.</p>
+            <p class="text-[10px] text-zinc-400 font-bold uppercase leading-relaxed">Visualização do cliente e link para pedidos.</p>
         </a>
 
         <!-- Módulo 2: Atendimento (atendimento2.html) -->
@@ -58,7 +62,7 @@
         <a href="admin.html" class="card-central bg-white p-10 rounded-[3rem] shadow-xl border-b-8 border-[#d97706] flex flex-col items-center text-center">
             <div class="w-20 h-20 bg-amber-50 rounded-3xl flex items-center justify-center text-4xl mb-6 shadow-inner">🔐</div>
             <h2 class="font-black uppercase text-zinc-800 text-lg mb-3">Painel Admin</h2>
-            <p class="text-[10px] text-zinc-400 font-bold uppercase leading-relaxed">Controle de preços, relatórios e permissões de equipe.</p>
+            <p class="text-[10px] text-zinc-400 font-bold uppercase leading-relaxed">Controle financeiro, produtos e equipe.</p>
         </a>
 
     </div>
@@ -68,5 +72,26 @@
         <p class="text-[11px] text-[#d97706] font-black uppercase tracking-[2px] mt-1 italic">Point do Café</p>
     </footer>
 
+    <script>
+        // Sincroniza a logo com o que foi definido no Admin
+        const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
+        
+        async function carregarLogo() {
+            try {
+                const res = await fetch(DB_BASE + "configuracao/logo.json");
+                const logo = await res.json();
+                if(logo) {
+                    const img = document.getElementById('img-logo');
+                    img.src = logo;
+                    img.classList.remove('hidden');
+                    document.getElementById('placeholder-logo').classList.add('hidden');
+                }
+            } catch(e) {
+                console.log("Logo ainda não cadastrada.");
+            }
+        }
+        
+        carregarLogo();
+    </script>
 </body>
 </html>
