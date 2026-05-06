@@ -15,15 +15,12 @@
 </head>
 <body class="bg-zinc-900 text-zinc-100 p-4 font-sans text-left">
 
-    <!-- TELA DE LOGIN -->
+    <!-- LOGIN -->
     <div id="login" class="max-w-sm mx-auto mt-20 bg-white p-8 rounded-3xl text-zinc-900 shadow-2xl">
         <h2 class="text-2xl font-black mb-6 text-center text-amber-900">PAINEL POINT</h2>
         <input type="text" id="user-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-4 outline-none" placeholder="Usuário">
-        <div class="relative mb-6">
-            <input type="password" id="pass-login" class="w-full p-4 border-2 border-amber-100 rounded-xl outline-none" placeholder="Senha">
-        </div>
-        <button onclick="fazerLogin()" class="w-full bg-amber-900 text-white py-4 rounded-xl font-bold hover:bg-amber-800 transition-all">ENTRAR NO PAINEL</button>
-        <p class="text-[10px] text-gray-400 mt-4 text-center">Login inicial: admin / Root@8505</p>
+        <input type="password" id="pass-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-6 outline-none" placeholder="Senha">
+        <button onclick="fazerLogin()" class="w-full bg-amber-900 text-white py-4 rounded-xl font-bold">ENTRAR</button>
     </div>
 
     <!-- PAINEL PRINCIPAL -->
@@ -35,37 +32,32 @@
             <button onclick="changeTab('tab-usuarios')" class="tab-btn pb-2 px-2" id="btn-usuarios">Equipe</button>
         </div>
 
-        <!-- ABA 1: LOGO -->
-        <div id="tab-loja" class="tab-content space-y-6">
-            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700 text-center">
-                <h2 class="text-amber-500 font-black mb-4 uppercase text-sm">Logotipo</h2>
-                <div class="w-32 h-32 bg-zinc-900 mx-auto rounded-full border-2 border-amber-600 overflow-hidden mb-4 flex items-center justify-center">
-                    <img id="logo-img-view" class="hidden w-full h-full object-cover">
-                    <span id="logo-placeholder" class="text-xs text-zinc-600">Sem Logo</span>
-                </div>
-                <input type="file" id="logoInput" accept="image/*" class="text-xs mb-4">
-                <button onclick="salvarLogo()" id="btnLogo" class="w-full bg-amber-600 py-3 rounded-xl font-bold uppercase">Atualizar Logo</button>
+        <!-- ABA LOJA -->
+        <div id="tab-loja" class="tab-content text-center space-y-6">
+            <div class="w-32 h-32 bg-zinc-800 mx-auto rounded-full border-2 border-amber-600 overflow-hidden flex items-center justify-center">
+                <img id="logo-img-view" class="hidden w-full h-full object-cover">
+                <span id="logo-placeholder" class="text-xs text-zinc-600">Sem Logo</span>
             </div>
+            <input type="file" id="logoInput" accept="image/*" class="text-xs">
+            <button onclick="salvarLogo()" class="w-full bg-amber-600 py-3 rounded-xl font-bold uppercase">Salvar Logo</button>
         </div>
 
-        <!-- ABA 2: CATEGORIAS -->
-        <div id="tab-categorias" class="tab-content hidden space-y-4">
-            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
-                <div class="flex gap-2 mb-6">
-                    <input type="text" id="nova-cat" placeholder="Nova Categoria" class="flex-1 p-3 rounded-xl bg-zinc-700 border-none outline-none text-sm">
-                    <button onclick="adicionarCategoria()" class="bg-green-600 px-6 rounded-xl font-bold text-xl">+</button>
-                </div>
-                <div id="sortable-list" class="space-y-2"></div>
-                <button onclick="salvarOrdemCategorias()" class="w-full mt-6 bg-amber-600 py-3 rounded-xl font-bold uppercase text-xs">Salvar Ordem iFood</button>
+        <!-- ABA CATEGORIAS -->
+        <div id="tab-categorias" class="tab-content hidden">
+            <div class="flex gap-2 mb-4">
+                <input type="text" id="nova-cat" placeholder="Nova Categoria" class="flex-1 p-3 rounded-xl bg-zinc-700 outline-none">
+                <button onclick="adicionarCategoria()" class="bg-green-600 px-6 rounded-xl font-bold">+</button>
             </div>
+            <div id="sortable-list" class="space-y-2"></div>
+            <button onclick="salvarOrdemCategorias()" class="w-full mt-4 bg-amber-600 py-3 rounded-xl font-bold">SALVAR ORDEM</button>
         </div>
 
-        <!-- ABA 3: PRODUTOS -->
-        <div id="tab-produtos" class="tab-content hidden space-y-6">
+        <!-- ABA PRODUTOS -->
+        <div id="tab-produtos" class="tab-content hidden space-y-4">
             <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700 space-y-4">
                 <input type="hidden" id="edit-id">
                 <input type="text" id="n" placeholder="Nome do Produto" class="w-full p-4 rounded-xl bg-zinc-700 outline-none">
-                <select id="c" class="w-full p-4 rounded-xl bg-zinc-700 outline-none text-sm"></select>
+                <select id="c" class="w-full p-4 rounded-xl bg-zinc-700 outline-none"></select>
                 
                 <div class="flex flex-wrap gap-2" id="dias-semana">
                     <button type="button" data-day="0" class="day-btn border border-zinc-600 px-3 py-1 rounded-lg text-[10px]">Dom</button>
@@ -78,32 +70,28 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
-                    <input type="number" id="p" placeholder="Preço" class="w-full p-4 rounded-xl bg-zinc-700 outline-none text-sm">
-                    <input type="number" id="p-promo" placeholder="Preço Promo" class="w-full p-4 rounded-xl bg-zinc-700 border border-amber-600 outline-none text-sm">
+                    <input type="number" id="p" placeholder="Preço" class="w-full p-4 rounded-xl bg-zinc-700 outline-none">
+                    <input type="number" id="p-promo" placeholder="Preço Promo" class="w-full p-4 rounded-xl bg-zinc-700 border border-amber-600 outline-none">
                 </div>
-                <input type="file" id="fileInput" accept="image/*" class="w-full text-xs">
+                <input type="file" id="fileInput" accept="image/*" class="text-xs">
                 <canvas id="canvas" style="display:none;"></canvas>
-                <button onclick="salvar()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase">Salvar Produto</button>
+                <button onclick="salvar()" id="btnSalvarProd" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase">Salvar Produto</button>
             </div>
             <div id="lista-produtos" class="grid gap-2"></div>
         </div>
 
-        <!-- ABA 4: EQUIPE -->
+        <!-- ABA EQUIPE -->
         <div id="tab-usuarios" class="tab-content hidden space-y-4">
-            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700 text-zinc-100">
-                <input type="text" id="new-user" placeholder="Usuário" class="w-full p-3 mb-2 rounded-xl bg-zinc-700 outline-none">
-                <input type="password" id="new-pass" placeholder="Senha" class="w-full p-3 mb-4 rounded-xl bg-zinc-700 outline-none">
-                <button onclick="cadastrarUsuario()" class="w-full bg-green-600 py-3 rounded-xl font-bold">CRIAR ACESSO</button>
-                <div id="lista-usuarios" class="mt-6 space-y-2"></div>
-            </div>
+            <input type="text" id="new-user" placeholder="Usuário" class="w-full p-3 rounded-xl bg-zinc-700 outline-none">
+            <input type="password" id="new-pass" placeholder="Senha" class="w-full p-3 rounded-xl bg-zinc-700 outline-none">
+            <button onclick="cadastrarUsuario()" class="w-full bg-green-600 py-3 rounded-xl font-bold">CRIAR ACESSO</button>
+            <div id="lista-usuarios" class="mt-4 space-y-2"></div>
         </div>
     </div>
 
     <script>
-        // CONFIGURAÇÃO DO SEU FIREBASE
-        const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/"; 
+        const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/"; // Verificado na imagem
         
-        // Caminhos automáticos
         const DB_URL = DB_BASE + "produtos.json";
         const CAT_URL = DB_BASE + "categorias.json";
         const LOGO_URL = DB_BASE + "configuracao/logo.json";
@@ -111,20 +99,15 @@
 
         let imagemBase64 = "", logoBase64 = "", diasSelecionados = [];
 
-        // LOGIN DINÂMICO
         async function fazerLogin() {
             const u = document.getElementById('user-login').value;
             const p = document.getElementById('pass-login').value;
             if(u === "admin" && p === "Root@8505") return permitirAcesso();
             
-            try {
-                const res = await fetch(USER_URL);
-                const users = await res.json();
-                for(let id in users) {
-                    if(users[id].user === u && users[id].pass === p) return permitirAcesso();
-                }
-                alert("Dados incorretos!");
-            } catch(e) { alert("Erro de conexão. Verifique as regras do Firebase."); }
+            const res = await fetch(USER_URL);
+            const users = await res.json();
+            for(let id in users) { if(users[id].user === u && users[id].pass === p) return permitirAcesso(); }
+            alert("Dados incorretos!");
         }
 
         function permitirAcesso() {
@@ -160,6 +143,7 @@
         });
 
         async function salvarLogo() {
+            if(!logoBase64) return alert("Selecione uma imagem!");
             await fetch(LOGO_URL, { method: 'PUT', body: JSON.stringify(logoBase64) });
             alert("Logo Salva!");
         }
@@ -174,47 +158,44 @@
             }
         }
 
-        // CATEGORIAS COM ARRASTE
+        // CATEGORIAS
         async function carregarCategorias() {
             const res = await fetch(CAT_URL);
             const data = await res.json() || ["Comum"];
             const list = document.getElementById('sortable-list');
-            list.innerHTML = data.map(c => `<div class="bg-zinc-700 p-3 rounded-xl flex justify-between items-center handle" data-id="${c}"><span>☰ ${c}</span><button onclick="removerCategoria('${c}')" class="text-red-500">X</button></div>`).join('');
+            list.innerHTML = data.map(c => `<div class="bg-zinc-700 p-3 rounded-xl flex justify-between items-center handle" data-id="${c}"><span>☰ ${c}</span><button onclick="removerCategoria('${c}')" class="text-red-500 font-bold text-xs">X</button></div>`).join('');
             document.getElementById('c').innerHTML = data.map(c => `<option value="${c}">${c}</option>`).join('');
             new Sortable(list, { animation: 150, handle: '.handle' });
         }
 
         async function adicionarCategoria() {
-            const nomeInput = document.getElementById('nova-cat');
-            const nome = nomeInput.value.trim();
-            if (!nome) return;
-            try {
-                const res = await fetch(CAT_URL);
-                let data = await res.json() || [];
-                if (!data.includes(nome)) {
-                    data.push(nome);
-                    await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(data) });
-                    nomeInput.value = "";
-                    await carregarCategorias();
-                }
-            } catch (e) { console.error(e); }
+            const nInput = document.getElementById('nova-cat');
+            const n = nInput.value.trim();
+            if(!n) return;
+            const res = await fetch(CAT_URL);
+            let data = await res.json() || [];
+            if(!data.includes(n)) {
+                data.push(n);
+                await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(data) });
+                nInput.value = ""; carregarCategorias();
+            }
         }
 
         async function salvarOrdemCategorias() {
             const ordem = Array.from(document.querySelectorAll('#sortable-list > div')).map(i => i.dataset.id);
             await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(ordem) });
-            alert("Ordem iFood salva!");
+            alert("Ordem salva!");
         }
 
         async function removerCategoria(n) {
-            if(!confirm("Remover categoria?")) return;
+            if(!confirm("Excluir categoria?")) return;
             const res = await fetch(CAT_URL); let data = await res.json();
             data = data.filter(c => c !== n);
             await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(data) });
             carregarCategorias();
         }
 
-        // PRODUTOS E EDIÇÃO
+        // PRODUTOS
         document.querySelectorAll('.day-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const d = btn.dataset.day;
@@ -240,36 +221,58 @@
         });
 
         async function salvar() {
+            const btn = document.getElementById('btnSalvarProd');
             const id = document.getElementById('edit-id').value;
+            const nome = document.getElementById('n').value;
+            const preco = document.getElementById('p').value;
+
+            if(!nome || !preco) return alert("Nome e Preço são obrigatórios!");
+            btn.innerText = "SALVANDO..."; btn.disabled = true;
+
             const item = {
-                nome: document.getElementById('n').value,
+                nome: nome,
                 categoria: document.getElementById('c').value,
-                preco: parseFloat(document.getElementById('p').value),
+                preco: parseFloat(preco),
                 precoPromo: parseFloat(document.getElementById('p-promo').value) || null,
                 dias: diasSelecionados
             };
-            const url = id ? PROD_URL.replace('.json', `/${id}.json`) : PROD_URL.replace('.json', `/${Date.now()}.json`);
-            if(imagemBase64) item.img = imagemBase64;
-            else if(id) { const r = await fetch(url); const d = await r.json(); item.img = d.img; }
-            else return alert("Foto obrigatória!");
 
-            await fetch(url, { method: 'PUT', body: JSON.stringify(item) });
-            location.reload();
+            const url = id ? DB_BASE + "produtos/" + id + ".json" : DB_BASE + "produtos/" + Date.now() + ".json";
+
+            if(imagemBase64) {
+                item.img = imagemBase64;
+            } else if(id) {
+                const r = await fetch(url); const d = await r.json(); item.img = d.img;
+            } else { 
+                btn.innerText = "SALVAR PRODUTO"; btn.disabled = false;
+                return alert("Selecione uma foto!"); 
+            }
+
+            try {
+                await fetch(url, { method: 'PUT', body: JSON.stringify(item) });
+                alert("Produto Salvo!"); location.reload();
+            } catch(e) { 
+                alert("Erro ao salvar."); btn.innerText = "SALVAR PRODUTO"; btn.disabled = false;
+            }
         }
 
         async function listarProdutos() {
-            const res = await fetch(PROD_URL); const data = await res.json();
+            const res = await fetch(DB_URL); const data = await res.json();
             const list = document.getElementById('lista-produtos'); list.innerHTML = "";
+            if(!data) return;
             for(let id in data) {
-                list.innerHTML += `<div class="bg-zinc-800 p-3 rounded-xl flex justify-between items-center border border-zinc-700 text-xs mb-2">
-                    <div class="flex items-center gap-2 text-zinc-100"><img src="${data[id].img}" class="w-8 h-8 rounded-lg"><span>${data[id].nome}</span></div>
-                    <div class="flex gap-2"><button onclick="prepararEdicao('${id}')" class="bg-zinc-700 px-2 py-1 rounded text-zinc-100">Editar</button><button onclick="removerProduto('${id}')" class="text-red-500 font-bold">X</button></div>
+                list.innerHTML += `<div class="bg-zinc-800 p-3 rounded-xl flex justify-between items-center border border-zinc-700 text-xs mb-1">
+                    <div class="flex items-center gap-2"><img src="${data[id].img}" class="w-8 h-8 rounded-lg"><span>${data[id].nome}</span></div>
+                    <div class="flex gap-2">
+                        <button onclick="prepararEdicao('${id}')" class="bg-zinc-700 px-2 py-1 rounded">Edit</button>
+                        <button onclick="removerProduto('${id}')" class="text-red-500 font-bold">X</button>
+                    </div>
                 </div>`;
             }
         }
 
         async function prepararEdicao(id) {
-            const res = await fetch(PROD_URL.replace('.json', `/${id}.json`)); const p = await res.json();
+            const res = await fetch(DB_BASE + "produtos/" + id + ".json"); const p = await res.json();
             document.getElementById('edit-id').value = id;
             document.getElementById('n').value = p.nome; document.getElementById('p').value = p.preco;
             document.getElementById('p-promo').value = p.precoPromo || ""; document.getElementById('c').value = p.categoria;
@@ -278,14 +281,13 @@
             window.scrollTo(0,0);
         }
 
-        async function removerProduto(id) { if(confirm("Excluir?")) { await fetch(PROD_URL.replace('.json', `/${id}.json`), { method: 'DELETE' }); listarProdutos(); } }
+        async function removerProduto(id) { if(confirm("Excluir?")) { await fetch(DB_BASE + "produtos/" + id + ".json", { method: 'DELETE' }); listarProdutos(); } }
 
-        // EQUIPE (USUÁRIOS)
+        // EQUIPE
         async function cadastrarUsuario() {
             const u = document.getElementById('new-user').value, p = document.getElementById('new-pass').value;
-            if(!u || !p) return alert("Preencha usuário e senha!");
+            if(!u || !p) return;
             await fetch(USER_URL.replace('.json', `/${Date.now()}.json`), { method: 'PUT', body: JSON.stringify({user:u, pass:p}) });
-            document.getElementById('new-user').value = ""; document.getElementById('new-pass').value = "";
             listarUsuarios();
         }
 
@@ -293,7 +295,7 @@
             const res = await fetch(USER_URL); const data = await res.json();
             const list = document.getElementById('lista-usuarios'); list.innerHTML = "";
             if(!data) return;
-            for(let id in data) list.innerHTML += `<div class="bg-zinc-700 p-2 rounded-lg flex justify-between text-[10px]"><span>👤 ${data[id].user}</span><button onclick="removerUsuario('${id}')" class="text-red-400">Excluir</button></div>`;
+            for(let id in data) list.innerHTML += `<div class="bg-zinc-700 p-2 rounded-lg flex justify-between text-[10px] mb-1"><span>👤 ${data[id].user}</span><button onclick="removerUsuario('${id}')" class="text-red-400">Excluir</button></div>`;
         }
 
         async function removerUsuario(id) { await fetch(USER_URL.replace('.json', `/${id}.json`), { method: 'DELETE' }); listarUsuarios(); }
