@@ -7,137 +7,177 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
+        body { font-family: 'Montserrat', sans-serif; }
         .day-btn.active { background-color: #d97706; color: white; border-color: #d97706; }
-        .tab-btn.active { border-bottom: 4px solid #d97706; color: #d97706; }
+        /* Abas Maiores e mais visíveis */
+        .tab-btn { padding: 16px 20px; font-size: 12px; transition: all 0.3s; border-bottom: 4px solid transparent; }
+        .tab-btn.active { border-bottom: 4px solid #d97706; color: #d97706; background-color: rgba(217, 119, 6, 0.05); }
         .tab-content.hidden { display: none; }
         .admin-only { display: none; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #d97706; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-zinc-900 text-zinc-100 p-4 font-sans text-left">
 
     <!-- TELA DE LOGIN -->
-    <div id="login" class="max-w-sm mx-auto mt-20 bg-white p-8 rounded-3xl text-zinc-900 shadow-2xl">
-        <h2 class="text-2xl font-black mb-6 text-center text-amber-900 uppercase tracking-tighter">Point do Café</h2>
-        <p class="text-center text-[10px] font-bold text-zinc-400 mb-6 uppercase tracking-widest">Painel Administrativo</p>
-        <input type="text" id="user-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-4 outline-none" placeholder="Usuário">
-        <input type="password" id="pass-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-6 outline-none" placeholder="Senha">
-        <button onclick="fazerLogin()" class="w-full bg-amber-900 text-white py-4 rounded-xl font-bold uppercase hover:bg-amber-800 transition-all">Entrar</button>
+    <div id="login" class="max-w-sm mx-auto mt-20 bg-white p-10 rounded-[2.5rem] text-zinc-900 shadow-2xl">
+        <h2 class="text-3xl font-black mb-2 text-center text-amber-900 uppercase tracking-tighter">Point do Café</h2>
+        <p class="text-center text-[10px] font-bold text-zinc-400 mb-8 uppercase tracking-[3px]">Painel Administrativo</p>
+        <input type="text" id="user-login" class="w-full p-5 border-2 border-amber-100 rounded-2xl mb-4 outline-none focus:border-amber-600 transition-all" placeholder="Usuário">
+        <input type="password" id="pass-login" class="w-full p-5 border-2 border-amber-100 rounded-2xl mb-8 outline-none focus:border-amber-600 transition-all" placeholder="Senha">
+        <button onclick="fazerLogin()" class="w-full bg-amber-900 text-white py-5 rounded-2xl font-black uppercase hover:bg-amber-800 transition-all shadow-lg">Entrar no Sistema</button>
     </div>
 
     <!-- PAINEL PRINCIPAL -->
-    <div id="painel" class="hidden max-w-2xl mx-auto py-4">
-        <div class="flex justify-between items-center mb-6 px-2">
+    <div id="painel" class="hidden max-w-4xl mx-auto py-4">
+        <div class="flex justify-between items-center mb-8 px-4">
             <div>
-                <span id="label-nivel" class="text-[8px] bg-amber-600 text-white px-2 py-0.5 rounded-full font-black uppercase">Operador</span>
-                <p class="text-[10px] text-zinc-500 font-black uppercase tracking-widest mt-1">Point do Café</p>
+                <span id="label-nivel" class="text-[10px] bg-amber-600 text-white px-3 py-1 rounded-full font-black uppercase tracking-widest shadow-sm">Carregando...</span>
+                <p class="text-[11px] text-zinc-500 font-bold uppercase tracking-widest mt-2">Gestão Point do Café</p>
             </div>
-            <button onclick="logout()" class="text-red-500 text-[10px] font-black uppercase underline">Sair</button>
+            <button onclick="logout()" class="text-red-500 text-xs font-black uppercase underline hover:text-red-400">Sair com Segurança</button>
         </div>
         
-        <!-- Menu de Abas -->
-        <div class="flex justify-around mb-8 border-b border-zinc-800 font-bold uppercase text-[9px] tracking-widest overflow-x-auto">
-            <button onclick="changeTab('tab-loja')" class="tab-btn pb-2 px-2 active" id="btn-loja">Loja</button>
-            <button onclick="changeTab('tab-categorias')" class="tab-btn pb-2 px-2" id="btn-categorias">Categorias</button>
-            <button onclick="changeTab('tab-produtos')" class="tab-btn pb-2 px-2" id="btn-produtos">Produtos</button>
-            <button onclick="changeTab('tab-relatorios')" class="tab-btn pb-2 px-2" id="btn-relatorios">Relatórios</button>
-            <button onclick="changeTab('tab-usuarios')" class="tab-btn pb-2 px-2 admin-only" id="btn-usuarios">Equipe 🔒</button>
+        <!-- Menu de Abas (Aumentado para Computador) -->
+        <div class="flex flex-wrap justify-start gap-2 mb-10 border-b border-zinc-800 font-black uppercase tracking-widest">
+            <button onclick="changeTab('tab-loja')" class="tab-btn" id="btn-loja">🖼️ Loja</button>
+            <button onclick="changeTab('tab-categorias')" class="tab-btn" id="btn-categorias">📂 Categorias</button>
+            <button onclick="changeTab('tab-produtos')" class="tab-btn" id="btn-produtos">🍔 Produtos</button>
+            <button onclick="changeTab('tab-relatorios')" class="tab-btn" id="btn-relatorios">📈 Relatórios</button>
+            <button onclick="changeTab('tab-usuarios')" class="tab-btn admin-only" id="btn-usuarios">🔐 Equipe</button>
         </div>
 
         <!-- ABA 1: LOGO -->
         <div id="tab-loja" class="tab-content text-center space-y-6">
-            <div class="bg-zinc-800 p-8 rounded-3xl border border-zinc-700">
-                <div class="w-32 h-32 bg-zinc-900 mx-auto rounded-full border-2 border-amber-600 overflow-hidden flex items-center justify-center mb-6">
+            <div class="bg-zinc-800 p-10 rounded-[3rem] border border-zinc-700 shadow-xl">
+                <div class="w-40 h-40 bg-zinc-900 mx-auto rounded-full border-4 border-amber-600 overflow-hidden flex items-center justify-center mb-8 shadow-inner">
                     <img id="logo-img-view" class="hidden w-full h-full object-cover">
-                    <span id="logo-placeholder" class="text-xs text-zinc-600 font-bold uppercase">Logo Point do Café</span>
+                    <span id="logo-placeholder" class="text-[10px] text-zinc-600 font-black uppercase">Logo do Café</span>
                 </div>
-                <input type="file" id="logoInput" accept="image/*" class="text-xs mb-6 block w-full text-zinc-400">
-                <button onclick="salvarLogo()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase text-xs">Atualizar Logo</button>
+                <input type="file" id="logoInput" accept="image/*" class="text-xs mb-8 block w-full text-zinc-500">
+                <button onclick="salvarLogo()" class="w-full max-w-sm bg-amber-600 py-5 rounded-2xl font-black uppercase text-xs hover:bg-amber-500 transition-all">Atualizar Identidade Visual</button>
             </div>
         </div>
 
         <!-- ABA 2: CATEGORIAS -->
         <div id="tab-categorias" class="tab-content hidden">
-            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
-                <div class="flex gap-2 mb-6">
-                    <input type="text" id="nova-cat" placeholder="Nova Categoria" class="flex-1 p-4 rounded-xl bg-zinc-700 outline-none text-sm">
-                    <button onclick="adicionarCategoria()" class="bg-green-600 px-6 rounded-xl font-black text-xl hover:bg-green-500">+</button>
+            <div class="bg-zinc-800 p-8 rounded-[3rem] border border-zinc-700 shadow-xl">
+                <div class="flex gap-3 mb-8">
+                    <input type="text" id="nova-cat" placeholder="Nome da Categoria (Ex: Bebidas)" class="flex-1 p-5 rounded-2xl bg-zinc-700 outline-none text-sm font-bold focus:ring-2 ring-amber-600">
+                    <button onclick="adicionarCategoria()" class="bg-green-600 px-8 rounded-2xl font-black text-2xl hover:bg-green-500 transition-all">+</button>
                 </div>
-                <div id="sortable-list" class="space-y-2 mb-6"></div>
-                <button onclick="salvarOrdemCategorias()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase text-xs">Salvar Ordem</button>
+                <div id="sortable-list" class="space-y-3 mb-8"></div>
+                <button onclick="salvarOrdemCategorias()" class="w-full bg-amber-600 py-5 rounded-2xl font-black uppercase text-xs shadow-lg">Salvar Ordem das Categorias</button>
             </div>
         </div>
 
         <!-- ABA 3: PRODUTOS -->
-        <div id="tab-produtos" class="tab-content hidden space-y-4">
-            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700 space-y-4 shadow-xl">
+        <div id="tab-produtos" class="tab-content hidden space-y-6">
+            <div class="bg-zinc-800 p-8 rounded-[3rem] border border-zinc-700 space-y-5 shadow-xl">
                 <input type="hidden" id="edit-id">
-                <input type="text" id="n" placeholder="Nome do Produto" class="w-full p-4 rounded-xl bg-zinc-700 outline-none">
-                <select id="c" class="w-full p-4 rounded-xl bg-zinc-700 outline-none text-sm"></select>
+                <input type="text" id="n" placeholder="Título do Produto" class="w-full p-5 rounded-2xl bg-zinc-700 outline-none font-bold">
+                <select id="c" class="w-full p-5 rounded-2xl bg-zinc-700 outline-none text-sm font-black text-amber-500"></select>
                 
-                <div class="p-4 bg-zinc-900 rounded-2xl space-y-2">
-                    <label class="text-[9px] font-black text-amber-500 uppercase">Disponibilidade Point do Café:</label>
+                <div class="p-6 bg-zinc-900 rounded-[2rem] space-y-4">
+                    <label class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Sugerir este item nos dias:</label>
                     <div class="flex flex-wrap gap-2" id="dias-semana">
-                        <button type="button" data-day="0" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Dom</button>
-                        <button type="button" data-day="1" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Seg</button>
-                        <button type="button" data-day="2" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Ter</button>
-                        <button type="button" data-day="3" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Qua</button>
-                        <button type="button" data-day="4" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Qui</button>
-                        <button type="button" data-day="5" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Sex</button>
-                        <button type="button" data-day="6" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Sáb</button>
+                        <button type="button" data-day="0" class="day-btn border border-zinc-700 px-4 py-3 rounded-xl text-[10px] font-black">DOM</button>
+                        <button type="button" data-day="1" class="day-btn border border-zinc-700 px-4 py-3 rounded-xl text-[10px] font-black">SEG</button>
+                        <button type="button" data-day="2" class="day-btn border border-zinc-700 px-4 py-3 rounded-xl text-[10px] font-black">TER</button>
+                        <button type="button" data-day="3" class="day-btn border border-zinc-700 px-4 py-3 rounded-xl text-[10px] font-black">QUA</button>
+                        <button type="button" data-day="4" class="day-btn border border-zinc-700 px-4 py-3 rounded-xl text-[10px] font-black">QUI</button>
+                        <button type="button" data-day="5" class="day-btn border border-zinc-700 px-4 py-3 rounded-xl text-[10px] font-black">SEX</button>
+                        <button type="button" data-day="6" class="day-btn border border-zinc-700 px-4 py-3 rounded-xl text-[10px] font-black">SÁB</button>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
-                    <input type="number" id="p" placeholder="Preço R$" class="w-full p-4 rounded-xl bg-zinc-700 outline-none">
-                    <input type="number" id="p-promo" placeholder="Promo R$" class="w-full p-4 rounded-xl bg-zinc-700 border-2 border-amber-900 outline-none">
+                    <div>
+                        <label class="text-[9px] font-black text-zinc-500 ml-2 uppercase">Preço Normal</label>
+                        <input type="number" id="p" placeholder="0.00" class="w-full p-5 mt-1 rounded-2xl bg-zinc-700 outline-none font-black">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-amber-500 ml-2 uppercase">Preço Promoção</label>
+                        <input type="number" id="p-promo" placeholder="0.00" class="w-full p-5 mt-1 rounded-2xl bg-zinc-700 border-2 border-amber-900 outline-none font-black text-amber-500">
+                    </div>
                 </div>
                 <input type="file" id="fileInput" accept="image/*" class="text-xs w-full text-zinc-500">
                 <canvas id="canvas" style="display:none;"></canvas>
-                <button onclick="salvar()" id="btnSalvarProd" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase">Salvar Produto</button>
+                <button onclick="salvar()" id="btnSalvarProd" class="w-full bg-amber-600 py-5 rounded-2xl font-black uppercase shadow-xl hover:bg-amber-500">Salvar Produto no Point do Café</button>
             </div>
-            <div id="lista-produtos" class="grid gap-2"></div>
+            <div id="lista-produtos" class="grid gap-3 grid-cols-1 md:grid-cols-2"></div>
         </div>
 
         <!-- ABA 4: RELATÓRIOS -->
         <div id="tab-relatorios" class="tab-content hidden space-y-6">
-            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
-                <h2 class="text-amber-500 font-black mb-4 uppercase text-sm">Vendas Point do Café</h2>
-                <div class="grid grid-cols-2 gap-4 mb-6 text-center">
-                    <div class="bg-zinc-900 p-5 rounded-2xl border border-zinc-700">
-                        <p class="text-[9px] text-zinc-500 uppercase font-black">Pedidos Hoje</p>
-                        <p id="resumo-qtd-hoje" class="text-3xl font-black text-white">0</p>
+            <div class="bg-zinc-800 p-8 rounded-[3rem] border border-zinc-700 shadow-xl">
+                <h2 class="text-amber-500 font-black mb-6 uppercase text-center tracking-widest">Resumo Financeiro</h2>
+                <div class="grid grid-cols-2 gap-6 mb-8 text-center">
+                    <div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-700">
+                        <p class="text-[10px] text-zinc-500 uppercase font-black tracking-widest mb-2">Pedidos Hoje</p>
+                        <p id="resumo-qtd-hoje" class="text-4xl font-black text-white">0</p>
                     </div>
-                    <div class="bg-zinc-900 p-5 rounded-2xl border border-zinc-700">
-                        <p class="text-[9px] text-zinc-500 uppercase font-black">Faturamento Hoje</p>
-                        <p id="resumo-valor-hoje" class="text-3xl font-black text-green-500">R$ 0,00</p>
+                    <div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-700 shadow-inner">
+                        <p class="text-[10px] text-zinc-500 uppercase font-black tracking-widest mb-2">Faturamento Hoje</p>
+                        <p id="resumo-valor-hoje" class="text-4xl font-black text-green-500 tracking-tighter">R$ 0,00</p>
                     </div>
                 </div>
-                <div class="flex gap-2 mb-6">
-                    <button onclick="exportarExcel()" class="flex-1 bg-zinc-700 py-3 rounded-xl text-[10px] font-black uppercase">📊 Planilha</button>
-                    <button onclick="exportarPDF()" class="flex-1 bg-zinc-700 py-3 rounded-xl text-[10px] font-black uppercase">📄 PDF</button>
+                <div class="flex gap-4 mb-8">
+                    <button onclick="exportarExcel()" class="flex-1 bg-zinc-700 hover:bg-zinc-600 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all">📊 Baixar Planilha</button>
+                    <button onclick="exportarPDF()" class="flex-1 bg-zinc-700 hover:bg-zinc-600 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all">📄 Gerar PDF</button>
                 </div>
-                <div class="space-y-3 max-h-96 overflow-y-auto pr-2" id="lista-vendas-historico"></div>
-                <button onclick="listarRelatorios()" class="w-full mt-4 bg-zinc-700 py-3 rounded-xl font-black text-[10px] uppercase">🔄 Atualizar</button>
+                <div class="space-y-4 max-h-[500px] overflow-y-auto pr-2" id="lista-vendas-historico"></div>
+                <button onclick="listarRelatorios()" class="w-full mt-6 bg-zinc-700 py-4 rounded-2xl font-black text-[11px] uppercase border border-zinc-600">🔄 Sincronizar Relatório</button>
             </div>
         </div>
 
-        <!-- ABA 5: EQUIPE -->
-        <div id="tab-usuarios" class="tab-content hidden space-y-4">
-            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
-                <h2 class="text-amber-500 font-black mb-4 uppercase text-sm">Equipe Point do Café 🔒</h2>
-                <input type="hidden" id="edit-user-id">
-                <input type="text" id="new-user" placeholder="Usuário" class="w-full p-4 mb-3 rounded-xl bg-zinc-700 outline-none">
-                <input type="password" id="new-pass" placeholder="Senha" class="w-full p-4 mb-4 rounded-xl bg-zinc-700 outline-none">
-                <button onclick="cadastrarUsuario()" class="w-full bg-green-600 py-4 rounded-xl font-black uppercase text-xs">Salvar Acesso</button>
-                <div id="lista-usuarios" class="mt-8 space-y-2"></div>
+        <!-- ABA 5: EQUIPE (CONTROLE MASTER) -->
+        <div id="tab-usuarios" class="tab-content hidden space-y-6">
+            <div class="bg-zinc-800 p-10 rounded-[3rem] border border-zinc-700 shadow-xl">
+                <h2 class="text-amber-500 font-black mb-6 uppercase text-center tracking-widest">Gestão de Equipe Point do Café</h2>
+                
+                <div class="bg-zinc-900 p-8 rounded-[2rem] space-y-6">
+                    <input type="hidden" id="edit-user-id">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" id="new-user" placeholder="Nome de Usuário" class="p-5 rounded-2xl bg-zinc-800 outline-none font-bold text-sm">
+                        <input type="password" id="new-pass" placeholder="Definir Senha" class="p-5 rounded-2xl bg-zinc-800 outline-none font-bold text-sm">
+                    </div>
+
+                    <div class="p-6 bg-zinc-800 rounded-2xl border border-zinc-700">
+                        <p class="text-[10px] font-black text-amber-500 uppercase mb-4 tracking-widest">Definir Permissões de Acesso:</p>
+                        <select id="new-role" class="w-full p-4 mb-6 rounded-xl bg-zinc-900 text-xs font-black uppercase text-zinc-300 outline-none cursor-pointer">
+                            <option value="operador">Operador (Acesso Limitado)</option>
+                            <option value="admin">Administrador (Acesso Total)</option>
+                        </select>
+                        
+                        <div id="area-permissoes" class="grid grid-cols-2 gap-4">
+                            <label class="flex items-center gap-3 text-xs font-bold text-zinc-400 cursor-pointer">
+                                <input type="checkbox" id="perm-loja" class="check-perm w-5 h-5 accent-amber-600"> Identidade/Logo
+                            </label>
+                            <label class="flex items-center gap-3 text-xs font-bold text-zinc-400 cursor-pointer">
+                                <input type="checkbox" id="perm-categorias" class="check-perm w-5 h-5 accent-amber-600"> Categorias
+                            </label>
+                            <label class="flex items-center gap-3 text-xs font-bold text-zinc-400 cursor-pointer">
+                                <input type="checkbox" id="perm-produtos" class="check-perm w-5 h-5 accent-amber-600"> Produtos
+                            </label>
+                            <label class="flex items-center gap-3 text-xs font-bold text-zinc-400 cursor-pointer">
+                                <input type="checkbox" id="perm-relatorios" class="check-perm w-5 h-5 accent-amber-600"> Relatórios
+                            </label>
+                        </div>
+                    </div>
+
+                    <button onclick="cadastrarUsuario()" class="w-full bg-green-600 py-5 rounded-2xl font-black uppercase text-xs shadow-lg hover:bg-green-500 transition-all">Salvar Acesso da Equipe</button>
+                </div>
+
+                <div id="lista-usuarios" class="mt-10 space-y-3 pt-8 border-t border-zinc-700"></div>
             </div>
         </div>
 
-        <footer class="mt-12 text-center">
-            <p class="text-[9px] text-zinc-600 font-bold uppercase tracking-[3px]">SISTEMA DESENVOLVIDO POR <span class="text-amber-600">DPTECH SOLUTIONS</span></p>
+        <footer class="mt-16 text-center pb-10">
+            <p class="text-[10px] text-zinc-600 font-black uppercase tracking-[5px]">Tecnologia <span class="text-amber-600 font-black italic">DPTech Solutions</span></p>
         </footer>
     </div>
 
@@ -149,13 +189,16 @@
         const USER_URL = DB_BASE + "usuarios.json";
         const VENDAS_URL = DB_BASE + "vendas.json";
 
-        let imagemBase64 = "", logoBase64 = "", diasSelecionados = [], NIVEL_ATUAL = "operador";
+        let imagemBase64 = "", logoBase64 = "", diasSelecionados = [], NIVEL_ATUAL = "operador", PERMISSOES_ATUAIS = [];
 
         function verificarSessao() {
             const sessao = localStorage.getItem('point_sessao');
             const nivelSessao = localStorage.getItem('point_nivel');
+            const permissoesSessao = JSON.parse(localStorage.getItem('point_permissoes')) || [];
+            
             if (sessao && new Date().getTime() < parseInt(sessao)) {
                 NIVEL_ATUAL = nivelSessao;
+                PERMISSOES_ATUAIS = permissoesSessao;
                 permitirAcesso();
             }
         }
@@ -164,8 +207,9 @@
             const u = document.getElementById('user-login').value;
             const p = document.getElementById('pass-login').value;
             
+            // Login Root Master
             if(u === "admin" && p === "Root@8505") {
-                executarLogin("admin");
+                executarLogin("admin", ['tab-loja', 'tab-categorias', 'tab-produtos', 'tab-relatorios', 'tab-usuarios']);
                 return;
             }
 
@@ -173,28 +217,44 @@
             const users = await res.json();
             for(let id in users) { 
                 if(users[id].user === u && users[id].pass === p) {
-                    executarLogin("operador");
+                    executarLogin(users[id].role, users[id].permissoes);
                     return;
                 } 
             }
-            alert("Acesso Negado para Point do Café!");
+            alert("Acesso Negado! Verifique seus dados.");
         }
 
-        function executarLogin(nivel) {
+        function executarLogin(nivel, permissoes) {
             NIVEL_ATUAL = nivel;
+            PERMISSOES_ATUAIS = permissoes;
             localStorage.setItem('point_nivel', nivel);
-            localStorage.setItem('point_sessao', new Date().getTime() + (30 * 60 * 1000));
+            localStorage.setItem('point_permissoes', JSON.stringify(permissoes));
+            localStorage.setItem('point_sessao', new Date().getTime() + (60 * 60 * 1000));
             permitirAcesso();
         }
 
         function permitirAcesso() {
             document.getElementById('login').classList.add('hidden');
             document.getElementById('painel').classList.remove('hidden');
-            document.getElementById('label-nivel').innerText = NIVEL_ATUAL === "admin" ? "Admin Master" : "Operador";
+            document.getElementById('label-nivel').innerText = NIVEL_ATUAL === "admin" ? "ADMIN MASTER" : "EQUIPE OPERACIONAL";
 
+            // Aplica visibilidade das abas conforme permissão
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.add('hidden'));
+            
+            PERMISSOES_ATUAIS.forEach(permId => {
+                const btnId = 'btn-' + permId.split('-')[1];
+                const btn = document.getElementById(btnId);
+                if(btn) btn.classList.remove('hidden');
+            });
+
+            // Recurso exclusivo de equipe só pro root/admin master
             if(NIVEL_ATUAL === "admin") {
+                document.getElementById('btn-usuarios').classList.remove('hidden');
                 document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
             }
+
+            // Ativa a primeira aba permitida
+            changeTab(PERMISSOES_ATUAIS[0]);
 
             carregarLogo(); carregarCategorias(); listarProdutos(); listarUsuarios(); listarRelatorios();
         }
@@ -202,40 +262,44 @@
         function logout() { localStorage.clear(); location.reload(); }
 
         function changeTab(tabId) {
+            if(!PERMISSOES_ATUAIS.includes(tabId) && NIVEL_ATUAL !== 'admin') return;
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(tabId).classList.remove('hidden');
             document.getElementById('btn-' + tabId.split('-')[1]).classList.add('active');
         }
 
+        // SEGURANÇA: Bloqueio de exclusão por Operador
         async function removerCategoria(n) { 
-            if(NIVEL_ATUAL !== "admin") return alert("Apenas Admin Point do Café pode excluir!");
-            if(!confirm("Excluir?")) return;
+            if(NIVEL_ATUAL !== "admin") return alert("Permissão Negada! Somente o Admin Master pode excluir.");
+            if(!confirm("Remover categoria definitivamente?")) return;
             const res = await fetch(CAT_URL); let data = await res.json(); data = data.filter(c => c !== n);
             await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(data) }); carregarCategorias();
         }
 
         async function removerProduto(id) { 
-            if(NIVEL_ATUAL !== "admin") return alert("Apenas Admin Point do Café pode excluir!");
-            if(!confirm("Excluir?")) return;
+            if(NIVEL_ATUAL !== "admin") return alert("Permissão Negada! Somente o Admin Master pode excluir.");
+            if(!confirm("Excluir produto do Point do Café?")) return;
             await fetch(DB_BASE + "produtos/" + id + ".json", { method: 'DELETE' }); listarProdutos();
         }
 
         async function removerVenda(id) {
-            if(NIVEL_ATUAL !== "admin") return alert("Apenas Admin Point do Café pode excluir!");
-            if(!confirm("Excluir?")) return;
+            if(NIVEL_ATUAL !== "admin") return alert("Permissão Negada! Somente o Admin Master pode apagar o histórico.");
+            if(!confirm("Apagar registro de venda?")) return;
             await fetch(DB_BASE + "vendas/" + id + ".json", { method: 'DELETE' }); listarRelatorios();
         }
 
-        // --- RESTANTE DAS FUNÇÕES IGUAIS ---
+        // LOGO
         async function carregarLogo() {
             const res = await fetch(LOGO_URL); const data = await res.json();
             if(data) { document.getElementById('logo-img-view').src = data; document.getElementById('logo-img-view').classList.remove('hidden'); document.getElementById('logo-placeholder').classList.add('hidden'); }
         }
+
         async function salvarLogo() {
-            if(!logoBase64) return alert("Selecione imagem!");
-            await fetch(LOGO_URL, { method: 'PUT', body: JSON.stringify(logoBase64) }); alert("Logo Point do Café Atualizada!");
+            if(!logoBase64) return alert("Selecione uma imagem primeiro!");
+            await fetch(LOGO_URL, { method: 'PUT', body: JSON.stringify(logoBase64) }); alert("Identidade Visual Atualizada!");
         }
+
         document.getElementById('logoInput').addEventListener('change', (e) => {
             const reader = new FileReader();
             reader.onload = (ev) => {
@@ -252,22 +316,32 @@
             };
             reader.readAsDataURL(e.target.files[0]);
         });
+
+        // CATEGORIAS
         async function carregarCategorias() {
             const res = await fetch(CAT_URL); const data = await res.json() || ["Geral"];
             const list = document.getElementById('sortable-list');
-            list.innerHTML = data.map(c => `<div class="bg-zinc-700 p-4 rounded-xl flex justify-between items-center handle" data-id="${c}"><span>☰ ${c}</span>${NIVEL_ATUAL === 'admin' ? `<button onclick="removerCategoria('${c}')" class="text-red-500 font-bold">X</button>` : ''}</div>`).join('');
+            list.innerHTML = data.map(c => `
+                <div class="bg-zinc-700 p-5 rounded-2xl flex justify-between items-center handle shadow-sm" data-id="${c}">
+                    <span class="font-bold text-sm">☰ ${c}</span>
+                    ${NIVEL_ATUAL === 'admin' ? `<button onclick="removerCategoria('${c}')" class="text-red-500 font-black px-2 hover:scale-125 transition-transform">×</button>` : ''}
+                </div>`).join('');
             document.getElementById('c').innerHTML = data.map(c => `<option value="${c}">${c}</option>`).join('');
             new Sortable(list, { animation: 150, handle: '.handle' });
         }
+
         async function adicionarCategoria() {
             const nInput = document.getElementById('nova-cat'); const n = nInput.value.trim(); if(!n) return;
             const res = await fetch(CAT_URL); let data = await res.json() || [];
             if(!data.includes(n)) { data.push(n); await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(data) }); nInput.value = ""; carregarCategorias(); }
         }
+
         async function salvarOrdemCategorias() {
             const ordem = Array.from(document.querySelectorAll('#sortable-list > div')).map(i => i.dataset.id);
-            await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(ordem) }); alert("Ordem Salva!");
+            await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(ordem) }); alert("Ordem das Categorias Sincronizada!");
         }
+
+        // PRODUTOS
         document.querySelectorAll('.day-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const d = btn.dataset.day;
@@ -275,6 +349,7 @@
                 else diasSelecionados.push(d); btn.classList.toggle('active');
             });
         });
+
         document.getElementById('fileInput').addEventListener('change', (e) => {
             const reader = new FileReader();
             reader.onload = (ev) => {
@@ -287,75 +362,144 @@
             };
             reader.readAsDataURL(e.target.files[0]);
         });
+
         async function salvar() {
             const id = document.getElementById('edit-id').value;
             const item = { nome: document.getElementById('n').value, categoria: document.getElementById('c').value, preco: parseFloat(document.getElementById('p').value), precoPromo: parseFloat(document.getElementById('p-promo').value) || null, dias: diasSelecionados };
-            if(!item.nome || !item.preco) return alert("Erro no Point do Café!");
+            if(!item.nome || !item.preco) return alert("Erro! Nome e Preço são obrigatórios.");
             const url = id ? DB_BASE + "produtos/" + id + ".json" : DB_BASE + "produtos/" + Date.now() + ".json";
             if(imagemBase64) item.img = imagemBase64;
             else if(id) { const r = await fetch(url); const d = await r.json(); item.img = d.img; }
-            else return alert("Foto obrigatória!");
-            await fetch(url, { method: 'PUT', body: JSON.stringify(item) }); alert("Produto Salvo!"); location.reload();
+            else return alert("A foto do produto é obrigatória!");
+            await fetch(url, { method: 'PUT', body: JSON.stringify(item) }); alert("Produto Atualizado no Cardápio!"); location.reload();
         }
+
         async function listarProdutos() {
             const res = await fetch(DB_URL); const data = await res.json();
             const list = document.getElementById('lista-produtos'); list.innerHTML = "";
             if(!data) return;
-            for(let id in data) list.innerHTML += `<div class="bg-zinc-800 p-4 rounded-2xl flex justify-between items-center border border-zinc-700 mb-2"><div class="flex items-center gap-3"><img src="${data[id].img}" class="w-10 h-10 object-cover rounded-xl"><div><p class="font-bold text-xs">${data[id].nome}</p></div></div><div class="flex gap-2"><button onclick="prepararEdicao('${id}')" class="bg-zinc-700 px-3 py-1 rounded-lg text-[9px]">Editar</button>${NIVEL_ATUAL === 'admin' ? `<button onclick="removerProduto('${id}')" class="text-red-500 font-bold px-2">X</button>` : ''}</div></div>`;
+            for(let id in data) list.innerHTML += `
+                <div class="bg-zinc-800 p-5 rounded-3xl flex justify-between items-center border border-zinc-700 shadow-sm">
+                    <div class="flex items-center gap-4">
+                        <img src="${data[id].img}" class="w-14 h-14 object-cover rounded-2xl border-2 border-zinc-700">
+                        <div><p class="font-black text-sm uppercase text-amber-500">${data[id].nome}</p></div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="prepararEdicao('${id}')" class="bg-zinc-700 px-4 py-2 rounded-xl text-[10px] font-black uppercase">Editar</button>
+                        ${NIVEL_ATUAL === 'admin' ? `<button onclick="removerProduto('${id}')" class="text-red-500 font-black px-3 text-xl hover:scale-125 transition-all">×</button>` : ''}
+                    </div>
+                </div>`;
         }
+
         async function prepararEdicao(id) {
             const res = await fetch(DB_BASE + "produtos/" + id + ".json"); const p = await res.json();
             document.getElementById('edit-id').value = id; document.getElementById('n').value = p.nome; document.getElementById('p').value = p.preco; document.getElementById('p-promo').value = p.precoPromo || ""; document.getElementById('c').value = p.categoria;
             diasSelecionados = p.dias ? p.dias.map(String) : [];
             document.querySelectorAll('.day-btn').forEach(b => b.classList.toggle('active', diasSelecionados.includes(b.dataset.day)));
-            window.scrollTo(0,0);
+            window.scrollTo({top: 0, behavior: 'smooth'});
         }
+
+        // RELATÓRIOS
         async function listarRelatorios() {
             const res = await fetch(VENDAS_URL); const vendas = await res.json();
             const container = document.getElementById('lista-vendas-historico'); const hoje = new Date().toLocaleDateString('pt-BR');
             let qtdHoje = 0, valorHoje = 0, html = "";
-            if (!vendas) { container.innerHTML = "<p class='text-center py-10'>Sem vendas no Point do Café.</p>"; return; }
+            if (!vendas) { container.innerHTML = "<p class='text-center py-10 font-bold text-zinc-600'>Sem vendas registradas hoje.</p>"; return; }
             Object.keys(vendas).reverse().forEach(id => {
                 const v = vendas[id]; if (v.dataLocal === hoje) { qtdHoje++; valorHoje += v.total; }
-                html += `<div class="bg-zinc-900 p-4 rounded-2xl border-l-4 ${v.dataLocal === hoje ? 'border-green-500' : 'border-zinc-700'} mb-2"><div class="flex justify-between items-start"><div><p class="text-white font-black text-xs uppercase">${v.cliente}</p><p class="text-[9px] text-zinc-500">${v.dataLocal}</p></div><div class="text-right"><p class="text-green-500 font-black text-sm">R$ ${v.total.toFixed(2)}</p>${NIVEL_ATUAL === 'admin' ? `<button onclick="removerVenda('${id}')" class="text-zinc-600 text-[10px] uppercase hover:text-red-500">Excluir</button>` : ''}</div></div></div>`;
+                html += `
+                <div class="bg-zinc-900 p-6 rounded-[2rem] border-l-8 ${v.dataLocal === hoje ? 'border-green-600 shadow-lg' : 'border-zinc-700'}">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-white font-black text-sm uppercase tracking-tight">${v.cliente}</p>
+                            <p class="text-[10px] text-zinc-500 font-bold mt-1 uppercase">${v.dataLocal} • ${v.pagamento}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-green-500 font-black text-lg">R$ ${v.total.toFixed(2)}</p>
+                            ${NIVEL_ATUAL === 'admin' ? `<button onclick="removerVenda('${id}')" class="text-zinc-600 text-[10px] font-black uppercase hover:text-red-500 mt-2">Apagar</button>` : ''}
+                        </div>
+                    </div>
+                </div>`;
             });
             document.getElementById('resumo-qtd-hoje').innerText = qtdHoje; document.getElementById('resumo-valor-hoje').innerText = `R$ ${valorHoje.toFixed(2)}`;
             container.innerHTML = html;
         }
+
         async function exportarExcel() {
             const res = await fetch(VENDAS_URL); const v = await res.json();
-            const dados = Object.keys(v).map(id => ({ "Data": v[id].dataLocal, "Cliente": v[id].cliente, "Total": v[id].total.toFixed(2) }));
+            const dados = Object.keys(v).map(id => ({ "Data": v[id].dataLocal, "Cliente": v[id].cliente, "Total": v[id].total.toFixed(2), "Pagamento": v[id].pagamento }));
             const ws = XLSX.utils.json_to_sheet(dados); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Vendas");
-            XLSX.writeFile(wb, "Vendas_PointDoCafe.xlsx");
+            XLSX.writeFile(wb, "Relatorio_PointDoCafe.xlsx");
         }
+
         function exportarPDF() {
             const c = document.getElementById('lista-vendas-historico').innerHTML;
-            const j = window.open('', '', 'width=800,height=600');
-            j.document.write(`<html><head><style>body{font-family:sans-serif;padding:20px} .pedido-card{border-bottom:1px solid #eee;padding:10px} button{display:none !important}</style></head><body><h1>Relatório Point do Café</h1><hr>${c}</body></html>`);
+            const j = window.open('', '', 'width=900,height=600');
+            j.document.write(`<html><head><style>body{font-family:sans-serif;padding:30px} h1{color:#d97706; text-align:center} .pedido-card{border-bottom:2px solid #eee;padding:20px} button{display:none !important}</style></head><body><h1>Relatório Point do Café</h1><hr>${c}</body></html>`);
             j.document.close(); j.print(); j.close();
         }
+
+        // EQUIPE POINT DO CAFÉ
         async function cadastrarUsuario() {
             if(NIVEL_ATUAL !== "admin") return;
             const u = document.getElementById('new-user').value, p = document.getElementById('new-pass').value, id = document.getElementById('edit-user-id').value;
-            if(!u || !p) return alert("Preencha!");
+            const r = document.getElementById('new-role').value;
+            const permissoes = [];
+            if(document.getElementById('perm-loja').checked) permissoes.push('tab-loja');
+            if(document.getElementById('perm-categorias').checked) permissoes.push('tab-categorias');
+            if(document.getElementById('perm-produtos').checked) permissoes.push('tab-produtos');
+            if(document.getElementById('perm-relatorios').checked) permissoes.push('tab-relatorios');
+
+            if(!u || !p) return alert("Erro: Preencha Usuário e Senha!");
+            
+            const userObj = {
+                user: u, 
+                pass: p, 
+                role: r, 
+                permissoes: r === 'admin' ? ['tab-loja', 'tab-categorias', 'tab-produtos', 'tab-relatorios', 'tab-usuarios'] : permissoes 
+            };
+
             const url = id ? USER_URL.replace('.json', `/${id}.json`) : USER_URL.replace('.json', `/${Date.now()}.json`);
-            await fetch(url, { method: 'PUT', body: JSON.stringify({user:u, pass:p}) });
+            await fetch(url, { method: 'PUT', body: JSON.stringify(userObj) });
+            alert("Acesso de Equipe Salvo com Sucesso!");
+            
             document.getElementById('new-user').value = ""; document.getElementById('new-pass').value = ""; document.getElementById('edit-user-id').value = "";
+            document.querySelectorAll('.check-perm').forEach(c => c.checked = false);
             listarUsuarios();
         }
+
         async function listarUsuarios() {
             const res = await fetch(USER_URL); const data = await res.json();
             const list = document.getElementById('lista-usuarios'); list.innerHTML = "";
             if(!data) return;
-            for(let id in data) list.innerHTML += `<div class="bg-zinc-700 p-4 rounded-xl flex justify-between items-center text-[10px] mb-2 font-bold"><span>👤 ${data[id].user}</span><div class="flex gap-3"><button onclick="prepararEdicaoUsuario('${id}')" class="text-amber-500 uppercase">Editar</button><button onclick="removerUsuario('${id}')" class="text-red-400 uppercase">X</button></div></div>`;
+            for(let id in data) list.innerHTML += `
+                <div class="bg-zinc-700 p-5 rounded-2xl flex justify-between items-center text-xs mb-3 shadow-md">
+                    <div class="flex items-center gap-4">
+                        <span class="text-xl">👤</span>
+                        <div>
+                            <p class="font-black uppercase tracking-widest text-amber-500">${data[id].user}</p>
+                            <p class="text-[9px] text-zinc-400 font-bold uppercase">${data[id].role}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <button onclick="prepararEdicaoUsuario('${id}')" class="text-amber-500 font-black uppercase text-[10px] underline">Editar</button>
+                        <button onclick="removerUsuario('${id}')" class="text-red-400 font-black text-xl">×</button>
+                    </div>
+                </div>`;
         }
+
         async function prepararEdicaoUsuario(id) {
             const res = await fetch(USER_URL.replace('.json', `/${id}.json`)); const u = await res.json();
             document.getElementById('edit-user-id').value = id; document.getElementById('new-user').value = u.user; document.getElementById('new-pass').value = u.pass;
+            document.getElementById('new-role').value = u.role;
+            document.querySelectorAll('.check-perm').forEach(c => {
+                c.checked = u.permissoes.includes(c.id.replace('perm-', 'tab-'));
+            });
         }
+
         async function removerUsuario(id) { 
             if(NIVEL_ATUAL !== "admin") return;
-            if(confirm("Remover?")) { await fetch(USER_URL.replace('.json', `/${id}.json`), { method: 'DELETE' }); listarUsuarios(); }
+            if(confirm("Deseja mesmo remover este acesso?")) { await fetch(USER_URL.replace('.json', `/${id}.json`), { method: 'DELETE' }); listarUsuarios(); }
         }
 
         verificarSessao();
