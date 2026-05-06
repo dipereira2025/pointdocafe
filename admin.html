@@ -11,86 +11,126 @@
         .tab-btn.active { border-bottom: 4px solid #d97706; color: #d97706; }
         .sortable-ghost { opacity: 0.4; background: #4b5563; }
         .tab-content.hidden { display: none; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-zinc-900 text-zinc-100 p-4 font-sans text-left">
 
     <!-- TELA DE LOGIN -->
     <div id="login" class="max-w-sm mx-auto mt-20 bg-white p-8 rounded-3xl text-zinc-900 shadow-2xl">
-        <h2 class="text-2xl font-black mb-6 text-center text-amber-900">PAINEL POINT</h2>
+        <h2 class="text-2xl font-black mb-6 text-center text-amber-900 uppercase">Painel Point</h2>
         <input type="text" id="user-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-4 outline-none" placeholder="Usuário">
         <input type="password" id="pass-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-6 outline-none" placeholder="Senha">
-        <button onclick="fazerLogin()" class="w-full bg-amber-900 text-white py-4 rounded-xl font-bold">ENTRAR</button>
+        <button onclick="fazerLogin()" class="w-full bg-amber-900 text-white py-4 rounded-xl font-bold hover:bg-amber-800 transition-all">ACESSAR</button>
     </div>
 
     <!-- PAINEL PRINCIPAL -->
     <div id="painel" class="hidden max-w-2xl mx-auto py-4">
-        <div class="flex justify-between items-center mb-6">
-            <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Painel Administrativo</span>
-            <button onclick="logout()" class="text-red-500 text-[10px] font-bold uppercase underline">Sair</button>
+        <div class="flex justify-between items-center mb-6 px-2">
+            <span class="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-amber-500">Gestão Profissional</span>
+            <button onclick="logout()" class="text-red-500 text-[10px] font-black uppercase underline">Sair do Painel</button>
         </div>
         
-        <div class="flex justify-around mb-8 border-b border-zinc-800 font-bold uppercase text-[10px] tracking-widest">
+        <!-- Menu de Abas -->
+        <div class="flex justify-around mb-8 border-b border-zinc-800 font-bold uppercase text-[9px] tracking-widest overflow-x-auto">
             <button onclick="changeTab('tab-loja')" class="tab-btn pb-2 px-2 active" id="btn-loja">Loja</button>
             <button onclick="changeTab('tab-categorias')" class="tab-btn pb-2 px-2" id="btn-categorias">Categorias</button>
             <button onclick="changeTab('tab-produtos')" class="tab-btn pb-2 px-2" id="btn-produtos">Produtos</button>
+            <button onclick="changeTab('tab-relatorios')" class="tab-btn pb-2 px-2" id="btn-relatorios">Relatórios</button>
             <button onclick="changeTab('tab-usuarios')" class="tab-btn pb-2 px-2" id="btn-usuarios">Equipe</button>
         </div>
 
-        <!-- ABA LOJA -->
+        <!-- ABA 1: LOGO -->
         <div id="tab-loja" class="tab-content text-center space-y-6">
-            <div class="w-32 h-32 bg-zinc-800 mx-auto rounded-full border-2 border-amber-600 overflow-hidden flex items-center justify-center">
-                <img id="logo-img-view" class="hidden w-full h-full object-cover">
-                <span id="logo-placeholder" class="text-xs text-zinc-600">Sem Logo</span>
+            <div class="bg-zinc-800 p-8 rounded-3xl border border-zinc-700">
+                <div class="w-32 h-32 bg-zinc-900 mx-auto rounded-full border-2 border-amber-600 overflow-hidden flex items-center justify-center mb-6">
+                    <img id="logo-img-view" class="hidden w-full h-full object-cover">
+                    <span id="logo-placeholder" class="text-xs text-zinc-600 font-bold uppercase">Sem Logo</span>
+                </div>
+                <input type="file" id="logoInput" accept="image/*" class="text-xs mb-6 block w-full text-zinc-400">
+                <button onclick="salvarLogo()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase text-xs">Atualizar Logotipo</button>
             </div>
-            <input type="file" id="logoInput" accept="image/*" class="text-xs">
-            <button onclick="salvarLogo()" class="w-full bg-amber-600 py-3 rounded-xl font-bold">SALVAR LOGO</button>
         </div>
 
-        <!-- ABA CATEGORIAS -->
+        <!-- ABA 2: CATEGORIAS -->
         <div id="tab-categorias" class="tab-content hidden">
-            <div class="flex gap-2 mb-4">
-                <input type="text" id="nova-cat" placeholder="Nova Categoria" class="flex-1 p-3 rounded-xl bg-zinc-700 outline-none">
-                <button onclick="adicionarCategoria()" class="bg-green-600 px-6 rounded-xl font-bold">+</button>
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+                <div class="flex gap-2 mb-6">
+                    <input type="text" id="nova-cat" placeholder="Nome da Categoria" class="flex-1 p-4 rounded-xl bg-zinc-700 outline-none text-sm border-none">
+                    <button onclick="adicionarCategoria()" class="bg-green-600 px-6 rounded-xl font-black text-xl hover:bg-green-500">+</button>
+                </div>
+                <div id="sortable-list" class="space-y-2 mb-6"></div>
+                <button onclick="salvarOrdemCategorias()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase text-xs">Salvar Ordem iFood</button>
             </div>
-            <div id="sortable-list" class="space-y-2"></div>
-            <button onclick="salvarOrdemCategorias()" class="w-full mt-4 bg-amber-600 py-3 rounded-xl font-bold">SALVAR ORDEM</button>
         </div>
 
-        <!-- ABA PRODUTOS -->
+        <!-- ABA 3: PRODUTOS -->
         <div id="tab-produtos" class="tab-content hidden space-y-4">
-            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700 space-y-4">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700 space-y-4 shadow-xl">
                 <input type="hidden" id="edit-id">
-                <input type="text" id="n" placeholder="Nome do Produto" class="w-full p-4 rounded-xl bg-zinc-700 outline-none">
-                <select id="c" class="w-full p-4 rounded-xl bg-zinc-700 outline-none"></select>
+                <input type="text" id="n" placeholder="Nome do Produto" class="w-full p-4 rounded-xl bg-zinc-700 outline-none border-none">
+                <select id="c" class="w-full p-4 rounded-xl bg-zinc-700 outline-none text-sm border-none"></select>
                 
-                <div class="flex flex-wrap gap-2" id="dias-semana">
-                    <button type="button" data-day="0" class="day-btn border border-zinc-600 px-3 py-1 rounded-lg text-[10px]">Dom</button>
-                    <button type="button" data-day="1" class="day-btn border border-zinc-600 px-3 py-1 rounded-lg text-[10px]">Seg</button>
-                    <button type="button" data-day="2" class="day-btn border border-zinc-600 px-3 py-1 rounded-lg text-[10px]">Ter</button>
-                    <button type="button" data-day="3" class="day-btn border border-zinc-600 px-3 py-1 rounded-lg text-[10px]">Qua</button>
-                    <button type="button" data-day="4" class="day-btn border border-zinc-600 px-3 py-1 rounded-lg text-[10px]">Qui</button>
-                    <button type="button" data-day="5" class="day-btn border border-zinc-600 px-3 py-1 rounded-lg text-[10px]">Sex</button>
-                    <button type="button" data-day="6" class="day-btn border border-zinc-600 px-3 py-1 rounded-lg text-[10px]">Sáb</button>
+                <div class="p-4 bg-zinc-900 rounded-2xl space-y-2">
+                    <label class="text-[9px] font-black text-amber-500 uppercase ml-1">Ativar como sugestão nestes dias:</label>
+                    <div class="flex flex-wrap gap-2" id="dias-semana">
+                        <button type="button" data-day="0" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Dom</button>
+                        <button type="button" data-day="1" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Seg</button>
+                        <button type="button" data-day="2" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Ter</button>
+                        <button type="button" data-day="3" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Qua</button>
+                        <button type="button" data-day="4" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Qui</button>
+                        <button type="button" data-day="5" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Sex</button>
+                        <button type="button" data-day="6" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Sáb</button>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
-                    <input type="number" id="p" placeholder="Preço" class="w-full p-4 rounded-xl bg-zinc-700 outline-none">
-                    <input type="number" id="p-promo" placeholder="Preço Promo" class="w-full p-4 rounded-xl bg-zinc-700 border border-amber-600 outline-none">
+                    <input type="number" id="p" placeholder="Preço R$" class="w-full p-4 rounded-xl bg-zinc-700 outline-none border-none">
+                    <input type="number" id="p-promo" placeholder="Promo R$" class="w-full p-4 rounded-xl bg-zinc-700 border-2 border-amber-900 outline-none">
                 </div>
-                <input type="file" id="fileInput" accept="image/*" class="text-xs">
+                <input type="file" id="fileInput" accept="image/*" class="text-xs w-full text-zinc-500">
                 <canvas id="canvas" style="display:none;"></canvas>
-                <button onclick="salvar()" id="btnSalvarProd" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase">Salvar Produto</button>
+                <button onclick="salvar()" id="btnSalvarProd" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase shadow-lg">Salvar Produto</button>
             </div>
             <div id="lista-produtos" class="grid gap-2"></div>
         </div>
 
-        <!-- ABA EQUIPE -->
+        <!-- ABA 4: RELATÓRIOS (NOVA) -->
+        <div id="tab-relatorios" class="tab-content hidden space-y-6">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+                <h2 class="text-amber-500 font-black mb-4 uppercase text-sm">Resumo de Vendas</h2>
+                
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-zinc-900 p-5 rounded-2xl border border-zinc-700 text-center">
+                        <p class="text-[9px] text-zinc-500 uppercase font-black mb-1">Pedidos Hoje</p>
+                        <p id="resumo-qtd-hoje" class="text-3xl font-black text-white">0</p>
+                    </div>
+                    <div class="bg-zinc-900 p-5 rounded-2xl border border-zinc-700 text-center">
+                        <p class="text-[9px] text-zinc-500 uppercase font-black mb-1">Faturamento Hoje</p>
+                        <p id="resumo-valor-hoje" class="text-3xl font-black text-green-500">R$ 0,00</p>
+                    </div>
+                </div>
+
+                <div class="space-y-3 max-h-96 overflow-y-auto pr-2" id="lista-vendas-historico">
+                    <!-- Vendas aparecerão aqui -->
+                </div>
+                
+                <button onclick="listarRelatorios()" class="w-full mt-4 bg-zinc-700 py-4 rounded-xl font-black text-[10px] uppercase border border-zinc-600">
+                    🔄 Atualizar Histórico
+                </button>
+            </div>
+        </div>
+
+        <!-- ABA 5: EQUIPE -->
         <div id="tab-usuarios" class="tab-content hidden space-y-4">
-            <input type="text" id="new-user" placeholder="Usuário" class="w-full p-3 rounded-xl bg-zinc-700 outline-none">
-            <input type="password" id="new-pass" placeholder="Senha" class="w-full p-3 rounded-xl bg-zinc-700 outline-none">
-            <button onclick="cadastrarUsuario()" class="w-full bg-green-600 py-3 rounded-xl font-bold">CRIAR ACESSO</button>
-            <div id="lista-usuarios" class="mt-4 space-y-2"></div>
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+                <h2 class="text-amber-500 font-black mb-4 uppercase text-sm">Controle de Acessos</h2>
+                <input type="text" id="new-user" placeholder="Nome do Usuário" class="w-full p-4 mb-3 rounded-xl bg-zinc-700 outline-none border-none">
+                <input type="password" id="new-pass" placeholder="Definir Senha" class="w-full p-4 mb-4 rounded-xl bg-zinc-700 outline-none border-none">
+                <button onclick="cadastrarUsuario()" class="w-full bg-green-600 py-4 rounded-xl font-black uppercase text-xs">Criar Novo Acesso</button>
+                <div id="lista-usuarios" class="mt-8 space-y-2"></div>
+            </div>
         </div>
     </div>
 
@@ -100,30 +140,26 @@
         const CAT_URL = DB_BASE + "categorias.json";
         const LOGO_URL = DB_BASE + "configuracao/logo.json";
         const USER_URL = DB_BASE + "usuarios.json";
+        const VENDAS_URL = DB_BASE + "vendas.json";
 
         let imagemBase64 = "", logoBase64 = "", diasSelecionados = [];
 
-        // --- LÓGICA DE SESSÃO (30 MINUTOS) ---
+        // SESSÃO DE 30 MINUTOS
         function verificarSessao() {
             const sessao = localStorage.getItem('point_sessao');
             if (sessao) {
-                const agora = new Date().getTime();
-                // Se o tempo atual for menor que o tempo de expiração salvo
-                if (agora < parseInt(sessao)) {
+                if (new Date().getTime() < parseInt(sessao)) {
                     permitirAcesso();
-                } else {
-                    logout();
-                }
+                } else { logout(); }
             }
         }
 
         async function fazerLogin() {
             const u = document.getElementById('user-login').value;
             const p = document.getElementById('pass-login').value;
-            
             let logado = false;
+
             if(u === "admin" && p === "Root@8505") logado = true;
-            
             if(!logado) {
                 const res = await fetch(USER_URL);
                 const users = await res.json();
@@ -131,19 +167,15 @@
             }
 
             if(logado) {
-                // Salva expiração para daqui a 30 minutos
-                const expiracao = new Date().getTime() + (30 * 60 * 1000);
-                localStorage.setItem('point_sessao', expiracao);
+                localStorage.setItem('point_sessao', new Date().getTime() + (30 * 60 * 1000));
                 permitirAcesso();
-            } else {
-                alert("Dados incorretos!");
-            }
+            } else { alert("Acesso Negado!"); }
         }
 
         function permitirAcesso() {
             document.getElementById('login').classList.add('hidden');
             document.getElementById('painel').classList.remove('hidden');
-            carregarLogo(); carregarCategorias(); listarProdutos(); listarUsuarios();
+            carregarLogo(); carregarCategorias(); listarProdutos(); listarUsuarios(); listarRelatorios();
         }
 
         function logout() {
@@ -151,13 +183,28 @@
             location.reload();
         }
 
-        // --- RESTANTE DAS FUNÇÕES ---
-
         function changeTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(tabId).classList.remove('hidden');
             document.getElementById('btn-' + tabId.split('-')[1]).classList.add('active');
+        }
+
+        // LOGO
+        async function carregarLogo() {
+            const res = await fetch(LOGO_URL);
+            const data = await res.json();
+            if(data) {
+                document.getElementById('logo-img-view').src = data;
+                document.getElementById('logo-img-view').classList.remove('hidden');
+                document.getElementById('logo-placeholder').classList.add('hidden');
+            }
+        }
+
+        async function salvarLogo() {
+            if(!logoBase64) return alert("Selecione uma imagem!");
+            await fetch(LOGO_URL, { method: 'PUT', body: JSON.stringify(logoBase64) });
+            alert("Logotipo atualizado com sucesso!");
         }
 
         document.getElementById('logoInput').addEventListener('change', (e) => {
@@ -178,27 +225,15 @@
             reader.readAsDataURL(e.target.files[0]);
         });
 
-        async function salvarLogo() {
-            if(!logoBase64) return alert("Selecione uma imagem!");
-            await fetch(LOGO_URL, { method: 'PUT', body: JSON.stringify(logoBase64) });
-            alert("Logo Salva!");
-        }
-
-        async function carregarLogo() {
-            const res = await fetch(LOGO_URL);
-            const data = await res.json();
-            if(data) {
-                document.getElementById('logo-img-view').src = data;
-                document.getElementById('logo-img-view').classList.remove('hidden');
-                document.getElementById('logo-placeholder').classList.add('hidden');
-            }
-        }
-
+        // CATEGORIAS
         async function carregarCategorias() {
             const res = await fetch(CAT_URL);
-            const data = await res.json() || ["Comum"];
+            const data = await res.json() || ["Geral"];
             const list = document.getElementById('sortable-list');
-            list.innerHTML = data.map(c => `<div class="bg-zinc-700 p-3 rounded-xl flex justify-between items-center handle" data-id="${c}"><span>☰ ${c}</span><button onclick="removerCategoria('${c}')" class="text-red-500 font-bold text-xs">X</button></div>`).join('');
+            list.innerHTML = data.map(c => `<div class="bg-zinc-700 p-4 rounded-xl flex justify-between items-center handle" data-id="${c}">
+                <span class="font-bold text-sm">☰ ${c}</span>
+                <button onclick="removerCategoria('${c}')" class="text-red-500 font-black">EXCLUIR</button>
+            </div>`).join('');
             document.getElementById('c').innerHTML = data.map(c => `<option value="${c}">${c}</option>`).join('');
             new Sortable(list, { animation: 150, handle: '.handle' });
         }
@@ -219,17 +254,18 @@
         async function salvarOrdemCategorias() {
             const ordem = Array.from(document.querySelectorAll('#sortable-list > div')).map(i => i.dataset.id);
             await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(ordem) });
-            alert("Ordem salva!");
+            alert("Ordem salva com sucesso!");
         }
 
         async function removerCategoria(n) {
-            if(!confirm("Excluir categoria?")) return;
+            if(!confirm(`Remover "${n}"?`)) return;
             const res = await fetch(CAT_URL); let data = await res.json();
             data = data.filter(c => c !== n);
             await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(data) });
             carregarCategorias();
         }
 
+        // PRODUTOS
         document.querySelectorAll('.day-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const d = btn.dataset.day;
@@ -260,8 +296,8 @@
             const nome = document.getElementById('n').value;
             const preco = document.getElementById('p').value;
 
-            if(!nome || !preco) return alert("Nome e Preço são obrigatórios!");
-            btn.innerText = "SALVANDO..."; btn.disabled = true;
+            if(!nome || !preco) return alert("Preencha Nome e Preço!");
+            btn.innerText = "ENVIANDO..."; btn.disabled = true;
 
             const item = {
                 nome: nome,
@@ -273,31 +309,22 @@
 
             const url = id ? DB_BASE + "produtos/" + id + ".json" : DB_BASE + "produtos/" + Date.now() + ".json";
 
-            if(imagemBase64) {
-                item.img = imagemBase64;
-            } else if(id) {
-                const r = await fetch(url); const d = await r.json(); item.img = d.img;
-            } else { 
-                btn.innerText = "SALVAR PRODUTO"; btn.disabled = false;
-                return alert("Selecione uma foto!"); 
-            }
+            if(imagemBase64) item.img = imagemBase64;
+            else if(id) { const r = await fetch(url); const d = await r.json(); item.img = d.img; }
+            else { btn.innerText = "Salvar Produto"; btn.disabled = false; return alert("A foto é obrigatória!"); }
 
             try {
                 await fetch(url, { method: 'PUT', body: JSON.stringify(item) });
-                alert("Produto Salvo!");
-                // LIMPA O FORMULÁRIO SEM FAZER LOGOFF
+                alert("Produto salvo!");
                 document.getElementById('edit-id').value = "";
                 document.getElementById('n').value = "";
                 document.getElementById('p').value = "";
                 document.getElementById('p-promo').value = "";
-                imagemBase64 = "";
-                diasSelecionados = [];
+                imagemBase64 = ""; diasSelecionados = [];
                 document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
-                btn.innerText = "SALVAR PRODUTO"; btn.disabled = false;
-                listarProdutos(); // Atualiza a lista na tela
-            } catch(e) { 
-                alert("Erro ao salvar."); btn.innerText = "SALVAR PRODUTO"; btn.disabled = false;
-            }
+                btn.innerText = "Salvar Produto"; btn.disabled = false;
+                listarProdutos();
+            } catch(e) { alert("Erro ao salvar."); btn.innerText = "Salvar Produto"; btn.disabled = false; }
         }
 
         async function listarProdutos() {
@@ -305,11 +332,12 @@
             const list = document.getElementById('lista-produtos'); list.innerHTML = "";
             if(!data) return;
             for(let id in data) {
-                list.innerHTML += `<div class="bg-zinc-800 p-3 rounded-xl flex justify-between items-center border border-zinc-700 text-xs mb-1">
-                    <div class="flex items-center gap-2"><img src="${data[id].img}" class="w-8 h-8 rounded-lg"><span>${data[id].nome}</span></div>
+                list.innerHTML += `<div class="bg-zinc-800 p-4 rounded-2xl flex justify-between items-center border border-zinc-700 mb-2">
+                    <div class="flex items-center gap-3"><img src="${data[id].img}" class="w-10 h-10 object-cover rounded-xl">
+                    <div><p class="font-bold text-xs">${data[id].nome}</p><p class="text-[9px] text-amber-500 uppercase font-black">${data[id].categoria}</p></div></div>
                     <div class="flex gap-2">
-                        <button onclick="prepararEdicao('${id}')" class="bg-zinc-700 px-2 py-1 rounded">Edit</button>
-                        <button onclick="removerProduto('${id}')" class="text-red-500 font-bold">X</button>
+                        <button onclick="prepararEdicao('${id}')" class="bg-zinc-700 px-3 py-2 rounded-lg text-[9px] font-black uppercase">Editar</button>
+                        <button onclick="removerProduto('${id}')" class="text-red-500 font-black text-xs px-2">X</button>
                     </div>
                 </div>`;
             }
@@ -322,14 +350,54 @@
             document.getElementById('p-promo').value = p.precoPromo || ""; document.getElementById('c').value = p.categoria;
             diasSelecionados = p.dias ? p.dias.map(String) : [];
             document.querySelectorAll('.day-btn').forEach(b => b.classList.toggle('active', diasSelecionados.includes(b.dataset.day)));
-            window.scrollTo(0,0);
+            changeTab('tab-produtos'); window.scrollTo(0,0);
         }
 
-        async function removerProduto(id) { if(confirm("Excluir?")) { await fetch(DB_BASE + "produtos/" + id + ".json", { method: 'DELETE' }); listarProdutos(); } }
+        async function removerProduto(id) { if(confirm("Excluir produto definitivamente?")) { await fetch(DB_BASE + "produtos/" + id + ".json", { method: 'DELETE' }); listarProdutos(); } }
 
+        // RELATÓRIOS
+        async function listarRelatorios() {
+            const res = await fetch(VENDAS_URL);
+            const vendas = await res.json();
+            const container = document.getElementById('lista-vendas-historico');
+            const hoje = new Date().toLocaleDateString('pt-BR');
+            
+            let qtdHoje = 0, valorHoje = 0, html = "";
+
+            if (!vendas) {
+                container.innerHTML = "<p class='text-center text-zinc-500 text-xs py-10'>Nenhum pedido registrado ainda.</p>";
+                return;
+            }
+
+            const listaVendas = Object.keys(vendas).reverse();
+
+            listaVendas.forEach(id => {
+                const v = vendas[id];
+                if (v.dataLocal === hoje) { qtdHoje++; valorHoje += v.total; }
+
+                html += `
+                    <div class="bg-zinc-900 p-4 rounded-2xl border-l-4 ${v.dataLocal === hoje ? 'border-green-500' : 'border-zinc-700'}">
+                        <div class="flex justify-between items-start mb-2">
+                            <div><p class="text-white font-black text-xs uppercase">${v.cliente}</p>
+                            <p class="text-[9px] text-zinc-500">${v.dataLocal} • ${new Date(v.data).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</p></div>
+                            <p class="text-green-500 font-black text-sm">R$ ${v.total.toFixed(2)}</p>
+                        </div>
+                        <div class="text-[9px] text-zinc-400 italic">
+                            ${v.itens.map(i => `${i.qty}x ${i.nome}`).join(', ')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('resumo-qtd-hoje').innerText = qtdHoje;
+            document.getElementById('resumo-valor-hoje').innerText = `R$ ${valorHoje.toFixed(2)}`;
+            container.innerHTML = html;
+        }
+
+        // EQUIPE
         async function cadastrarUsuario() {
             const u = document.getElementById('new-user').value, p = document.getElementById('new-pass').value;
-            if(!u || !p) return alert("Preencha usuário e senha!");
+            if(!u || !p) return alert("Preencha todos os campos!");
             await fetch(USER_URL.replace('.json', `/${Date.now()}.json`), { method: 'PUT', body: JSON.stringify({user:u, pass:p}) });
             document.getElementById('new-user').value = ""; document.getElementById('new-pass').value = "";
             listarUsuarios();
@@ -339,12 +407,11 @@
             const res = await fetch(USER_URL); const data = await res.json();
             const list = document.getElementById('lista-usuarios'); list.innerHTML = "";
             if(!data) return;
-            for(let id in data) list.innerHTML += `<div class="bg-zinc-700 p-2 rounded-lg flex justify-between text-[10px] mb-1"><span>👤 ${data[id].user}</span><button onclick="removerUsuario('${id}')" class="text-red-400">Excluir</button></div>`;
+            for(let id in data) list.innerHTML += `<div class="bg-zinc-700 p-4 rounded-xl flex justify-between items-center text-[10px] mb-2 font-bold"><span>👤 ${data[id].user}</span><button onclick="removerUsuario('${id}')" class="text-red-400 uppercase font-black">Remover</button></div>`;
         }
 
-        async function removerUsuario(id) { await fetch(USER_URL.replace('.json', `/${id}.json`), { method: 'DELETE' }); listarUsuarios(); }
+        async function removerUsuario(id) { if(confirm("Remover este acesso?")) { await fetch(USER_URL.replace('.json', `/${id}.json`), { method: 'DELETE' }); listarUsuarios(); } }
 
-        // INICIALIZAÇÃO
         verificarSessao();
     </script>
 </body>
