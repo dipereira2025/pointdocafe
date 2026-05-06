@@ -94,23 +94,39 @@
             <div id="lista-produtos" class="grid gap-2"></div>
         </div>
 
-        <!-- ABA RELATÓRIOS (Com Exclusão) -->
-        <div id="tab-relatorios" class="tab-content hidden space-y-6">
-            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
-                <div class="grid grid-cols-2 gap-4 mb-6 text-center">
-                    <div class="bg-zinc-900 p-5 rounded-2xl border border-zinc-700">
-                        <p class="text-[9px] text-zinc-500 uppercase font-black">Pedidos Hoje</p>
-                        <p id="resumo-qtd-hoje" class="text-3xl font-black text-white">0</p>
-                    </div>
-                    <div class="bg-zinc-900 p-5 rounded-2xl border border-zinc-700">
-                        <p class="text-[9px] text-zinc-500 uppercase font-black">Faturamento Hoje</p>
-                        <p id="resumo-valor-hoje" class="text-3xl font-black text-green-500">R$ 0,00</p>
-                    </div>
-                </div>
-                <div class="space-y-3 max-h-96 overflow-y-auto pr-2" id="lista-vendas-historico"></div>
-                <button onclick="listarRelatorios()" class="w-full mt-4 bg-zinc-700 py-3 rounded-xl font-black text-[10px] uppercase">🔄 Atualizar Relatório</button>
+        <!-- ABA 4: RELATÓRIOS -->
+<div id="tab-relatorios" class="tab-content hidden space-y-6">
+    <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+        <h2 class="text-amber-500 font-black mb-4 uppercase text-sm">Resumo de Vendas</h2>
+        
+        <div class="grid grid-cols-2 gap-4 mb-6 text-center">
+            <div class="bg-zinc-900 p-5 rounded-2xl border border-zinc-700">
+                <p class="text-[9px] text-zinc-500 uppercase font-black mb-1">Pedidos Hoje</p>
+                <p id="resumo-qtd-hoje" class="text-3xl font-black text-white">0</p>
+            </div>
+            <div class="bg-zinc-900 p-5 rounded-2xl border border-zinc-700">
+                <p class="text-[9px] text-zinc-500 uppercase font-black mb-1">Faturamento Hoje</p>
+                <p id="resumo-valor-hoje" class="text-3xl font-black text-green-500">R$ 0,00</p>
             </div>
         </div>
+
+        <!-- Botões de Exportação -->
+        <div class="flex gap-2 mb-6">
+            <button onclick="exportarExcel()" class="flex-1 bg-zinc-700 hover:bg-zinc-600 py-3 rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-2">
+                📊 Planilha (XLSX)
+            </button>
+            <button onclick="exportarPDF()" class="flex-1 bg-zinc-700 hover:bg-zinc-600 py-3 rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-2">
+                📄 Relatório (PDF)
+            </button>
+        </div>
+
+        <div class="space-y-3 max-h-96 overflow-y-auto pr-2" id="lista-vendas-historico"></div>
+        
+        <button onclick="listarRelatorios()" class="w-full mt-4 bg-zinc-700 py-4 rounded-xl font-black text-[10px] uppercase border border-zinc-600">
+            🔄 Atualizar Dados
+        </button>
+    </div>
+</div>
 
         <!-- ABA EQUIPE (Com Edição) -->
         <div id="tab-usuarios" class="tab-content hidden space-y-4">
