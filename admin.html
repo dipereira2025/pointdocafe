@@ -3,77 +3,288 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Full - Point do Café</title>
+    <title>Admin Master - Point do Café</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        .day-btn.active { background-color: #d97706; color: white; border-color: #d97706; }
+        .tab-btn.active { border-bottom: 4px solid #d97706; color: #d97706; }
+        .sortable-ghost { opacity: 0.4; background: #4b5563; }
+        .tab-content.hidden { display: none; }
+    </style>
 </head>
-<body class="bg-zinc-900 text-zinc-100 p-4 font-sans">
+<body class="bg-zinc-900 text-zinc-100 p-4 font-sans text-left">
 
-    <!-- LOGIN -->
+    <!-- TELA DE LOGIN -->
     <div id="login" class="max-w-sm mx-auto mt-20 bg-white p-8 rounded-3xl text-zinc-900 shadow-2xl">
         <h2 class="text-2xl font-black mb-6 text-center text-amber-900">PAINEL POINT</h2>
         <input type="text" id="user-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-4 outline-none" placeholder="Usuário">
-        <input type="password" id="pass-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-4 outline-none" placeholder="Senha">
-        <button onclick="fazerLogin()" class="w-full bg-amber-900 text-white py-4 rounded-xl font-bold">ENTRAR</button>
+        <div class="relative mb-6">
+            <input type="password" id="pass-login" class="w-full p-4 border-2 border-amber-100 rounded-xl outline-none" placeholder="Senha">
+        </div>
+        <button onclick="fazerLogin()" class="w-full bg-amber-900 text-white py-4 rounded-xl font-bold hover:bg-amber-800 transition-all">ENTRAR NO PAINEL</button>
+        <p class="text-[10px] text-gray-400 mt-4 text-center">Login inicial: admin / Root@8505</p>
     </div>
 
-    <!-- PAINEL -->
+    <!-- PAINEL PRINCIPAL -->
     <div id="painel" class="hidden max-w-2xl mx-auto py-4">
+        <!-- Menu de Abas -->
         <div class="flex justify-around mb-8 border-b border-zinc-800 font-bold uppercase text-[10px] tracking-widest">
-            <button onclick="changeTab('tab-loja')" class="pb-2 px-2" id="btn-loja">Loja</button>
-            <button onclick="changeTab('tab-categorias')" class="pb-2 px-2" id="btn-categorias">Categorias</button>
-            <button onclick="changeTab('tab-produtos')" class="pb-2 px-2" id="btn-produtos">Produtos</button>
-            <button onclick="changeTab('tab-usuarios')" class="pb-2 px-2" id="btn-usuarios">Equipe</button>
+            <button onclick="changeTab('tab-loja')" class="tab-btn pb-2 px-2 active" id="btn-loja">Minha Loja</button>
+            <button onclick="changeTab('tab-categorias')" class="tab-btn pb-2 px-2" id="btn-categorias">Categorias</button>
+            <button onclick="changeTab('tab-produtos')" class="tab-btn pb-2 px-2" id="btn-produtos">Produtos</button>
+            <button onclick="changeTab('tab-usuarios')" class="tab-btn pb-2 px-2" id="btn-usuarios">Equipe</button>
         </div>
 
-        <!-- ABA LOJA -->
-        <div id="tab-loja" class="tab-content space-y-6 text-center">
-            <div class="w-32 h-32 bg-zinc-800 mx-auto rounded-full border-2 border-amber-600 overflow-hidden mb-4">
-                <img id="logo-img-view" class="w-full h-full object-cover hidden">
+        <!-- ABA 1: LOGO -->
+        <div id="tab-loja" class="tab-content space-y-6">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700 text-center">
+                <h2 class="text-amber-500 font-black mb-4 uppercase text-sm">Logotipo</h2>
+                <div class="w-32 h-32 bg-zinc-900 mx-auto rounded-full border-2 border-amber-600 overflow-hidden mb-4 flex items-center justify-center">
+                    <img id="logo-img-view" class="hidden w-full h-full object-cover">
+                    <span id="logo-placeholder" class="text-xs text-zinc-600">Sem Logo</span>
+                </div>
+                <input type="file" id="logoInput" accept="image/*" class="text-xs mb-4">
+                <button onclick="salvarLogo()" id="btnLogo" class="w-full bg-amber-600 py-3 rounded-xl font-bold uppercase">Atualizar Logo</button>
             </div>
-            <input type="file" id="logoInput" class="text-xs">
-            <button onclick="salvarLogo()" class="w-full bg-amber-600 py-3 rounded-xl font-bold">SALVAR LOGO</button>
         </div>
 
-        <!-- ABA CATEGORIAS (ORDEm IFOOD) -->
-        <div id="tab-categorias" class="tab-content hidden">
-            <div class="flex gap-2 mb-4">
-                <input type="text" id="nova-cat" placeholder="Nova Categoria" class="flex-1 p-3 rounded-xl bg-zinc-700 outline-none">
-                <button onclick="adicionarCategoria()" class="bg-green-600 px-6 rounded-xl font-bold">+</button>
+        <!-- ABA 2: CATEGORIAS (ARRASTAR) -->
+        <div id="tab-categorias" class="tab-content hidden space-y-4">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+                <div class="flex gap-2 mb-6">
+                    <input type="text" id="nova-cat" placeholder="Nova Categoria" class="flex-1 p-3 rounded-xl bg-zinc-700 border-none outline-none text-sm">
+                    <button onclick="adicionarCategoria()" class="bg-green-600 px-6 rounded-xl font-bold text-xl">+</button>
+                </div>
+                <div id="sortable-list" class="space-y-2"></div>
+                <button onclick="salvarOrdemCategorias()" class="w-full mt-6 bg-amber-600 py-3 rounded-xl font-bold uppercase text-xs">Salvar Ordem iFood</button>
             </div>
-            <div id="sortable-list" class="space-y-2"></div>
-            <button onclick="salvarOrdemCategorias()" class="w-full mt-4 bg-amber-600 py-3 rounded-xl font-bold text-xs">SALVAR ORDEM IFOOD</button>
         </div>
 
-        <!-- ABA PRODUTOS -->
-        <div id="tab-produtos" class="tab-content hidden space-y-4">
-            <input type="hidden" id="edit-id">
-            <input type="text" id="n" placeholder="Nome" class="w-full p-4 rounded-xl bg-zinc-700 outline-none">
-            <select id="c" class="w-full p-4 rounded-xl bg-zinc-700 outline-none"></select>
-            <div class="grid grid-cols-2 gap-4">
-                <input type="number" id="p" placeholder="Preço" class="w-full p-4 rounded-xl bg-zinc-700 outline-none">
-                <input type="number" id="p-promo" placeholder="Preço Promo" class="w-full p-4 rounded-xl bg-zinc-700 border border-amber-600 outline-none">
+        <!-- ABA 3: PRODUTOS -->
+        <div id="tab-produtos" class="tab-content hidden space-y-6">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700 space-y-4">
+                <input type="hidden" id="edit-id">
+                <input type="text" id="n" placeholder="Nome do Produto" class="w-full p-4 rounded-xl bg-zinc-700 outline-none">
+                <select id="c" class="w-full p-4 rounded-xl bg-zinc-700 outline-none text-sm"></select>
+                
+                <div class="flex flex-wrap gap-2" id="dias-semana">
+                    <button type="button" data-day="0" class="day-btn border border-zinc-600 px-3 py-1 rounded-lg text-[10px]">Dom</button>
+                    <button type="button" data-day="1" class="day-btn border border-zinc-600 px-3 py-1 rounded-lg text-[10px]">Seg</button>
+                    <button type="button" data-day="2" class="day-btn border border-zinc-600 px-3 py-1 rounded-lg text-[10px]">Ter</button>
+                    <button type="button" data-day="3" class="day-btn border border-zinc-600 px-3 py-1 rounded-lg text-[10px]">Qua</button>
+                    <button type="button" data-day="4" class="day-btn border border-zinc-600 px-3 py-1 rounded-lg text-[10px]">Qui</button>
+                    <button type="button" data-day="5" class="day-btn border border-zinc-600 px-3 py-1 rounded-lg text-[10px]">Sex</button>
+                    <button type="button" data-day="6" class="day-btn border border-zinc-600 px-3 py-1 rounded-lg text-[10px]">Sáb</button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="number" id="p" placeholder="Preço" class="w-full p-4 rounded-xl bg-zinc-700 outline-none text-sm">
+                    <input type="number" id="p-promo" placeholder="Preço Promo" class="w-full p-4 rounded-xl bg-zinc-700 border border-amber-600 outline-none text-sm">
+                </div>
+                <input type="file" id="fileInput" accept="image/*" class="w-full text-xs">
+                <canvas id="canvas" style="display:none;"></canvas>
+                <button onclick="salvar()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase">Salvar Produto</button>
             </div>
-            <input type="file" id="fileInput" class="text-xs">
-            <button onclick="salvar()" class="w-full bg-amber-600 py-4 rounded-xl font-black">SALVAR PRODUTO</button>
-            <div id="lista-produtos" class="grid gap-2 mt-6"></div>
+            <div id="lista-produtos" class="grid gap-2"></div>
         </div>
 
-        <!-- ABA USUÁRIOS -->
-        <div id="tab-usuarios" class="tab-content hidden space-y-4">
-            <input type="text" id="new-user" placeholder="Nome" class="w-full p-3 rounded-xl bg-zinc-700 outline-none">
-            <input type="password" id="new-pass" placeholder="Senha" class="w-full p-3 rounded-xl bg-zinc-700 outline-none">
-            <button onclick="cadastrarUsuario()" class="w-full bg-green-600 py-3 rounded-xl font-bold">CRIAR ACESSO</button>
-            <div id="lista-usuarios" class="mt-4 space-y-2"></div>
+        <!-- ABA 4: EQUIPE -->
+        <div id="tab-usuarios" class="tab-content hidden space-y-4 text-zinc-100">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+                <input type="text" id="new-user" placeholder="Usuário" class="w-full p-3 mb-2 rounded-xl bg-zinc-700 outline-none">
+                <input type="password" id="new-pass" placeholder="Senha" class="w-full p-3 mb-4 rounded-xl bg-zinc-700 outline-none">
+                <button onclick="cadastrarUsuario()" class="w-full bg-green-600 py-3 rounded-xl font-bold">CRIAR ACESSO</button>
+                <div id="lista-usuarios" class="mt-6 space-y-2"></div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Use a sua URL do Firebase aqui
-        const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
+        // ATENÇÃO: COLOQUE A SUA URL DO FIREBASE ABAIXO!
+        const DB_BASE = "SUA_URL_DO_FIREBASE_AQUI/"; 
         
-        // --- Todas as funções de lógica que enviamos antes (Login, Categorias, Produtos, Logo, Usuarios) ---
-        // Basta manter as funções JavaScript que discutimos.
+        const DB_URL = DB_BASE + "produtos.json";
+        const CAT_URL = DB_BASE + "categorias.json";
+        const LOGO_URL = DB_BASE + "configuracao/logo.json";
+        const USER_URL = DB_BASE + "usuarios.json";
+
+        let imagemBase64 = "", logoBase64 = "", diasSelecionados = [];
+
+        // LOGIN
+        async function fazerLogin() {
+            const u = document.getElementById('user-login').value;
+            const p = document.getElementById('pass-login').value;
+            if(u === "admin" && p === "Root@8505") return permitirAcesso();
+            
+            const res = await fetch(USER_URL);
+            const users = await res.json();
+            for(let id in users) {
+                if(users[id].user === u && users[id].pass === p) return permitirAcesso();
+            }
+            alert("Dados incorretos!");
+        }
+
+        function permitirAcesso() {
+            document.getElementById('login').classList.add('hidden');
+            document.getElementById('painel').classList.remove('hidden');
+            carregarLogo(); carregarCategorias(); listarProdutos(); listarUsuarios();
+        }
+
+        // ABAS
+        function changeTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById('btn-' + tabId.split('-')[1]).classList.add('active');
+        }
+
+        // LOGO
+        document.getElementById('logoInput').addEventListener('change', (e) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const cv = document.createElement('canvas');
+                    cv.width = 300; cv.height = 300;
+                    cv.getContext('2d').drawImage(img, 0, 0, 300, 300);
+                    logoBase64 = cv.toDataURL('image/png');
+                    document.getElementById('logo-img-view').src = logoBase64;
+                    document.getElementById('logo-img-view').classList.remove('hidden');
+                    document.getElementById('logo-placeholder').classList.add('hidden');
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        });
+
+        async function salvarLogo() {
+            await fetch(LOGO_URL, { method: 'PUT', body: JSON.stringify(logoBase64) });
+            alert("Logo Salva!");
+        }
+
+        async function carregarLogo() {
+            const res = await fetch(LOGO_URL);
+            const data = await res.json();
+            if(data) {
+                document.getElementById('logo-img-view').src = data;
+                document.getElementById('logo-img-view').classList.remove('hidden');
+                document.getElementById('logo-placeholder').classList.add('hidden');
+            }
+        }
+
+        // CATEGORIAS
+        async function carregarCategorias() {
+            const res = await fetch(CAT_URL);
+            const data = await res.json() || ["Comum"];
+            const list = document.getElementById('sortable-list');
+            list.innerHTML = data.map(c => `<div class="bg-zinc-700 p-3 rounded-xl flex justify-between items-center handle" data-id="${c}"><span>☰ ${c}</span><button onclick="removerCategoria('${c}')" class="text-red-500">X</button></div>`).join('');
+            document.getElementById('c').innerHTML = data.map(c => `<option value="${c}">${c}</option>`).join('');
+            new Sortable(list, { animation: 150, handle: '.handle' });
+        }
+
+        async function adicionarCategoria() {
+            const n = document.getElementById('nova-cat').value; if(!n) return;
+            const res = await fetch(CAT_URL); let data = await res.json() || [];
+            if(!data.includes(n)) data.push(n);
+            await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(data) });
+            document.getElementById('nova-cat').value = ""; carregarCategorias();
+        }
+
+        async function salvarOrdemCategorias() {
+            const ordem = Array.from(document.querySelectorAll('#sortable-list > div')).map(i => i.dataset.id);
+            await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(ordem) });
+            alert("Ordem salva!");
+        }
+
+        async function removerCategoria(n) {
+            const res = await fetch(CAT_URL); let data = await res.json();
+            data = data.filter(c => c !== n);
+            await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(data) });
+            carregarCategorias();
+        }
+
+        // PRODUTOS
+        document.querySelectorAll('.day-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const d = btn.dataset.day;
+                if(diasSelecionados.includes(d)) diasSelecionados = diasSelecionados.filter(x => x !== d);
+                else diasSelecionados.push(d);
+                btn.classList.toggle('active');
+            });
+        });
+
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const cv = document.getElementById('canvas');
+                    cv.width = 400; cv.height = 400;
+                    cv.getContext('2d').drawImage(img, 0, 0, 400, 400);
+                    imagemBase64 = cv.toDataURL('image/jpeg', 0.8);
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        });
+
+        async function salvar() {
+            const id = document.getElementById('edit-id').value;
+            const item = {
+                nome: document.getElementById('n').value,
+                categoria: document.getElementById('c').value,
+                preco: parseFloat(document.getElementById('p').value),
+                precoPromo: parseFloat(document.getElementById('p-promo').value) || null,
+                dias: diasSelecionados
+            };
+            const url = id ? PROD_URL.replace('.json', `/${id}.json`) : PROD_URL.replace('.json', `/${Date.now()}.json`);
+            if(imagemBase64) item.img = imagemBase64;
+            else if(id) { const r = await fetch(url); const d = await r.json(); item.img = d.img; }
+            else return alert("Foto obrigatória!");
+
+            await fetch(url, { method: 'PUT', body: JSON.stringify(item) });
+            location.reload();
+        }
+
+        async function listarProdutos() {
+            const res = await fetch(PROD_URL); const data = await res.json();
+            const list = document.getElementById('lista-produtos'); list.innerHTML = "";
+            for(let id in data) {
+                list.innerHTML += `<div class="bg-zinc-800 p-3 rounded-xl flex justify-between items-center border border-zinc-700 text-xs">
+                    <div class="flex items-center gap-2"><img src="${data[id].img}" class="w-8 h-8 rounded-lg"><span>${data[id].nome}</span></div>
+                    <div class="flex gap-2"><button onclick="prepararEdicao('${id}')" class="bg-zinc-700 px-2 py-1 rounded">Editar</button><button onclick="removerProduto('${id}')" class="text-red-500">X</button></div>
+                </div>`;
+            }
+        }
+
+        async function prepararEdicao(id) {
+            const res = await fetch(PROD_URL.replace('.json', `/${id}.json`)); const p = await res.json();
+            document.getElementById('edit-id').value = id;
+            document.getElementById('n').value = p.nome; document.getElementById('p').value = p.preco;
+            document.getElementById('p-promo').value = p.precoPromo || ""; document.getElementById('c').value = p.categoria;
+            diasSelecionados = p.dias ? p.dias.map(String) : [];
+            document.querySelectorAll('.day-btn').forEach(b => b.classList.toggle('active', diasSelecionados.includes(b.dataset.day)));
+            window.scrollTo(0,0);
+        }
+
+        async function removerProduto(id) { if(confirm("Excluir?")) { await fetch(PROD_URL.replace('.json', `/${id}.json`), { method: 'DELETE' }); listarProdutos(); } }
+
+        // USUÁRIOS
+        async function cadastrarUsuario() {
+            const u = document.getElementById('new-user').value, p = document.getElementById('new-pass').value;
+            if(!u || !p) return;
+            await fetch(USER_URL.replace('.json', `/${Date.now()}.json`), { method: 'PUT', body: JSON.stringify({user:u, pass:p}) });
+            listarUsuarios();
+        }
+
+        async function listarUsuarios() {
+            const res = await fetch(USER_URL); const data = await res.json();
+            const list = document.getElementById('lista-usuarios'); list.innerHTML = "";
+            for(let id in data) list.innerHTML += `<div class="bg-zinc-700 p-2 rounded-lg flex justify-between text-[10px]"><span>${data[id].user}</span><button onclick="removerUsuario('${id}')" class="text-red-400">Excluir</button></div>`;
+        }
+
+        async function removerUsuario(id) { await fetch(USER_URL.replace('.json', `/${id}.json`), { method: 'DELETE' }); listarUsuarios(); }
     </script>
 </body>
 </html>
