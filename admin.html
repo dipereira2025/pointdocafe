@@ -15,7 +15,7 @@
 </head>
 <body class="bg-zinc-900 text-zinc-100 p-4 font-sans text-left">
 
-    <!-- LOGIN -->
+    <!-- TELA DE LOGIN -->
     <div id="login" class="max-w-sm mx-auto mt-20 bg-white p-8 rounded-3xl text-zinc-900 shadow-2xl">
         <h2 class="text-2xl font-black mb-6 text-center text-amber-900">PAINEL POINT</h2>
         <input type="text" id="user-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-4 outline-none" placeholder="Usuário">
@@ -25,8 +25,13 @@
 
     <!-- PAINEL PRINCIPAL -->
     <div id="painel" class="hidden max-w-2xl mx-auto py-4">
+        <div class="flex justify-between items-center mb-6">
+            <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Painel Administrativo</span>
+            <button onclick="logout()" class="text-red-500 text-[10px] font-bold uppercase underline">Sair</button>
+        </div>
+        
         <div class="flex justify-around mb-8 border-b border-zinc-800 font-bold uppercase text-[10px] tracking-widest">
-            <button onclick="changeTab('tab-loja')" class="tab-btn pb-2 px-2 active" id="btn-loja">Minha Loja</button>
+            <button onclick="changeTab('tab-loja')" class="tab-btn pb-2 px-2 active" id="btn-loja">Loja</button>
             <button onclick="changeTab('tab-categorias')" class="tab-btn pb-2 px-2" id="btn-categorias">Categorias</button>
             <button onclick="changeTab('tab-produtos')" class="tab-btn pb-2 px-2" id="btn-produtos">Produtos</button>
             <button onclick="changeTab('tab-usuarios')" class="tab-btn pb-2 px-2" id="btn-usuarios">Equipe</button>
@@ -39,7 +44,7 @@
                 <span id="logo-placeholder" class="text-xs text-zinc-600">Sem Logo</span>
             </div>
             <input type="file" id="logoInput" accept="image/*" class="text-xs">
-            <button onclick="salvarLogo()" class="w-full bg-amber-600 py-3 rounded-xl font-bold uppercase">Salvar Logo</button>
+            <button onclick="salvarLogo()" class="w-full bg-amber-600 py-3 rounded-xl font-bold">SALVAR LOGO</button>
         </div>
 
         <!-- ABA CATEGORIAS -->
@@ -90,8 +95,7 @@
     </div>
 
     <script>
-        const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/"; // Verificado na imagem
-        
+        const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/"; 
         const DB_URL = DB_BASE + "produtos.json";
         const CAT_URL = DB_BASE + "categorias.json";
         const LOGO_URL = DB_BASE + "configuracao/logo.json";
@@ -99,15 +103,41 @@
 
         let imagemBase64 = "", logoBase64 = "", diasSelecionados = [];
 
+        // --- LÓGICA DE SESSÃO (30 MINUTOS) ---
+        function verificarSessao() {
+            const sessao = localStorage.getItem('point_sessao');
+            if (sessao) {
+                const agora = new Date().getTime();
+                // Se o tempo atual for menor que o tempo de expiração salvo
+                if (agora < parseInt(sessao)) {
+                    permitirAcesso();
+                } else {
+                    logout();
+                }
+            }
+        }
+
         async function fazerLogin() {
             const u = document.getElementById('user-login').value;
             const p = document.getElementById('pass-login').value;
-            if(u === "admin" && p === "Root@8505") return permitirAcesso();
             
-            const res = await fetch(USER_URL);
-            const users = await res.json();
-            for(let id in users) { if(users[id].user === u && users[id].pass === p) return permitirAcesso(); }
-            alert("Dados incorretos!");
+            let logado = false;
+            if(u === "admin" && p === "Root@8505") logado = true;
+            
+            if(!logado) {
+                const res = await fetch(USER_URL);
+                const users = await res.json();
+                for(let id in users) { if(users[id].user === u && users[id].pass === p) logado = true; }
+            }
+
+            if(logado) {
+                // Salva expiração para daqui a 30 minutos
+                const expiracao = new Date().getTime() + (30 * 60 * 1000);
+                localStorage.setItem('point_sessao', expiracao);
+                permitirAcesso();
+            } else {
+                alert("Dados incorretos!");
+            }
         }
 
         function permitirAcesso() {
@@ -116,6 +146,13 @@
             carregarLogo(); carregarCategorias(); listarProdutos(); listarUsuarios();
         }
 
+        function logout() {
+            localStorage.removeItem('point_sessao');
+            location.reload();
+        }
+
+        // --- RESTANTE DAS FUNÇÕES ---
+
         function changeTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -123,7 +160,6 @@
             document.getElementById('btn-' + tabId.split('-')[1]).classList.add('active');
         }
 
-        // LOGO
         document.getElementById('logoInput').addEventListener('change', (e) => {
             const reader = new FileReader();
             reader.onload = (ev) => {
@@ -158,7 +194,6 @@
             }
         }
 
-        // CATEGORIAS
         async function carregarCategorias() {
             const res = await fetch(CAT_URL);
             const data = await res.json() || ["Comum"];
@@ -195,7 +230,6 @@
             carregarCategorias();
         }
 
-        // PRODUTOS
         document.querySelectorAll('.day-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const d = btn.dataset.day;
@@ -250,7 +284,17 @@
 
             try {
                 await fetch(url, { method: 'PUT', body: JSON.stringify(item) });
-                alert("Produto Salvo!"); location.reload();
+                alert("Produto Salvo!");
+                // LIMPA O FORMULÁRIO SEM FAZER LOGOFF
+                document.getElementById('edit-id').value = "";
+                document.getElementById('n').value = "";
+                document.getElementById('p').value = "";
+                document.getElementById('p-promo').value = "";
+                imagemBase64 = "";
+                diasSelecionados = [];
+                document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+                btn.innerText = "SALVAR PRODUTO"; btn.disabled = false;
+                listarProdutos(); // Atualiza a lista na tela
             } catch(e) { 
                 alert("Erro ao salvar."); btn.innerText = "SALVAR PRODUTO"; btn.disabled = false;
             }
@@ -283,11 +327,11 @@
 
         async function removerProduto(id) { if(confirm("Excluir?")) { await fetch(DB_BASE + "produtos/" + id + ".json", { method: 'DELETE' }); listarProdutos(); } }
 
-        // EQUIPE
         async function cadastrarUsuario() {
             const u = document.getElementById('new-user').value, p = document.getElementById('new-pass').value;
-            if(!u || !p) return;
+            if(!u || !p) return alert("Preencha usuário e senha!");
             await fetch(USER_URL.replace('.json', `/${Date.now()}.json`), { method: 'PUT', body: JSON.stringify({user:u, pass:p}) });
+            document.getElementById('new-user').value = ""; document.getElementById('new-pass').value = "";
             listarUsuarios();
         }
 
@@ -299,6 +343,9 @@
         }
 
         async function removerUsuario(id) { await fetch(USER_URL.replace('.json', `/${id}.json`), { method: 'DELETE' }); listarUsuarios(); }
+
+        // INICIALIZAÇÃO
+        verificarSessao();
     </script>
 </body>
 </html>
