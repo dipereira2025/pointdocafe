@@ -3,28 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atendimento Automático - Point do Café</title>
+    <title>Atendimento Automático - DPTech</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Otimização para Impressoras Térmicas/Matriciais */
         @media print {
-    #secao-impressao { 
-        width: 72mm; /* Largura ideal para bobinas de 80mm */
-        font-family: 'Courier New', monospace; 
-        font-size: 12pt; 
-        line-height: 1.2;
-    }
-}
+            body * { display: none !important; }
+            #secao-impressao, #secao-impressao * { display: block !important; }
+            #secao-impressao { 
+                width: 72mm; 
+                font-family: 'Courier New', monospace; 
+                font-size: 12pt; 
+                line-height: 1.2;
+                margin: 0;
+                padding: 0;
+            }
+        }
+        .bg-card { background-color: #ffffff; }
     </style>
 </head>
-<body class="bg-zinc-100 p-4 font-sans">
+<body class="bg-zinc-100 p-4 font-sans text-left">
 
     <header class="max-w-2xl mx-auto flex justify-between items-center mb-6 bg-white p-6 rounded-3xl shadow-sm border-b-4 border-amber-600">
-        <div>
-            <h1 class="text-2xl font-black text-zinc-800 uppercase italic">POINT DO CAFÉ Pedidos</h1>
-            <p id="status-rede" class="text-[10px] text-green-600 font-bold uppercase">● Monitorando Pedidos...</p>
+        <div class="flex items-center gap-4">
+            <!-- Logo Dinâmica -->
+            <div id="logo-container" class="w-16 h-16 hidden">
+                <img id="loja-logo" class="w-full h-full object-contain rounded-full border border-zinc-100 shadow-sm">
+            </div>
+            <div>
+                <h1 class="text-xl font-black text-zinc-800 uppercase italic">Terminal Atendimento</h1>
+                <p id="status-rede" class="text-[9px] text-green-600 font-bold uppercase tracking-widest">● Monitorando Pedidos...</p>
+            </div>
         </div>
-        <div class="text-right">
+        <div class="text-right hidden sm:block">
             <p id="hora-atual" class="font-bold text-zinc-400 text-xs"></p>
+            <p class="text-[8px] text-zinc-300 font-black uppercase">DPTech Solutions</p>
         </div>
     </header>
 
@@ -36,6 +49,29 @@
     <script>
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
         let pedidosImpressos = JSON.parse(localStorage.getItem('pedidos_impressos')) || [];
+
+        async function inicializar() {
+            await carregarLogo();
+            monitorar();
+            // Atualiza hora e monitora a cada 10 segundos
+            setInterval(() => {
+                const agora = new Date();
+                document.getElementById('hora-atual').innerText = agora.toLocaleTimeString('pt-BR');
+                monitorar();
+            }, 10000);
+        }
+
+        async function carregarLogo() {
+            try {
+                const res = await fetch(DB_BASE + "configuracao/logo.json");
+                const logo = await res.json();
+                if(logo) {
+                    const imgEl = document.getElementById('loja-logo');
+                    imgEl.src = logo;
+                    document.getElementById('logo-container').classList.remove('hidden');
+                }
+            } catch (e) { console.log("Erro ao carregar logo."); }
+        }
 
         async function monitorar() {
             try {
@@ -50,15 +86,15 @@
                 let html = "";
                 for (let id of ids) {
                     const v = vendas[id];
-                    const numPedido = id.slice(-4); // Pega os últimos 4 dígitos como número do pedido
+                    const numPedido = id.slice(-4); 
 
-                    // Se for novo e não estiver na lista de impressos, IMPRIME AUTOMÁTICO
+                    // AUTO-PRINT para novos pedidos
                     if (!pedidosImpressos.includes(id)) {
                         await imprimir(id, v);
                     }
 
                     html += `
-                        <div class="bg-white p-6 rounded-3xl shadow-sm border-2 ${pedidosImpressos.includes(id) ? 'border-zinc-100' : 'border-green-500 animate-pulse'}">
+                        <div class="bg-card p-6 rounded-3xl shadow-sm border-2 ${pedidosImpressos.includes(id) ? 'border-zinc-100' : 'border-green-500 animate-pulse'}">
                             <div class="flex justify-between items-center mb-4">
                                 <span class="bg-zinc-800 text-white px-4 py-1 rounded-full font-black text-xl">#${numPedido}</span>
                                 <span class="text-xs font-bold text-zinc-400">${new Date(v.data).toLocaleTimeString('pt-BR')}</span>
@@ -67,9 +103,9 @@
                             <div class="space-y-1 mb-4 text-lg">
                                 ${v.itens.map(i => `<div class="border-b border-zinc-50 font-medium"><b>${i.qty}x</b> ${i.nome}</div>`).join('')}
                             </div>
-                            <div class="flex justify-between text-[10px] font-bold uppercase text-zinc-400">
-                                <span>PGTO: ${v.pagamento}</span>
-                                <button onclick="reimprimir('${id}')" class="underline">Reimprimir</button>
+                            <div class="flex justify-between items-center text-[10px] font-bold uppercase text-zinc-400">
+                                <span>PAGAMENTO: ${v.pagamento}</span>
+                                <button onclick="reimprimir('${id}')" class="bg-zinc-100 px-3 py-1 rounded-lg hover:bg-zinc-200">Reimprimir</button>
                             </div>
                         </div>
                     `;
@@ -81,10 +117,12 @@
         async function imprimir(id, v) {
             const numPedido = id.slice(-4);
             const printArea = document.getElementById('secao-impressao');
+            
+            // Layout otimizado para a largura da Bematech (72mm/80mm)
             printArea.innerHTML = `
                 <div style="text-align: center; text-transform: uppercase;">
                     <h2 style="margin:0;">POINT DO CAFE</h2>
-                    <p style="margin:0;">PEDIDO #${numPedido}</p>
+                    <p style="margin:0; font-size: 18px;">PEDIDO #${numPedido}</p>
                     --------------------------------
                 </div>
                 <div style="margin: 10px 0; font-weight: bold;">
@@ -92,36 +130,33 @@
                     HORA: ${new Date(v.data).toLocaleTimeString('pt-BR')}<br>
                     --------------------------------
                 </div>
-                <div style="font-size: 16px;">
+                <div style="font-size: 16px; font-weight: bold;">
                     ${v.itens.map(i => `${i.qty}x ${i.nome}`).join('<br>')}
                 </div>
                 --------------------------------<br>
                 TOTAL: R$ ${v.total.toFixed(2)}<br>
                 PGTO: ${v.pagamento}<br>
                 ${v.observacao ? `OBS: ${v.observacao}` : ''}
-                <div style="text-align: center; margin-top: 10px;">
-                    DPTech - Atendimento Automático
+                <div style="text-align: center; margin-top: 15px; font-size: 10px;">
+                    DPTech - Terminal de Atendimento
                 </div>
             `;
 
-            // Comando de Impressão
             window.print();
 
-            // Marca como impresso para não repetir
-            pedidosImpressos.push(id);
-            localStorage.setItem('pedidos_impressos', JSON.stringify(pedidosImpressos));
+            if (!pedidosImpressos.includes(id)) {
+                pedidosImpressos.push(id);
+                localStorage.setItem('pedidos_impressos', JSON.stringify(pedidosImpressos));
+            }
         }
 
         function reimprimir(id) {
+            // Remove temporariamente para forçar a função imprimir
             pedidosImpressos = pedidosImpressos.filter(x => x !== id);
             monitorar();
         }
 
-        setInterval(() => {
-            document.getElementById('hora-atual').innerText = new Date().toLocaleTimeString('pt-BR');
-            monitorar();
-        }, 10000); // Verifica novos pedidos a cada 10 segundos
-        monitorar();
+        inicializar();
     </script>
 </body>
 </html>
