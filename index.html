@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .modal-open { overflow: hidden; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #d97706; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-amber-50 pb-24 font-sans text-gray-900">
@@ -28,36 +30,41 @@
     </div>
 
     <!-- Modal de Checkout -->
-    <div id="modal-checkout" class="fixed inset-0 bg-black/70 hidden z-50 p-4 flex items-center justify-center">
-        <div class="bg-white w-full max-w-md rounded-3xl p-6 overflow-y-auto max-h-[90vh] shadow-2xl">
-            <h2 class="text-2xl font-black mb-4 text-amber-900 border-b pb-2">Resumo do Pedido</h2>
+    <div id="modal-checkout" class="fixed inset-0 bg-black/70 hidden z-50 p-4 flex items-center justify-center text-left">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 overflow-y-auto max-h-[95vh] shadow-2xl">
+            <h2 class="text-2xl font-black mb-4 text-amber-900 border-b pb-2 text-center">Resumo do Pedido</h2>
             
-            <!-- RESUMO DOS ITENS (O que você pediu) -->
             <div id="resumo-itens" class="mb-6 space-y-2 max-h-40 overflow-y-auto bg-gray-50 p-3 rounded-xl border border-dashed border-gray-300">
                 <!-- Preenchido via JS -->
             </div>
 
-            <div class="space-y-4">
+            <div class="space-y-4 text-left">
                 <div>
-                    <label class="block text-xs font-black text-gray-500 uppercase">Seu Nome</label>
-                    <input type="text" id="cli-nome" placeholder="Como te chamamos?" class="w-full p-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 border-none">
+                    <label class="block text-xs font-black text-gray-500 uppercase">Seu Nome *</label>
+                    <input type="text" id="cli-nome" class="w-full p-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 border-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-black text-gray-500 uppercase">Endereço ou Retirada</label>
-                    <input type="text" id="cli-end" placeholder="Rua, número e bairro" class="w-full p-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 border-none">
+                    <label class="block text-xs font-black text-gray-500 uppercase">Endereço ou Retirada *</label>
+                    <input type="text" id="cli-end" class="w-full p-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 border-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-black text-gray-500 uppercase">Forma de Pagamento</label>
-                    <select id="cli-pgto" class="w-full p-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 border-none appearance-none">
-                        <option value="Pix">Pix</option>
-                        <option value="Dinheiro">Dinheiro</option>
-                        <option value="Cartão de Débito">Cartão de Débito</option>
-                        <option value="Cartão de Crédito">Cartão de Crédito</option>
-                    </select>
+                    <label class="block text-xs font-black text-gray-500 uppercase">Ponto de Referência (Opcional)</label>
+                    <input type="text" id="cli-ref" placeholder="Perto de onde?" class="w-full p-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 border-none">
                 </div>
-                <div>
-                    <label class="block text-xs font-black text-gray-500 uppercase">Observações</label>
-                    <textarea id="cli-obs" placeholder="Ex: Tirar cebola, troco para 50..." class="w-full p-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 border-none h-20"></textarea>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-black text-gray-500 uppercase">Pagamento</label>
+                        <select id="cli-pgto" class="w-full p-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 border-none">
+                            <option value="Pix">Pix</option>
+                            <option value="Dinheiro">Dinheiro</option>
+                            <option value="Débito">Débito</option>
+                            <option value="Crédito">Crédito</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-gray-500 uppercase">Observações</label>
+                        <input type="text" id="cli-obs" placeholder="Ex: Sem gelo" class="w-full p-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 border-none">
+                    </div>
                 </div>
 
                 <div class="pt-4 border-t border-gray-100">
@@ -65,10 +72,10 @@
                         <span>Total:</span>
                         <span id="checkout-total">R$ 0,00</span>
                     </div>
-                    <button onclick="enviarPedidoFinal()" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-green-100 hover:bg-green-700 active:scale-95 transition-all uppercase tracking-wider">
+                    <button onclick="enviarPedidoFinal()" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-green-700 transition-all uppercase">
                         ✅ Confirmar no WhatsApp
                     </button>
-                    <button onclick="fecharCheckout()" class="w-full text-gray-400 font-bold py-2 mt-2 text-sm">Cancelar / Voltar</button>
+                    <button onclick="fecharCheckout()" class="w-full text-gray-400 font-bold py-2 mt-2 text-sm">Voltar</button>
                 </div>
             </div>
         </div>
@@ -108,25 +115,49 @@
             return `
                 <section>
                     <h2 class="text-sm font-black mb-4 text-amber-900 border-b-2 border-amber-200 pb-1 uppercase tracking-widest">${titulo}</h2>
-                    <div class="space-y-3">
+                    <div class="space-y-4">
                         ${itens.map(p => `
                             <div class="bg-white p-3 rounded-2xl shadow-sm flex items-center gap-4 border border-amber-100">
-                                <img src="${p.img}" class="w-20 h-20 object-cover rounded-xl bg-amber-50 shadow-inner">
+                                <img src="${p.img}" class="w-20 h-20 object-cover rounded-xl bg-amber-50">
                                 <div class="flex-1">
                                     <h3 class="font-bold text-amber-900 text-sm leading-tight">${p.nome}</h3>
                                     <p class="text-green-700 font-black mt-1">R$ ${p.preco.toFixed(2)}</p>
+                                    
+                                    <!-- Controle de Quantidade -->
+                                    <div class="flex items-center gap-2 mt-2">
+                                        <button onclick="changeQty('${p.id}', -1)" class="w-6 h-6 bg-gray-200 rounded-full font-bold text-xs">-</button>
+                                        <span id="qty-${p.id}" class="text-xs font-bold">1</span>
+                                        <button onclick="changeQty('${p.id}', 1)" class="w-6 h-6 bg-gray-200 rounded-full font-bold text-xs">+</button>
+                                    </div>
                                 </div>
-                                <button onclick="addToCart('${p.nome}', ${p.preco})" class="bg-amber-100 text-amber-900 w-10 h-10 rounded-full font-black text-xl hover:bg-amber-600 hover:text-white transition-all active:scale-90">＋</button>
+                                <button onclick="addToCart('${p.id}', '${p.nome}', ${p.preco})" class="bg-amber-100 text-amber-900 px-3 py-2 rounded-xl font-black text-xs uppercase hover:bg-amber-600 hover:text-white transition-all">Add</button>
                             </div>
                         `).join('')}
                     </div>
                 </section>`;
         }
 
-        function addToCart(nome, preco) {
-            carrinho.push({nome, preco});
+        function changeQty(id, delta) {
+            const el = document.getElementById(`qty-${id}`);
+            let current = parseInt(el.innerText);
+            current = Math.max(1, current + delta);
+            el.innerText = current;
+        }
+
+        function addToCart(id, nome, preco) {
+            const qty = parseInt(document.getElementById(`qty-${id}`).innerText);
+            carrinho.push({ nome, preco, qty });
+            
+            // Resetar visor de quantidade após adicionar
+            document.getElementById(`qty-${id}`).innerText = "1";
+            
+            atualizarBotaoFlutuante();
+        }
+
+        function atualizarBotaoFlutuante() {
             document.getElementById('cart-float').classList.remove('hidden');
-            document.getElementById('cart-count').innerText = carrinho.length;
+            const totalItens = carrinho.reduce((sum, item) => sum + item.qty, 0);
+            document.getElementById('cart-count').innerText = totalItens;
         }
 
         function abrirCheckout() {
@@ -135,16 +166,16 @@
             modal.classList.remove('hidden');
             document.body.classList.add('modal-open');
 
-            // Gerar o Resumo Visual
             let resumoHtml = "";
             let total = 0;
             carrinho.forEach((item, index) => {
+                const subtotal = item.preco * item.qty;
                 resumoHtml += `
-                    <div class="flex justify-between text-sm">
-                        <span class="text-gray-600 font-medium">${index + 1}. ${item.nome}</span>
-                        <span class="font-bold text-amber-900 text-xs">R$ ${item.preco.toFixed(2)}</span>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-gray-600">${item.qty}x ${item.nome}</span>
+                        <span class="font-bold text-amber-900">R$ ${subtotal.toFixed(2)}</span>
                     </div>`;
-                total += item.preco;
+                total += subtotal;
             });
 
             resumoContainer.innerHTML = resumoHtml;
@@ -159,28 +190,30 @@
         function enviarPedidoFinal() {
             const nome = document.getElementById('cli-nome').value;
             const end = document.getElementById('cli-end').value;
+            const ref = document.getElementById('cli-ref').value;
             const pgto = document.getElementById('cli-pgto').value;
             const obs = document.getElementById('cli-obs').value;
 
-            if(!nome || !end) return alert("Por favor, preencha seu Nome e Endereço!");
+            if(!nome || !end) return alert("Preencha Nome e Endereço!");
 
             let msg = `*☕ POINT DO CAFÉ - NOVO PEDIDO*\n`;
             msg += `------------------------------\n`;
             msg += `*Cliente:* ${nome}\n`;
             msg += `*Endereço:* ${end}\n`;
+            if(ref) msg += `*Referência:* ${ref}\n`;
             msg += `*Pagamento:* ${pgto}\n`;
-            if(obs) msg += `*Observações:* ${obs}\n`;
+            if(obs) msg += `*Obs:* ${obs}\n`;
             msg += `------------------------------\n`;
             
             let total = 0;
-            carrinho.forEach((item, idx) => {
-                msg += `*${idx + 1}.* ${item.nome} - R$ ${item.preco.toFixed(2)}\n`;
-                total += item.preco;
+            carrinho.forEach((item) => {
+                const sub = item.preco * item.qty;
+                msg += `• ${item.qty}x ${item.nome} - R$ ${sub.toFixed(2)}\n`;
+                total += sub;
             });
             
             msg += `------------------------------\n`;
-            msg += `*TOTAL: R$ ${total.toFixed(2)}*\n\n`;
-            msg += `_Enviado pelo Point do Café Online_`;
+            msg += `*TOTAL: R$ ${total.toFixed(2)}*`;
 
             window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`);
         }
