@@ -18,14 +18,14 @@
             <img id="loja-logo" class="w-full h-full object-contain rounded-full shadow-md">
         </div>
         <h1 class="text-2xl font-black text-amber-900 uppercase tracking-tighter">Point do Café</h1>
-        <p class="text-amber-700 font-medium text-[10px] mt-1 uppercase tracking-widest"> Restaurante e Lanchonete - Aqui você encontra comida caseira.</p>
+        <p class="text-amber-700 font-medium text-[10px] mt-1 uppercase tracking-widest">O seu café, do seu jeito.</p>
     </header>
 
     <main id="categorias-container" class="max-w-md mx-auto p-4 space-y-8">
         <div class="text-center py-10 text-amber-900 animate-pulse text-sm font-bold">Carregando cardápio...</div>
     </main>
 
-    <!-- Botão Flutuante -->
+    <!-- Botão Flutuante do Carrinho -->
     <div id="cart-float" class="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-xs px-4">
         <button onclick="abrirCheckout()" class="w-full bg-green-600 text-white py-4 rounded-full shadow-2xl font-black flex justify-center gap-2 border-4 border-white items-center hover:scale-105 transition-transform uppercase text-sm">
             🛒 Finalizar Pedido
@@ -43,17 +43,17 @@
             <div id="resumo-itens" class="mb-6 space-y-2 bg-gray-50 p-3 rounded-xl border border-dashed border-gray-300 text-sm"></div>
 
             <div class="space-y-3">
-                <input type="text" id="cli-nome" placeholder="Seu Nome *" class="w-full p-3 bg-gray-100 rounded-xl outline-none text-sm">
-                <input type="text" id="cli-end" placeholder="Endereço ou Retirada *" class="w-full p-3 bg-gray-100 rounded-xl outline-none text-sm">
-                <input type="text" id="cli-ref" placeholder="Ponto de Referência (Opcional)" class="w-full p-3 bg-gray-100 rounded-xl outline-none text-sm">
+                <input type="text" id="cli-nome" placeholder="Seu Nome *" class="w-full p-3 bg-gray-100 rounded-xl outline-none text-sm border-none">
+                <input type="text" id="cli-end" placeholder="Endereço ou Retirada *" class="w-full p-3 bg-gray-100 rounded-xl outline-none text-sm border-none">
+                <input type="text" id="cli-ref" placeholder="Ponto de Referência (Opcional)" class="w-full p-3 bg-gray-100 rounded-xl outline-none text-sm border-none">
                 
                 <div class="grid grid-cols-2 gap-2">
-                    <select id="cli-pgto" class="w-full p-3 bg-gray-100 rounded-xl text-sm outline-none">
+                    <select id="cli-pgto" class="w-full p-3 bg-gray-100 rounded-xl text-sm outline-none border-none">
                         <option value="Pix">Pix</option>
                         <option value="Dinheiro">Dinheiro</option>
                         <option value="Cartão">Cartão</option>
                     </select>
-                    <input type="text" id="cli-obs" placeholder="Observações" class="w-full p-3 bg-gray-100 rounded-xl text-sm outline-none">
+                    <input type="text" id="cli-obs" placeholder="Observações" class="w-full p-3 bg-gray-100 rounded-xl text-sm outline-none border-none">
                 </div>
 
                 <div class="pt-4 border-t border-gray-100">
@@ -73,7 +73,7 @@
     <script>
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
         const WHATSAPP = "5561999521964";
-        const diaHoje = new Date().getDay().toString();
+        const diaHoje = new Date().getDay().toString(); // 0 = Domingo, 1 = Segunda...
         let produtosLocal = [];
 
         async function inicializar() {
@@ -89,11 +89,12 @@
                     document.getElementById('loja-logo').src = logo;
                     document.getElementById('logo-container').classList.remove('hidden');
                 }
-            } catch (e) { console.log("Sem logo."); }
+            } catch (e) { console.log("Sem logo cadastrada."); }
         }
 
         async function loadMenu() {
             try {
+                // Carrega Produtos
                 const resProd = await fetch(DB_BASE + "produtos.json");
                 const dataProd = await resProd.json();
                 if (!dataProd) {
@@ -102,30 +103,43 @@
                 }
                 produtosLocal = Object.keys(dataProd).map(key => ({ id: key, ...dataProd[key], qty: 0 }));
 
+                // Carrega Categorias
                 const resCat = await fetch(DB_BASE + "categorias.json");
-                let categorias = await resCat.json();
-                
-                // Se não houver categorias, cria uma padrão com todos os produtos
-                if (!categorias || !Array.isArray(categorias)) {
-                    categorias = ["Cardápio"];
-                    produtosLocal.forEach(p => p.categoria = "Cardápio");
-                }
+                let categorias = await resCat.json() || [];
+
+                // FILTRAGEM: Apenas produtos de HOJE ou SEM DIA marcado (Sempre disponíveis)
+                const produtosFiltrados = produtosLocal.filter(p => {
+                    const isSempreDisponivel = !p.dias || p.dias.length === 0;
+                    const isDeHoje = p.dias && p.dias.includes(diaHoje);
+                    return isSempreDisponivel || isDeHoje;
+                });
 
                 let html = "";
                 
-                // 1. Sugestão de Hoje
-                const sugestoes = produtosLocal.filter(p => p.dias && p.dias.includes(diaHoje));
-                if(sugestoes.length > 0) html += renderSection("⭐ Sugestão de Hoje", sugestoes);
+                // 1. Renderiza Sugestão de Hoje (apenas produtos marcados para HOJE)
+                const sugestoesHj = produtosFiltrados.filter(p => p.dias && p.dias.includes(diaHoje));
+                if(sugestoesHj.length > 0) {
+                    html += renderSection("⭐ Sugestão de Hoje", sugestoesHj);
+                }
 
-                // 2. Outras Categorias
-                categorias.forEach(cat => {
-                    const itens = produtosLocal.filter(p => p.categoria === cat && (!p.dias || !p.dias.includes(diaHoje)));
-                    if(itens.length > 0) html += renderSection(cat, itens);
-                });
+                // 2. Renderiza demais Categorias (produtos sem dia marcado)
+                if (categorias.length === 0) {
+                    const itensFixos = produtosFiltrados.filter(p => !p.dias || p.dias.length === 0);
+                    if(itensFixos.length > 0) html += renderSection("Cardápio", itensFixos);
+                } else {
+                    categorias.forEach(cat => {
+                        const itensNaCat = produtosFiltrados.filter(p => 
+                            p.categoria === cat && (!p.dias || p.dias.length === 0)
+                        );
+                        if(itensNaCat.length > 0) {
+                            html += renderSection(cat, itensNaCat);
+                        }
+                    });
+                }
 
-                document.getElementById('categorias-container').innerHTML = html;
+                document.getElementById('categorias-container').innerHTML = html || "<p class='text-center text-xs'>Nada disponível para hoje.</p>";
             } catch (e) {
-                document.getElementById('categorias-container').innerHTML = "<p class='text-center text-xs'>Erro de conexão.</p>";
+                document.getElementById('categorias-container').innerHTML = "<p class='text-center text-xs'>Erro ao carregar cardápio.</p>";
             }
         }
 
@@ -165,27 +179,19 @@
             const p = produtosLocal.find(x => x.id === id);
             if(p) {
                 p.qty = Math.max(0, p.qty + delta);
-                document.getElementById(`qty-${id}`).innerText = p.qty;
-            }
-        }
-
-        function limparCarrinho() {
-            if(confirm("Limpar carrinho?")) {
-                produtosLocal.forEach(p => {
-                    p.qty = 0;
-                    if(document.getElementById(`qty-${p.id}`)) document.getElementById(`qty-${p.id}`).innerText = "0";
-                });
-                fecharCheckout();
+                const el = document.getElementById(`qty-${id}`);
+                if(el) el.innerText = p.qty;
             }
         }
 
         function abrirCheckout() {
             const selecionados = produtosLocal.filter(p => p.qty > 0);
-            if(selecionados.length === 0) return alert("Adicione itens primeiro!");
+            if(selecionados.length === 0) return alert("Seu carrinho está vazio!");
             
             let html = ""; let total = 0;
             selecionados.forEach(p => {
-                const sub = (p.precoPromo || p.preco) * p.qty;
+                const precoUnit = p.precoPromo || p.preco;
+                const sub = precoUnit * p.qty;
                 html += `<div class="flex justify-between font-bold text-xs"><span>${p.qty}x ${p.nome}</span><span>R$ ${sub.toFixed(2)}</span></div>`;
                 total += sub;
             });
@@ -201,10 +207,21 @@
             document.body.classList.remove('modal-open');
         }
 
+        function limparCarrinho() {
+            if(confirm("Deseja realmente limpar o carrinho?")) {
+                produtosLocal.forEach(p => {
+                    p.qty = 0;
+                    const el = document.getElementById(`qty-${p.id}`);
+                    if(el) el.innerText = "0";
+                });
+                fecharCheckout();
+            }
+        }
+
         function enviarPedidoFinal() {
             const n = document.getElementById('cli-nome').value;
             const e = document.getElementById('cli-end').value;
-            if(!n || !e) return alert("Preencha nome e endereço!");
+            if(!n || !e) return alert("Por favor, preencha Nome e Endereço!");
 
             const selecionados = produtosLocal.filter(p => p.qty > 0);
             let msg = `*☕ NOVO PEDIDO - POINT DO CAFÉ*\n\n`;
@@ -212,13 +229,12 @@
             if(document.getElementById('cli-ref').value) msg += `*Ref:* ${document.getElementById('cli-ref').value}\n`;
             msg += `*Pagamento:* ${document.getElementById('cli-pgto').value}\n`;
             if(document.getElementById('cli-obs').value) msg += `*Obs:* ${document.getElementById('cli-obs').value}\n\n`;
-            msg += `*ITENS:*\n`;
             
             let total = 0;
             selecionados.forEach(p => {
                 const precoUnit = p.precoPromo || p.preco;
                 const sub = precoUnit * p.qty;
-                msg += `• ${p.qty}x ${p.nome} (R$ ${precoUnit.toFixed(2)}) = R$ ${sub.toFixed(2)}\n`;
+                msg += `• ${p.qty}x ${p.nome} = R$ ${sub.toFixed(2)}\n`;
                 total += sub;
             });
             msg += `\n*TOTAL: R$ ${total.toFixed(2)}*`;
