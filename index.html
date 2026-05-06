@@ -5,46 +5,226 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Point do Café - Cardápio</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .modal-open { overflow: hidden; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #d97706; border-radius: 10px; }
+    </style>
 </head>
 <body class="bg-amber-50 pb-24 font-sans text-gray-900">
     
     <header class="bg-white p-6 shadow-sm mb-6 flex flex-col items-center border-b-4 border-amber-600">
-        <!-- ÁREA DA LOGO DINÂMICA -->
         <div id="logo-container" class="w-24 h-24 mb-3 hidden">
-            <img id="loja-logo" class="w-full h-full object-contain rounded-full">
+            <img id="loja-logo" class="w-full h-full object-contain rounded-full shadow-md">
         </div>
-        <h1 id="loja-nome" class="text-2xl font-black text-amber-900 uppercase">Point do Café</h1>
-        <p class="text-amber-700 font-medium text-xs mt-1">O seu café, do seu jeito.</p>
+        <h1 class="text-2xl font-black text-amber-900 uppercase tracking-tighter">Point do Café</h1>
+        <p class="text-amber-700 font-medium text-[10px] mt-1 uppercase tracking-widest">O seu café, do seu jeito.</p>
     </header>
 
     <main id="categorias-container" class="max-w-md mx-auto p-4 space-y-8">
-        <div class="text-center py-10 text-amber-900 animate-pulse text-sm">Preparando ambiente...</div>
+        <div class="text-center py-10 text-amber-900 animate-pulse text-sm font-bold">Carregando cardápio...</div>
     </main>
+
+    <!-- Botão Flutuante -->
+    <div id="cart-float" class="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-xs px-4">
+        <button onclick="abrirCheckout()" class="w-full bg-green-600 text-white py-4 rounded-full shadow-2xl font-black flex justify-center gap-2 border-4 border-white items-center hover:scale-105 transition-transform uppercase text-sm">
+            🛒 Finalizar Pedido
+        </button>
+    </div>
+
+    <!-- Modal de Checkout -->
+    <div id="modal-checkout" class="fixed inset-0 bg-black/70 hidden z-50 p-4 flex items-center justify-center">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 overflow-y-auto max-h-[90vh] shadow-2xl">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 class="text-xl font-black text-amber-900 uppercase">Resumo</h2>
+                <button onclick="limparCarrinho()" class="text-[10px] font-black text-red-500 bg-red-50 px-3 py-1 rounded-full uppercase">Limpar</button>
+            </div>
+            
+            <div id="resumo-itens" class="mb-6 space-y-2 bg-gray-50 p-3 rounded-xl border border-dashed border-gray-300 text-sm"></div>
+
+            <div class="space-y-3">
+                <input type="text" id="cli-nome" placeholder="Seu Nome *" class="w-full p-3 bg-gray-100 rounded-xl outline-none text-sm">
+                <input type="text" id="cli-end" placeholder="Endereço ou Retirada *" class="w-full p-3 bg-gray-100 rounded-xl outline-none text-sm">
+                <input type="text" id="cli-ref" placeholder="Ponto de Referência (Opcional)" class="w-full p-3 bg-gray-100 rounded-xl outline-none text-sm">
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <select id="cli-pgto" class="w-full p-3 bg-gray-100 rounded-xl text-sm outline-none">
+                        <option value="Pix">Pix</option>
+                        <option value="Dinheiro">Dinheiro</option>
+                        <option value="Cartão">Cartão</option>
+                    </select>
+                    <input type="text" id="cli-obs" placeholder="Observações" class="w-full p-3 bg-gray-100 rounded-xl text-sm outline-none">
+                </div>
+
+                <div class="pt-4 border-t border-gray-100">
+                    <div class="flex justify-between text-xl font-black text-amber-900 mb-4">
+                        <span>Total:</span>
+                        <span id="checkout-total">R$ 0,00</span>
+                    </div>
+                    <button onclick="enviarPedidoFinal()" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-green-700 transition-all uppercase text-sm">
+                        ✅ Confirmar no WhatsApp
+                    </button>
+                    <button onclick="fecharCheckout()" class="w-full text-gray-400 font-bold py-2 mt-1 text-xs text-center uppercase">Voltar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
-        const DB_URL = DB_BASE + "produtos.json";
-        const LOGO_URL = DB_BASE + "configuracao/logo.json";
+        const WHATSAPP = "5561999521964";
+        const diaHoje = new Date().getDay().toString();
+        let produtosLocal = [];
 
         async function inicializar() {
-            await carregarConfiguracao();
+            await carregarLogo();
             await loadMenu();
         }
 
-        async function carregarConfiguracao() {
+        async function carregarLogo() {
             try {
-                const res = await fetch(LOGO_URL);
+                const res = await fetch(DB_BASE + "configuracao/logo.json");
                 const logo = await res.json();
                 if(logo) {
                     document.getElementById('loja-logo').src = logo;
                     document.getElementById('logo-container').classList.remove('hidden');
-                    // Opcional: Esconde o texto se tiver logo, ou mantém os dois
-                    // document.getElementById('loja-nome').classList.add('sr-only'); 
                 }
-            } catch (e) { console.log("Sem logo personalizada."); }
+            } catch (e) { console.log("Sem logo."); }
         }
 
-        // ... (Restante das funções de loadMenu e Carrinho que já temos) ...
+        async function loadMenu() {
+            try {
+                const resProd = await fetch(DB_BASE + "produtos.json");
+                const dataProd = await resProd.json();
+                if (!dataProd) {
+                    document.getElementById('categorias-container').innerHTML = "<p class='text-center text-xs'>Nenhum produto cadastrado.</p>";
+                    return;
+                }
+                produtosLocal = Object.keys(dataProd).map(key => ({ id: key, ...dataProd[key], qty: 0 }));
+
+                const resCat = await fetch(DB_BASE + "categorias.json");
+                let categorias = await resCat.json();
+                
+                // Se não houver categorias, cria uma padrão com todos os produtos
+                if (!categorias || !Array.isArray(categorias)) {
+                    categorias = ["Cardápio"];
+                    produtosLocal.forEach(p => p.categoria = "Cardápio");
+                }
+
+                let html = "";
+                
+                // 1. Sugestão de Hoje
+                const sugestoes = produtosLocal.filter(p => p.dias && p.dias.includes(diaHoje));
+                if(sugestoes.length > 0) html += renderSection("⭐ Sugestão de Hoje", sugestoes);
+
+                // 2. Outras Categorias
+                categorias.forEach(cat => {
+                    const itens = produtosLocal.filter(p => p.categoria === cat && (!p.dias || !p.dias.includes(diaHoje)));
+                    if(itens.length > 0) html += renderSection(cat, itens);
+                });
+
+                document.getElementById('categorias-container').innerHTML = html;
+            } catch (e) {
+                document.getElementById('categorias-container').innerHTML = "<p class='text-center text-xs'>Erro de conexão.</p>";
+            }
+        }
+
+        function renderSection(titulo, itens) {
+            return `
+                <section>
+                    <h2 class="text-[10px] font-black mb-3 text-amber-900 border-b-2 border-amber-200 pb-1 uppercase tracking-widest">${titulo}</h2>
+                    <div class="space-y-3">
+                        ${itens.map(p => {
+                            const temPromo = p.precoPromo && p.precoPromo < p.preco;
+                            const precoFinal = temPromo ? p.precoPromo : p.preco;
+                            return `
+                            <div class="bg-white p-3 rounded-2xl shadow-sm flex items-center gap-3 border border-amber-100">
+                                <div class="relative">
+                                    <img src="${p.img}" class="w-16 h-16 object-cover rounded-xl bg-amber-50">
+                                    ${temPromo ? '<span class="absolute -top-2 -left-2 bg-red-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase">Promo</span>' : ''}
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-amber-900 text-xs leading-tight">${p.nome}</h3>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <span class="text-green-700 font-black text-sm">R$ ${precoFinal.toFixed(2)}</span>
+                                        ${temPromo ? `<span class="text-[9px] text-gray-400 line-through font-bold">R$ ${p.preco.toFixed(2)}</span>` : ''}
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 bg-gray-100 p-1.5 rounded-xl">
+                                    <button onclick="updateQty('${p.id}', -1)" class="w-7 h-7 bg-white shadow-sm rounded-lg font-bold text-amber-900">-</button>
+                                    <span id="qty-${p.id}" class="text-xs font-black w-4 text-center">${p.qty}</span>
+                                    <button onclick="updateQty('${p.id}', 1)" class="w-7 h-7 bg-white shadow-sm rounded-lg font-bold text-amber-900">+</button>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </section>`;
+        }
+
+        function updateQty(id, delta) {
+            const p = produtosLocal.find(x => x.id === id);
+            if(p) {
+                p.qty = Math.max(0, p.qty + delta);
+                document.getElementById(`qty-${id}`).innerText = p.qty;
+            }
+        }
+
+        function limparCarrinho() {
+            if(confirm("Limpar carrinho?")) {
+                produtosLocal.forEach(p => {
+                    p.qty = 0;
+                    if(document.getElementById(`qty-${p.id}`)) document.getElementById(`qty-${p.id}`).innerText = "0";
+                });
+                fecharCheckout();
+            }
+        }
+
+        function abrirCheckout() {
+            const selecionados = produtosLocal.filter(p => p.qty > 0);
+            if(selecionados.length === 0) return alert("Adicione itens primeiro!");
+            
+            let html = ""; let total = 0;
+            selecionados.forEach(p => {
+                const sub = (p.precoPromo || p.preco) * p.qty;
+                html += `<div class="flex justify-between font-bold text-xs"><span>${p.qty}x ${p.nome}</span><span>R$ ${sub.toFixed(2)}</span></div>`;
+                total += sub;
+            });
+            
+            document.getElementById('resumo-itens').innerHTML = html;
+            document.getElementById('checkout-total').innerText = `R$ ${total.toFixed(2)}`;
+            document.getElementById('modal-checkout').classList.remove('hidden');
+            document.body.classList.add('modal-open');
+        }
+
+        function fecharCheckout() {
+            document.getElementById('modal-checkout').classList.add('hidden');
+            document.body.classList.remove('modal-open');
+        }
+
+        function enviarPedidoFinal() {
+            const n = document.getElementById('cli-nome').value;
+            const e = document.getElementById('cli-end').value;
+            if(!n || !e) return alert("Preencha nome e endereço!");
+
+            const selecionados = produtosLocal.filter(p => p.qty > 0);
+            let msg = `*☕ NOVO PEDIDO - POINT DO CAFÉ*\n\n`;
+            msg += `*Cliente:* ${n}\n*Endereço:* ${e}\n`;
+            if(document.getElementById('cli-ref').value) msg += `*Ref:* ${document.getElementById('cli-ref').value}\n`;
+            msg += `*Pagamento:* ${document.getElementById('cli-pgto').value}\n`;
+            if(document.getElementById('cli-obs').value) msg += `*Obs:* ${document.getElementById('cli-obs').value}\n\n`;
+            msg += `*ITENS:*\n`;
+            
+            let total = 0;
+            selecionados.forEach(p => {
+                const precoUnit = p.precoPromo || p.preco;
+                const sub = precoUnit * p.qty;
+                msg += `• ${p.qty}x ${p.nome} (R$ ${precoUnit.toFixed(2)}) = R$ ${sub.toFixed(2)}\n`;
+                total += sub;
+            });
+            msg += `\n*TOTAL: R$ ${total.toFixed(2)}*`;
+
+            window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`);
+        }
 
         inicializar();
     </script>
