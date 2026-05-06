@@ -319,7 +319,7 @@
         function exportarPDF() {
             const printContents = document.getElementById('lista-vendas-historico').innerHTML;
             const jan = window.open('', '', 'width=800,height=600');
-            jan.document.write(`<html><head><title>PDF</title><style>body{font-family:sans-serif;padding:20px} .pedido-card{border-bottom:1px solid #eee;padding:10px} button{display:none !important}</style></head><body><h1 style="text-align:center;color:#d97706">Relatório de Vendas DPTech</h1><hr>${printContents}</body></html>`);
+            jan.document.write(`<html><head><title>PDF</title><style>body{font-family:sans-serif;padding:20px} .pedido-card{border-bottom:1px solid #eee;padding:10px} button{display:none !important}</style></head><body><h1 style="text-align:center;color:#d97706">Relatório de Vendas Point do Café</h1><hr>${printContents}</body></html>`);
             jan.document.close(); jan.print(); jan.close();
         }
 
