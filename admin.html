@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Master - DPTech Solutions</title>
+    <title>Painel Gestão - Point do Café</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    <!-- Biblioteca para Exportar Excel -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
         .day-btn.active { background-color: #d97706; color: white; border-color: #d97706; }
         .tab-btn.active { border-bottom: 4px solid #d97706; color: #d97706; }
         .tab-content.hidden { display: none; }
+        .admin-only { display: none; }
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
     </style>
@@ -20,7 +20,8 @@
 
     <!-- TELA DE LOGIN -->
     <div id="login" class="max-w-sm mx-auto mt-20 bg-white p-8 rounded-3xl text-zinc-900 shadow-2xl">
-        <h2 class="text-2xl font-black mb-6 text-center text-amber-900 uppercase tracking-tighter">DPTech Admin</h2>
+        <h2 class="text-2xl font-black mb-6 text-center text-amber-900 uppercase tracking-tighter">Point do Café</h2>
+        <p class="text-center text-[10px] font-bold text-zinc-400 mb-6 uppercase tracking-widest">Painel Administrativo</p>
         <input type="text" id="user-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-4 outline-none" placeholder="Usuário">
         <input type="password" id="pass-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-6 outline-none" placeholder="Senha">
         <button onclick="fazerLogin()" class="w-full bg-amber-900 text-white py-4 rounded-xl font-bold uppercase hover:bg-amber-800 transition-all">Entrar</button>
@@ -29,7 +30,10 @@
     <!-- PAINEL PRINCIPAL -->
     <div id="painel" class="hidden max-w-2xl mx-auto py-4">
         <div class="flex justify-between items-center mb-6 px-2">
-            <span class="text-[10px] text-amber-500 font-black uppercase tracking-widest text-amber-500">Gestão Profissional</span>
+            <div>
+                <span id="label-nivel" class="text-[8px] bg-amber-600 text-white px-2 py-0.5 rounded-full font-black uppercase">Operador</span>
+                <p class="text-[10px] text-zinc-500 font-black uppercase tracking-widest mt-1">Point do Café</p>
+            </div>
             <button onclick="logout()" class="text-red-500 text-[10px] font-black uppercase underline">Sair</button>
         </div>
         
@@ -39,7 +43,7 @@
             <button onclick="changeTab('tab-categorias')" class="tab-btn pb-2 px-2" id="btn-categorias">Categorias</button>
             <button onclick="changeTab('tab-produtos')" class="tab-btn pb-2 px-2" id="btn-produtos">Produtos</button>
             <button onclick="changeTab('tab-relatorios')" class="tab-btn pb-2 px-2" id="btn-relatorios">Relatórios</button>
-            <button onclick="changeTab('tab-usuarios')" class="tab-btn pb-2 px-2" id="btn-usuarios">Equipe</button>
+            <button onclick="changeTab('tab-usuarios')" class="tab-btn pb-2 px-2 admin-only" id="btn-usuarios">Equipe 🔒</button>
         </div>
 
         <!-- ABA 1: LOGO -->
@@ -47,10 +51,10 @@
             <div class="bg-zinc-800 p-8 rounded-3xl border border-zinc-700">
                 <div class="w-32 h-32 bg-zinc-900 mx-auto rounded-full border-2 border-amber-600 overflow-hidden flex items-center justify-center mb-6">
                     <img id="logo-img-view" class="hidden w-full h-full object-cover">
-                    <span id="logo-placeholder" class="text-xs text-zinc-600 font-bold uppercase">Sem Logo</span>
+                    <span id="logo-placeholder" class="text-xs text-zinc-600 font-bold uppercase">Logo Point do Café</span>
                 </div>
                 <input type="file" id="logoInput" accept="image/*" class="text-xs mb-6 block w-full text-zinc-400">
-                <button onclick="salvarLogo()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase text-xs">Atualizar Logotipo</button>
+                <button onclick="salvarLogo()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase text-xs">Atualizar Logo</button>
             </div>
         </div>
 
@@ -58,7 +62,7 @@
         <div id="tab-categorias" class="tab-content hidden">
             <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
                 <div class="flex gap-2 mb-6">
-                    <input type="text" id="nova-cat" placeholder="Nome da Categoria" class="flex-1 p-4 rounded-xl bg-zinc-700 outline-none text-sm">
+                    <input type="text" id="nova-cat" placeholder="Nova Categoria" class="flex-1 p-4 rounded-xl bg-zinc-700 outline-none text-sm">
                     <button onclick="adicionarCategoria()" class="bg-green-600 px-6 rounded-xl font-black text-xl hover:bg-green-500">+</button>
                 </div>
                 <div id="sortable-list" class="space-y-2 mb-6"></div>
@@ -74,7 +78,7 @@
                 <select id="c" class="w-full p-4 rounded-xl bg-zinc-700 outline-none text-sm"></select>
                 
                 <div class="p-4 bg-zinc-900 rounded-2xl space-y-2">
-                    <label class="text-[9px] font-black text-amber-500 uppercase">Disponível em:</label>
+                    <label class="text-[9px] font-black text-amber-500 uppercase">Disponibilidade Point do Café:</label>
                     <div class="flex flex-wrap gap-2" id="dias-semana">
                         <button type="button" data-day="0" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Dom</button>
                         <button type="button" data-day="1" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Seg</button>
@@ -100,6 +104,7 @@
         <!-- ABA 4: RELATÓRIOS -->
         <div id="tab-relatorios" class="tab-content hidden space-y-6">
             <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+                <h2 class="text-amber-500 font-black mb-4 uppercase text-sm">Vendas Point do Café</h2>
                 <div class="grid grid-cols-2 gap-4 mb-6 text-center">
                     <div class="bg-zinc-900 p-5 rounded-2xl border border-zinc-700">
                         <p class="text-[9px] text-zinc-500 uppercase font-black">Pedidos Hoje</p>
@@ -110,12 +115,10 @@
                         <p id="resumo-valor-hoje" class="text-3xl font-black text-green-500">R$ 0,00</p>
                     </div>
                 </div>
-
                 <div class="flex gap-2 mb-6">
-                    <button onclick="exportarExcel()" class="flex-1 bg-zinc-700 hover:bg-zinc-600 py-3 rounded-xl text-[10px] font-black uppercase">📊 Planilha</button>
-                    <button onclick="exportarPDF()" class="flex-1 bg-zinc-700 hover:bg-zinc-600 py-3 rounded-xl text-[10px] font-black uppercase">📄 PDF</button>
+                    <button onclick="exportarExcel()" class="flex-1 bg-zinc-700 py-3 rounded-xl text-[10px] font-black uppercase">📊 Planilha</button>
+                    <button onclick="exportarPDF()" class="flex-1 bg-zinc-700 py-3 rounded-xl text-[10px] font-black uppercase">📄 PDF</button>
                 </div>
-
                 <div class="space-y-3 max-h-96 overflow-y-auto pr-2" id="lista-vendas-historico"></div>
                 <button onclick="listarRelatorios()" class="w-full mt-4 bg-zinc-700 py-3 rounded-xl font-black text-[10px] uppercase">🔄 Atualizar</button>
             </div>
@@ -124,16 +127,17 @@
         <!-- ABA 5: EQUIPE -->
         <div id="tab-usuarios" class="tab-content hidden space-y-4">
             <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+                <h2 class="text-amber-500 font-black mb-4 uppercase text-sm">Equipe Point do Café 🔒</h2>
                 <input type="hidden" id="edit-user-id">
-                <input type="text" id="new-user" placeholder="Nome do Usuário" class="w-full p-4 mb-3 rounded-xl bg-zinc-700 outline-none">
-                <input type="password" id="new-pass" placeholder="Definir Senha" class="w-full p-4 mb-4 rounded-xl bg-zinc-700 outline-none">
+                <input type="text" id="new-user" placeholder="Usuário" class="w-full p-4 mb-3 rounded-xl bg-zinc-700 outline-none">
+                <input type="password" id="new-pass" placeholder="Senha" class="w-full p-4 mb-4 rounded-xl bg-zinc-700 outline-none">
                 <button onclick="cadastrarUsuario()" class="w-full bg-green-600 py-4 rounded-xl font-black uppercase text-xs">Salvar Acesso</button>
                 <div id="lista-usuarios" class="mt-8 space-y-2"></div>
             </div>
         </div>
 
         <footer class="mt-12 text-center">
-            <p class="text-[9px] text-zinc-600 font-bold uppercase tracking-[3px]">Powered by <span class="text-amber-600">DPTech Solutions</span></p>
+            <p class="text-[9px] text-zinc-600 font-bold uppercase tracking-[3px]">SISTEMA DESENVOLVIDO POR <span class="text-amber-600">DPTECH SOLUTIONS</span></p>
         </footer>
     </div>
 
@@ -145,35 +149,57 @@
         const USER_URL = DB_BASE + "usuarios.json";
         const VENDAS_URL = DB_BASE + "vendas.json";
 
-        let imagemBase64 = "", logoBase64 = "", diasSelecionados = [];
+        let imagemBase64 = "", logoBase64 = "", diasSelecionados = [], NIVEL_ATUAL = "operador";
 
         function verificarSessao() {
             const sessao = localStorage.getItem('point_sessao');
-            if (sessao && new Date().getTime() < parseInt(sessao)) permitirAcesso();
+            const nivelSessao = localStorage.getItem('point_nivel');
+            if (sessao && new Date().getTime() < parseInt(sessao)) {
+                NIVEL_ATUAL = nivelSessao;
+                permitirAcesso();
+            }
         }
 
         async function fazerLogin() {
             const u = document.getElementById('user-login').value;
             const p = document.getElementById('pass-login').value;
-            let logado = (u === "admin" && p === "Root@8505");
-            if(!logado) {
-                const res = await fetch(USER_URL);
-                const users = await res.json();
-                for(let id in users) { if(users[id].user === u && users[id].pass === p) logado = true; }
+            
+            if(u === "admin" && p === "Root@8505") {
+                executarLogin("admin");
+                return;
             }
-            if(logado) {
-                localStorage.setItem('point_sessao', new Date().getTime() + (30 * 60 * 1000));
-                permitirAcesso();
-            } else alert("Dados incorretos!");
+
+            const res = await fetch(USER_URL);
+            const users = await res.json();
+            for(let id in users) { 
+                if(users[id].user === u && users[id].pass === p) {
+                    executarLogin("operador");
+                    return;
+                } 
+            }
+            alert("Acesso Negado para Point do Café!");
+        }
+
+        function executarLogin(nivel) {
+            NIVEL_ATUAL = nivel;
+            localStorage.setItem('point_nivel', nivel);
+            localStorage.setItem('point_sessao', new Date().getTime() + (30 * 60 * 1000));
+            permitirAcesso();
         }
 
         function permitirAcesso() {
             document.getElementById('login').classList.add('hidden');
             document.getElementById('painel').classList.remove('hidden');
+            document.getElementById('label-nivel').innerText = NIVEL_ATUAL === "admin" ? "Admin Master" : "Operador";
+
+            if(NIVEL_ATUAL === "admin") {
+                document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+            }
+
             carregarLogo(); carregarCategorias(); listarProdutos(); listarUsuarios(); listarRelatorios();
         }
 
-        function logout() { localStorage.removeItem('point_sessao'); location.reload(); }
+        function logout() { localStorage.clear(); location.reload(); }
 
         function changeTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
@@ -182,19 +208,34 @@
             document.getElementById('btn-' + tabId.split('-')[1]).classList.add('active');
         }
 
-        // LOGO
+        async function removerCategoria(n) { 
+            if(NIVEL_ATUAL !== "admin") return alert("Apenas Admin Point do Café pode excluir!");
+            if(!confirm("Excluir?")) return;
+            const res = await fetch(CAT_URL); let data = await res.json(); data = data.filter(c => c !== n);
+            await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(data) }); carregarCategorias();
+        }
+
+        async function removerProduto(id) { 
+            if(NIVEL_ATUAL !== "admin") return alert("Apenas Admin Point do Café pode excluir!");
+            if(!confirm("Excluir?")) return;
+            await fetch(DB_BASE + "produtos/" + id + ".json", { method: 'DELETE' }); listarProdutos();
+        }
+
+        async function removerVenda(id) {
+            if(NIVEL_ATUAL !== "admin") return alert("Apenas Admin Point do Café pode excluir!");
+            if(!confirm("Excluir?")) return;
+            await fetch(DB_BASE + "vendas/" + id + ".json", { method: 'DELETE' }); listarRelatorios();
+        }
+
+        // --- RESTANTE DAS FUNÇÕES IGUAIS ---
         async function carregarLogo() {
-            const res = await fetch(LOGO_URL);
-            const data = await res.json();
+            const res = await fetch(LOGO_URL); const data = await res.json();
             if(data) { document.getElementById('logo-img-view').src = data; document.getElementById('logo-img-view').classList.remove('hidden'); document.getElementById('logo-placeholder').classList.add('hidden'); }
         }
-
         async function salvarLogo() {
-            if(!logoBase64) return alert("Selecione uma imagem!");
-            await fetch(LOGO_URL, { method: 'PUT', body: JSON.stringify(logoBase64) });
-            alert("Logo salva!");
+            if(!logoBase64) return alert("Selecione imagem!");
+            await fetch(LOGO_URL, { method: 'PUT', body: JSON.stringify(logoBase64) }); alert("Logo Point do Café Atualizada!");
         }
-
         document.getElementById('logoInput').addEventListener('change', (e) => {
             const reader = new FileReader();
             reader.onload = (ev) => {
@@ -211,75 +252,57 @@
             };
             reader.readAsDataURL(e.target.files[0]);
         });
-
-        // CATEGORIAS
         async function carregarCategorias() {
-            const res = await fetch(CAT_URL);
-            const data = await res.json() || ["Geral"];
+            const res = await fetch(CAT_URL); const data = await res.json() || ["Geral"];
             const list = document.getElementById('sortable-list');
-            list.innerHTML = data.map(c => `<div class="bg-zinc-700 p-4 rounded-xl flex justify-between items-center handle" data-id="${c}"><span>☰ ${c}</span><button onclick="removerCategoria('${c}')" class="text-red-500 font-bold">X</button></div>`).join('');
+            list.innerHTML = data.map(c => `<div class="bg-zinc-700 p-4 rounded-xl flex justify-between items-center handle" data-id="${c}"><span>☰ ${c}</span>${NIVEL_ATUAL === 'admin' ? `<button onclick="removerCategoria('${c}')" class="text-red-500 font-bold">X</button>` : ''}</div>`).join('');
             document.getElementById('c').innerHTML = data.map(c => `<option value="${c}">${c}</option>`).join('');
             new Sortable(list, { animation: 150, handle: '.handle' });
         }
-
         async function adicionarCategoria() {
-            const nInput = document.getElementById('nova-cat');
-            const n = nInput.value.trim(); if(!n) return;
+            const nInput = document.getElementById('nova-cat'); const n = nInput.value.trim(); if(!n) return;
             const res = await fetch(CAT_URL); let data = await res.json() || [];
             if(!data.includes(n)) { data.push(n); await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(data) }); nInput.value = ""; carregarCategorias(); }
         }
-
         async function salvarOrdemCategorias() {
             const ordem = Array.from(document.querySelectorAll('#sortable-list > div')).map(i => i.dataset.id);
-            await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(ordem) });
-            alert("Ordem salva!");
+            await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(ordem) }); alert("Ordem Salva!");
         }
-
-        async function removerCategoria(n) { if(confirm("Excluir?")) { const res = await fetch(CAT_URL); let data = await res.json(); data = data.filter(c => c !== n); await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(data) }); carregarCategorias(); } }
-
-        // PRODUTOS
         document.querySelectorAll('.day-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const d = btn.dataset.day;
                 if(diasSelecionados.includes(d)) diasSelecionados = diasSelecionados.filter(x => x !== d);
-                else diasSelecionados.push(d);
-                btn.classList.toggle('active');
+                else diasSelecionados.push(d); btn.classList.toggle('active');
             });
         });
-
         document.getElementById('fileInput').addEventListener('change', (e) => {
             const reader = new FileReader();
             reader.onload = (ev) => {
                 const img = new Image();
                 img.onload = () => {
                     const cv = document.getElementById('canvas'); cv.width = 400; cv.height = 400;
-                    cv.getContext('2d').drawImage(img, 0, 0, 400, 400);
-                    imagemBase64 = cv.toDataURL('image/jpeg', 0.8);
+                    cv.getContext('2d').drawImage(img, 0, 0, 400, 400); imagemBase64 = cv.toDataURL('image/jpeg', 0.8);
                 };
                 img.src = ev.target.result;
             };
             reader.readAsDataURL(e.target.files[0]);
         });
-
         async function salvar() {
             const id = document.getElementById('edit-id').value;
             const item = { nome: document.getElementById('n').value, categoria: document.getElementById('c').value, preco: parseFloat(document.getElementById('p').value), precoPromo: parseFloat(document.getElementById('p-promo').value) || null, dias: diasSelecionados };
-            if(!item.nome || !item.preco) return alert("Preencha Nome e Preço!");
+            if(!item.nome || !item.preco) return alert("Erro no Point do Café!");
             const url = id ? DB_BASE + "produtos/" + id + ".json" : DB_BASE + "produtos/" + Date.now() + ".json";
             if(imagemBase64) item.img = imagemBase64;
             else if(id) { const r = await fetch(url); const d = await r.json(); item.img = d.img; }
             else return alert("Foto obrigatória!");
-            await fetch(url, { method: 'PUT', body: JSON.stringify(item) });
-            alert("Produto Salvo!"); location.reload();
+            await fetch(url, { method: 'PUT', body: JSON.stringify(item) }); alert("Produto Salvo!"); location.reload();
         }
-
         async function listarProdutos() {
             const res = await fetch(DB_URL); const data = await res.json();
             const list = document.getElementById('lista-produtos'); list.innerHTML = "";
             if(!data) return;
-            for(let id in data) list.innerHTML += `<div class="bg-zinc-800 p-4 rounded-2xl flex justify-between items-center border border-zinc-700 mb-2"><div class="flex items-center gap-3"><img src="${data[id].img}" class="w-10 h-10 object-cover rounded-xl"><div><p class="font-bold text-xs">${data[id].nome}</p></div></div><div class="flex gap-2"><button onclick="prepararEdicao('${id}')" class="bg-zinc-700 px-3 py-1 rounded-lg text-[9px]">Editar</button><button onclick="removerProduto('${id}')" class="text-red-500 font-bold text-xs px-2">X</button></div></div>`;
+            for(let id in data) list.innerHTML += `<div class="bg-zinc-800 p-4 rounded-2xl flex justify-between items-center border border-zinc-700 mb-2"><div class="flex items-center gap-3"><img src="${data[id].img}" class="w-10 h-10 object-cover rounded-xl"><div><p class="font-bold text-xs">${data[id].nome}</p></div></div><div class="flex gap-2"><button onclick="prepararEdicao('${id}')" class="bg-zinc-700 px-3 py-1 rounded-lg text-[9px]">Editar</button>${NIVEL_ATUAL === 'admin' ? `<button onclick="removerProduto('${id}')" class="text-red-500 font-bold px-2">X</button>` : ''}</div></div>`;
         }
-
         async function prepararEdicao(id) {
             const res = await fetch(DB_BASE + "produtos/" + id + ".json"); const p = await res.json();
             document.getElementById('edit-id').value = id; document.getElementById('n').value = p.nome; document.getElementById('p').value = p.preco; document.getElementById('p-promo').value = p.precoPromo || ""; document.getElementById('c').value = p.categoria;
@@ -287,65 +310,53 @@
             document.querySelectorAll('.day-btn').forEach(b => b.classList.toggle('active', diasSelecionados.includes(b.dataset.day)));
             window.scrollTo(0,0);
         }
-
-        async function removerProduto(id) { if(confirm("Excluir?")) { await fetch(DB_BASE + "produtos/" + id + ".json", { method: 'DELETE' }); listarProdutos(); } }
-
-        // RELATÓRIOS
         async function listarRelatorios() {
             const res = await fetch(VENDAS_URL); const vendas = await res.json();
-            const container = document.getElementById('lista-vendas-historico');
-            const hoje = new Date().toLocaleDateString('pt-BR');
+            const container = document.getElementById('lista-vendas-historico'); const hoje = new Date().toLocaleDateString('pt-BR');
             let qtdHoje = 0, valorHoje = 0, html = "";
-            if (!vendas) { container.innerHTML = "<p class='text-center text-zinc-500 text-xs py-10'>Sem vendas.</p>"; return; }
+            if (!vendas) { container.innerHTML = "<p class='text-center py-10'>Sem vendas no Point do Café.</p>"; return; }
             Object.keys(vendas).reverse().forEach(id => {
                 const v = vendas[id]; if (v.dataLocal === hoje) { qtdHoje++; valorHoje += v.total; }
-                html += `<div class="bg-zinc-900 p-4 rounded-2xl border-l-4 ${v.dataLocal === hoje ? 'border-green-500' : 'border-zinc-700'} mb-2"><div class="flex justify-between items-start"><div><p class="text-white font-black text-xs uppercase">${v.cliente}</p><p class="text-[9px] text-zinc-500">${v.dataLocal} às ${new Date(v.data).toLocaleTimeString('pt-BR')}</p></div><div class="text-right"><p class="text-green-500 font-black text-sm">R$ ${v.total.toFixed(2)}</p><button onclick="removerVenda('${id}')" class="text-zinc-600 text-[10px] font-bold uppercase hover:text-red-500">Excluir</button></div></div></div>`;
+                html += `<div class="bg-zinc-900 p-4 rounded-2xl border-l-4 ${v.dataLocal === hoje ? 'border-green-500' : 'border-zinc-700'} mb-2"><div class="flex justify-between items-start"><div><p class="text-white font-black text-xs uppercase">${v.cliente}</p><p class="text-[9px] text-zinc-500">${v.dataLocal}</p></div><div class="text-right"><p class="text-green-500 font-black text-sm">R$ ${v.total.toFixed(2)}</p>${NIVEL_ATUAL === 'admin' ? `<button onclick="removerVenda('${id}')" class="text-zinc-600 text-[10px] uppercase hover:text-red-500">Excluir</button>` : ''}</div></div></div>`;
             });
             document.getElementById('resumo-qtd-hoje').innerText = qtdHoje; document.getElementById('resumo-valor-hoje').innerText = `R$ ${valorHoje.toFixed(2)}`;
             container.innerHTML = html;
         }
-
-        async function removerVenda(id) { if(confirm("Excluir pedido?")) { await fetch(DB_BASE + "vendas/" + id + ".json", { method: 'DELETE' }); listarRelatorios(); } }
-
-        // EXPORTAÇÃO
         async function exportarExcel() {
-            const res = await fetch(VENDAS_URL); const vendas = await res.json();
-            if (!vendas) return alert("Sem dados.");
-            const dados = Object.keys(vendas).map(id => ({ "Data": vendas[id].dataLocal, "Cliente": vendas[id].cliente, "Total": vendas[id].total.toFixed(2), "Pagamento": vendas[id].pagamento, "Itens": vendas[id].itens.map(i => `${i.qty}x ${i.nome}`).join(', ') }));
+            const res = await fetch(VENDAS_URL); const v = await res.json();
+            const dados = Object.keys(v).map(id => ({ "Data": v[id].dataLocal, "Cliente": v[id].cliente, "Total": v[id].total.toFixed(2) }));
             const ws = XLSX.utils.json_to_sheet(dados); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Vendas");
-            XLSX.writeFile(wb, `Vendas_DPTech.xlsx`);
+            XLSX.writeFile(wb, "Vendas_PointDoCafe.xlsx");
         }
-
         function exportarPDF() {
-            const printContents = document.getElementById('lista-vendas-historico').innerHTML;
-            const jan = window.open('', '', 'width=800,height=600');
-            jan.document.write(`<html><head><title>PDF</title><style>body{font-family:sans-serif;padding:20px} .pedido-card{border-bottom:1px solid #eee;padding:10px} button{display:none !important}</style></head><body><h1 style="text-align:center;color:#d97706">Relatório de Vendas Point do Café</h1><hr>${printContents}</body></html>`);
-            jan.document.close(); jan.print(); jan.close();
+            const c = document.getElementById('lista-vendas-historico').innerHTML;
+            const j = window.open('', '', 'width=800,height=600');
+            j.document.write(`<html><head><style>body{font-family:sans-serif;padding:20px} .pedido-card{border-bottom:1px solid #eee;padding:10px} button{display:none !important}</style></head><body><h1>Relatório Point do Café</h1><hr>${c}</body></html>`);
+            j.document.close(); j.print(); j.close();
         }
-
-        // EQUIPE
         async function cadastrarUsuario() {
+            if(NIVEL_ATUAL !== "admin") return;
             const u = document.getElementById('new-user').value, p = document.getElementById('new-pass').value, id = document.getElementById('edit-user-id').value;
-            if(!u || !p) return alert("Preencha tudo!");
+            if(!u || !p) return alert("Preencha!");
             const url = id ? USER_URL.replace('.json', `/${id}.json`) : USER_URL.replace('.json', `/${Date.now()}.json`);
             await fetch(url, { method: 'PUT', body: JSON.stringify({user:u, pass:p}) });
             document.getElementById('new-user').value = ""; document.getElementById('new-pass').value = ""; document.getElementById('edit-user-id').value = "";
             listarUsuarios();
         }
-
         async function listarUsuarios() {
             const res = await fetch(USER_URL); const data = await res.json();
             const list = document.getElementById('lista-usuarios'); list.innerHTML = "";
             if(!data) return;
             for(let id in data) list.innerHTML += `<div class="bg-zinc-700 p-4 rounded-xl flex justify-between items-center text-[10px] mb-2 font-bold"><span>👤 ${data[id].user}</span><div class="flex gap-3"><button onclick="prepararEdicaoUsuario('${id}')" class="text-amber-500 uppercase">Editar</button><button onclick="removerUsuario('${id}')" class="text-red-400 uppercase">X</button></div></div>`;
         }
-
         async function prepararEdicaoUsuario(id) {
             const res = await fetch(USER_URL.replace('.json', `/${id}.json`)); const u = await res.json();
             document.getElementById('edit-user-id').value = id; document.getElementById('new-user').value = u.user; document.getElementById('new-pass').value = u.pass;
         }
-
-        async function removerUsuario(id) { if(confirm("Remover?")) { await fetch(USER_URL.replace('.json', `/${id}.json`), { method: 'DELETE' }); listarUsuarios(); } }
+        async function removerUsuario(id) { 
+            if(NIVEL_ATUAL !== "admin") return;
+            if(confirm("Remover?")) { await fetch(USER_URL.replace('.json', `/${id}.json`), { method: 'DELETE' }); listarUsuarios(); }
+        }
 
         verificarSessao();
     </script>
