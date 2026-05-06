@@ -49,17 +49,17 @@
             <p class="text-[10px] text-zinc-400 font-bold uppercase leading-relaxed mb-8">Fila de produção, estoque e impressora.</p>
             
             <div class="flex flex-col gap-3 w-full">
-                <a href="atendimento2.html?print=true" class="bg-green-600 text-white text-[10px] font-black py-4 rounded-2xl uppercase hover:bg-green-700 transition-all shadow-md">
+                <a href="atendimento2.html?print=true" target="_blank" class="bg-green-600 text-white text-[10px] font-black py-4 rounded-2xl uppercase hover:bg-green-700 transition-all shadow-md text-center">
                     💻 Terminal Caixa (Com Impressão)
                 </a>
-                <a href="atendimento2.html" class="bg-zinc-100 text-zinc-500 text-[10px] font-black py-4 rounded-2xl uppercase hover:bg-zinc-200 transition-all">
+                <a href="atendimento2.html" target="_blank" class="bg-zinc-100 text-zinc-500 text-[10px] font-black py-4 rounded-2xl uppercase hover:bg-zinc-200 transition-all text-center">
                     📱 Visão Cozinha (Apenas Tela)
                 </a>
             </div>
         </div>
 
         <!-- Módulo 3: Administração Master (admin.html) -->
-        <a href="admin.html" class="card-central bg-white p-10 rounded-[3rem] shadow-xl border-b-8 border-[#d97706] flex flex-col items-center text-center">
+        <a href="admin.html" target="_blank" class="card-central bg-white p-10 rounded-[3rem] shadow-xl border-b-8 border-[#d97706] flex flex-col items-center text-center">
             <div class="w-20 h-20 bg-amber-50 rounded-3xl flex items-center justify-center text-4xl mb-6 shadow-inner">🔐</div>
             <h2 class="font-black uppercase text-zinc-800 text-lg mb-3">Painel Admin</h2>
             <p class="text-[10px] text-zinc-400 font-bold uppercase leading-relaxed">Controle financeiro, produtos e equipe.</p>
@@ -73,7 +73,7 @@
     </footer>
 
     <script>
-        // Sincroniza a logo com o que foi definido no Admin
+        // Sincroniza a logo com o Firebase
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
         
         async function carregarLogo() {
@@ -87,7 +87,7 @@
                     document.getElementById('placeholder-logo').classList.add('hidden');
                 }
             } catch(e) {
-                console.log("Logo ainda não cadastrada.");
+                console.log("Logo ainda não cadastrada no sistema.");
             }
         }
         
