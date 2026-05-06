@@ -7,10 +7,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @media print {
-            body * { display: none !important; }
-            #secao-impressao, #secao-impressao * { display: block !important; }
-            #secao-impressao { width: 100%; font-family: 'Courier New', monospace; font-size: 14px; }
-        }
+    #secao-impressao { 
+        width: 72mm; /* Largura ideal para bobinas de 80mm */
+        font-family: 'Courier New', monospace; 
+        font-size: 12pt; 
+        line-height: 1.2;
+    }
+}
     </style>
 </head>
 <body class="bg-zinc-100 p-4 font-sans">
