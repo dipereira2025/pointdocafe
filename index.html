@@ -22,23 +22,25 @@
     </main>
 
     <!-- Botão Flutuante -->
-    <div id="cart-float" class="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-xs px-4 hidden">
-        <button onclick="abrirCheckout()" class="w-full bg-green-600 text-white py-4 rounded-full shadow-2xl font-bold flex justify-between px-8 border-4 border-white items-center hover:scale-105 transition-transform">
+    <div id="cart-float" class="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-xs px-4">
+        <button onclick="abrirCheckout()" class="w-full bg-green-600 text-white py-4 rounded-full shadow-2xl font-bold flex justify-center gap-2 border-4 border-white items-center hover:scale-105 transition-transform">
             <span>🛒 Finalizar Pedido</span>
-            <span id="cart-count" class="bg-white text-green-700 px-2 py-1 rounded-full text-xs font-black">0</span>
         </button>
     </div>
 
     <!-- Modal de Checkout -->
     <div id="modal-checkout" class="fixed inset-0 bg-black/70 hidden z-50 p-4 flex items-center justify-center text-left">
         <div class="bg-white w-full max-w-md rounded-3xl p-6 overflow-y-auto max-h-[95vh] shadow-2xl">
-            <h2 class="text-2xl font-black mb-4 text-amber-900 border-b pb-2 text-center">Resumo do Pedido</h2>
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 class="text-2xl font-black text-amber-900">Resumo</h2>
+                <button onclick="limparCarrinho()" class="text-xs font-bold text-red-500 bg-red-50 px-3 py-1 rounded-full hover:bg-red-500 hover:text-white transition-colors">🗑️ Limpar Carrinho</button>
+            </div>
             
-            <div id="resumo-itens" class="mb-6 space-y-2 max-h-40 overflow-y-auto bg-gray-50 p-3 rounded-xl border border-dashed border-gray-300">
+            <div id="resumo-itens" class="mb-6 space-y-2 max-h-40 overflow-y-auto bg-gray-50 p-3 rounded-xl border border-dashed border-gray-300 text-sm">
                 <!-- Preenchido via JS -->
             </div>
 
-            <div class="space-y-4 text-left">
+            <div class="space-y-4">
                 <div>
                     <label class="block text-xs font-black text-gray-500 uppercase">Seu Nome *</label>
                     <input type="text" id="cli-nome" class="w-full p-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 border-none">
@@ -48,13 +50,13 @@
                     <input type="text" id="cli-end" class="w-full p-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 border-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-black text-gray-500 uppercase">Ponto de Referência (Opcional)</label>
-                    <input type="text" id="cli-ref" placeholder="Perto de onde?" class="w-full p-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 border-none">
+                    <label class="block text-xs font-black text-gray-500 uppercase">Ponto de Referência</label>
+                    <input type="text" id="cli-ref" class="w-full p-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 border-none">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-black text-gray-500 uppercase">Pagamento</label>
-                        <select id="cli-pgto" class="w-full p-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 border-none">
+                        <select id="cli-pgto" class="w-full p-3 bg-gray-100 rounded-xl border-none">
                             <option value="Pix">Pix</option>
                             <option value="Dinheiro">Dinheiro</option>
                             <option value="Débito">Débito</option>
@@ -63,7 +65,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-black text-gray-500 uppercase">Observações</label>
-                        <input type="text" id="cli-obs" placeholder="Ex: Sem gelo" class="w-full p-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 border-none">
+                        <input type="text" id="cli-obs" placeholder="Ex: Sem gelo" class="w-full p-3 bg-gray-100 rounded-xl border-none">
                     </div>
                 </div>
 
@@ -73,9 +75,9 @@
                         <span id="checkout-total">R$ 0,00</span>
                     </div>
                     <button onclick="enviarPedidoFinal()" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-green-700 transition-all uppercase">
-                        ✅ Confirmar no WhatsApp
+                        ✅ Enviar no WhatsApp
                     </button>
-                    <button onclick="fecharCheckout()" class="w-full text-gray-400 font-bold py-2 mt-2 text-sm">Voltar</button>
+                    <button onclick="fecharCheckout()" class="w-full text-gray-400 font-bold py-2 mt-2 text-sm text-center">Voltar</button>
                 </div>
             </div>
         </div>
@@ -84,31 +86,35 @@
     <script>
         const DB_URL = "https://pointdocafe-default-rtdb.firebaseio.com/produtos.json";
         const WHATSAPP = "5561999521964";
-        let carrinho = [];
         const diaHoje = new Date().getDay().toString();
+        let produtosLocal = [];
 
         async function loadMenu() {
             try {
                 const response = await fetch(DB_URL);
                 const data = await response.json();
                 const container = document.getElementById('categorias-container');
-                if (!data) { container.innerHTML = "O cardápio está vazio."; return; }
+                if (!data) { container.innerHTML = "Cardápio vazio."; return; }
 
-                const produtos = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-                const pratosDoDia = produtos.filter(p => p.dias && p.dias.includes(diaHoje));
-                const outrosProdutos = produtos.filter(p => !p.dias || !p.dias.includes(diaHoje));
-
-                let html = "";
-                if (pratosDoDia.length > 0) html += renderSection("⭐ Sugestão de Hoje", pratosDoDia);
-                
-                const categorias = ["Combos do dia", "Bebidas", "Salgados", "Bombonieries", "Comum"];
-                categorias.forEach(cat => {
-                    const itensNaCat = outrosProdutos.filter(p => p.categoria === cat);
-                    if (itensNaCat.length > 0) html += renderSection(cat, itensNaCat);
-                });
-
-                container.innerHTML = html;
+                produtosLocal = Object.keys(data).map(key => ({ id: key, ...data[key], qty: 0 }));
+                renderizarInterface();
             } catch (e) { container.innerHTML = "Erro de conexão."; }
+        }
+
+        function renderizarInterface() {
+            const container = document.getElementById('categorias-container');
+            const pratosDoDia = produtosLocal.filter(p => p.dias && p.dias.includes(diaHoje));
+            const outrosProdutos = produtosLocal.filter(p => !p.dias || !p.dias.includes(diaHoje));
+
+            let html = "";
+            if (pratosDoDia.length > 0) html += renderSection("⭐ Sugestão de Hoje", pratosDoDia);
+            
+            const categorias = ["Combos do dia", "Bebidas", "Salgados", "Bombonieries", "Comum"];
+            categorias.forEach(cat => {
+                const itensNaCat = outrosProdutos.filter(p => p.categoria === cat);
+                if (itensNaCat.length > 0) html += renderSection(cat, itensNaCat);
+            });
+            container.innerHTML = html;
         }
 
         function renderSection(titulo, itens) {
@@ -118,68 +124,66 @@
                     <div class="space-y-4">
                         ${itens.map(p => `
                             <div class="bg-white p-3 rounded-2xl shadow-sm flex items-center gap-4 border border-amber-100">
-                                <img src="${p.img}" class="w-20 h-20 object-cover rounded-xl bg-amber-50">
+                                <img src="${p.img}" class="w-20 h-20 object-cover rounded-xl bg-amber-50 shadow-inner">
                                 <div class="flex-1">
                                     <h3 class="font-bold text-amber-900 text-sm leading-tight">${p.nome}</h3>
                                     <p class="text-green-700 font-black mt-1">R$ ${p.preco.toFixed(2)}</p>
-                                    
-                                    <!-- Controle de Quantidade -->
-                                    <div class="flex items-center gap-2 mt-2">
-                                        <button onclick="changeQty('${p.id}', -1)" class="w-6 h-6 bg-gray-200 rounded-full font-bold text-xs">-</button>
-                                        <span id="qty-${p.id}" class="text-xs font-bold">1</span>
-                                        <button onclick="changeQty('${p.id}', 1)" class="w-6 h-6 bg-gray-200 rounded-full font-bold text-xs">+</button>
-                                    </div>
                                 </div>
-                                <button onclick="addToCart('${p.id}', '${p.nome}', ${p.preco})" class="bg-amber-100 text-amber-900 px-3 py-2 rounded-xl font-black text-xs uppercase hover:bg-amber-600 hover:text-white transition-all">Add</button>
+                                <div class="flex items-center gap-3 bg-gray-100 p-2 rounded-xl">
+                                    <button onclick="updateQty('${p.id}', -1)" class="w-8 h-8 bg-white shadow-sm rounded-lg font-bold text-amber-900">-</button>
+                                    <span id="qty-${p.id}" class="text-sm font-black w-4 text-center">${p.qty}</span>
+                                    <button onclick="updateQty('${p.id}', 1)" class="w-8 h-8 bg-white shadow-sm rounded-lg font-bold text-amber-900">+</button>
+                                </div>
                             </div>
                         `).join('')}
                     </div>
                 </section>`;
         }
 
-        function changeQty(id, delta) {
-            const el = document.getElementById(`qty-${id}`);
-            let current = parseInt(el.innerText);
-            current = Math.max(1, current + delta);
-            el.innerText = current;
+        function updateQty(id, delta) {
+            const produto = produtosLocal.find(p => p.id === id);
+            if (produto) {
+                produto.qty = Math.max(0, produto.qty + delta);
+                document.getElementById(`qty-${id}`).innerText = produto.qty;
+            }
         }
 
-        function addToCart(id, nome, preco) {
-            const qty = parseInt(document.getElementById(`qty-${id}`).innerText);
-            carrinho.push({ nome, preco, qty });
-            
-            // Resetar visor de quantidade após adicionar
-            document.getElementById(`qty-${id}`).innerText = "1";
-            
-            atualizarBotaoFlutuante();
-        }
-
-        function atualizarBotaoFlutuante() {
-            document.getElementById('cart-float').classList.remove('hidden');
-            const totalItens = carrinho.reduce((sum, item) => sum + item.qty, 0);
-            document.getElementById('cart-count').innerText = totalItens;
+        function limparCarrinho() {
+            if (confirm("Deseja remover todos os itens selecionados?")) {
+                produtosLocal.forEach(p => {
+                    p.qty = 0;
+                    const el = document.getElementById(`qty-${p.id}`);
+                    if (el) el.innerText = "0";
+                });
+                fecharCheckout();
+                alert("Carrinho limpo!");
+            }
         }
 
         function abrirCheckout() {
+            const itensSelecionados = produtosLocal.filter(p => p.qty > 0);
+            if (itensSelecionados.length === 0) return alert("Escolha pelo menos um item!");
+
             const modal = document.getElementById('modal-checkout');
             const resumoContainer = document.getElementById('resumo-itens');
             modal.classList.remove('hidden');
             document.body.classList.add('modal-open');
 
             let resumoHtml = "";
-            let total = 0;
-            carrinho.forEach((item, index) => {
+            let totalGeral = 0;
+
+            itensSelecionados.forEach(item => {
                 const subtotal = item.preco * item.qty;
                 resumoHtml += `
-                    <div class="flex justify-between text-xs mb-1">
-                        <span class="text-gray-600">${item.qty}x ${item.nome}</span>
-                        <span class="font-bold text-amber-900">R$ ${subtotal.toFixed(2)}</span>
+                    <div class="flex justify-between mb-1">
+                        <span>${item.qty}x ${item.nome}</span>
+                        <span class="font-bold">R$ ${subtotal.toFixed(2)}</span>
                     </div>`;
-                total += subtotal;
+                totalGeral += subtotal;
             });
 
             resumoContainer.innerHTML = resumoHtml;
-            document.getElementById('checkout-total').innerText = `R$ ${total.toFixed(2)}`;
+            document.getElementById('checkout-total').innerText = `R$ ${totalGeral.toFixed(2)}`;
         }
 
         function fecharCheckout() {
@@ -196,24 +200,22 @@
 
             if(!nome || !end) return alert("Preencha Nome e Endereço!");
 
+            const itensSelecionados = produtosLocal.filter(p => p.qty > 0);
             let msg = `*☕ POINT DO CAFÉ - NOVO PEDIDO*\n`;
             msg += `------------------------------\n`;
-            msg += `*Cliente:* ${nome}\n`;
-            msg += `*Endereço:* ${end}\n`;
-            if(ref) msg += `*Referência:* ${ref}\n`;
+            msg += `*Cliente:* ${nome}\n*Endereço:* ${end}\n`;
+            if(ref) msg += `*Ref:* ${ref}\n`;
             msg += `*Pagamento:* ${pgto}\n`;
             if(obs) msg += `*Obs:* ${obs}\n`;
             msg += `------------------------------\n`;
             
             let total = 0;
-            carrinho.forEach((item) => {
+            itensSelecionados.forEach(item => {
                 const sub = item.preco * item.qty;
                 msg += `• ${item.qty}x ${item.nome} - R$ ${sub.toFixed(2)}\n`;
                 total += sub;
             });
-            
-            msg += `------------------------------\n`;
-            msg += `*TOTAL: R$ ${total.toFixed(2)}*`;
+            msg += `------------------------------\n*TOTAL: R$ ${total.toFixed(2)}*`;
 
             window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`);
         }
