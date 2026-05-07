@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Master - DPTech Solutions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        .day-btn.active { background-color: #d97706; color: white; border-color: #d97706; }
+        .tab-btn.active { border-bottom: 4px solid #d97706; color: #d97706; }
+        .tab-content.hidden { display: none; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-zinc-900 text-zinc-100 p-4 font-sans text-left">
+
+    <!-- LOGIN -->
+    <div id="login" class="max-w-sm mx-auto mt-20 bg-white p-8 rounded-3xl text-zinc-900 shadow-2xl">
+        <h2 class="text-2xl font-black mb-6 text-center text-amber-900 uppercase tracking-tighter">DPTech Admin</h2>
+        <input type="text" id="user-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-4 outline-none" placeholder="Usuário">
+        <input type="password" id="pass-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-6 outline-none" placeholder="Senha">
+        <button onclick="fazerLogin()" class="w-full bg-amber-900 text-white py-4 rounded-xl font-bold uppercase">Entrar</button>
+    </div>
+
+    <!-- PAINEL -->
+    <div id="painel" class="hidden max-w-2xl mx-auto py-4">
+        <div class="flex justify-between items-center mb-6 px-2">
+            <span class="text-[10px] text-amber-500 font-black uppercase tracking-widest">Painel Administrativo</span>
+            <button onclick="logout()" class="text-red-500 text-[10px] font-black uppercase underline">Sair</button>
+        </div>
+        
+        <div class="flex justify-around mb-8 border-b border-zinc-800 font-bold uppercase text-[9px] tracking-widest overflow-x-auto">
+            <button onclick="changeTab('tab-loja')" class="tab-btn pb-2 px-2 active" id="btn-loja">Loja</button>
+            <button onclick="changeTab('tab-categorias')" class="tab-btn pb-2 px-2" id="btn-categorias">Categorias</button>
+            <button onclick="changeTab('tab-produtos')" class="tab-btn pb-2 px-2" id="btn-produtos">Produtos</button>
+            <button onclick="changeTab('tab-relatorios')" class="tab-btn pb-2 px-2" id="btn-relatorios">Relatórios</button>
+            <button onclick="changeTab('tab-usuarios')" class="tab-btn pb-2 px-2" id="btn-usuarios">Equipe</button>
+        </div>
+
+        <!-- ABA LOJA (Logo) -->
+        <div id="tab-loja" class="tab-content text-center space-y-6">
+            <div class="bg-zinc-800 p-8 rounded-3xl border border-zinc-700">
+                <div class="w-32 h-32 bg-zinc-900 mx-auto rounded-full border-2 border-amber-600 overflow-hidden flex items-center justify-center mb-6">
+                    <img id="logo-img-view" class="hidden w-full h-full object-cover">
+                    <span id="logo-placeholder" class="text-xs text-zinc-600 font-bold uppercase">Sem Logo</span>
+                </div>
+                <input type="file" id="logoInput" accept="image/*" class="text-xs mb-6 block w-full text-zinc-400">
+                <button onclick="salvarLogo()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase text-xs">Salvar Logotipo</button>
+            </div>
+        </div>
+
+        <!-- ABA CATEGORIAS -->
+        <div id="tab-categorias" class="tab-content hidden">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+                <div class="flex gap-2 mb-6">
+                    <input type="text" id="nova-cat" placeholder="Nova Categoria" class="flex-1 p-4 rounded-xl bg-zinc-700 outline-none text-sm border-none">
+                    <button onclick="adicionarCategoria()" class="bg-green-600 px-6 rounded-xl font-black text-xl">+</button>
+                </div>
+                <div id="sortable-list" class="space-y-2 mb-6"></div>
+                <button onclick="salvarOrdemCategorias()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase text-xs">Salvar Ordem</button>
+            </div>
+        </div>
+
+        <!-- ABA PRODUTOS -->
+        <div id="tab-produtos" class="tab-content hidden space-y-4">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700 space-y-4 shadow-xl">
+                <input type="hidden" id="edit-id">
+                <input type="text" id="n" placeholder="Nome do Produto" class="w-full p-4 rounded-xl bg-zinc-700 outline-none border-none">
+                <select id="c" class="w-full p-4 rounded-xl bg-zinc-700 outline-none text-sm border-none"></select>
+                
+                <div class="p-4 bg-zinc-900 rounded-2xl space-y-2">
+                    <label class="text-[9px] font-black text-amber-500 uppercase">Disponível em:</label>
+                    <div class="flex flex-wrap gap-2" id="dias-semana">
+                        <button type="button" data-day="0" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Dom</button>
+                        <button type="button" data-day="1" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Seg</button>
+                        <button type="button" data-day="2" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Ter</button>
+                        <button type="button" data-day="3" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Qua</button>
+                        <button type="button" data-day="4" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Qui</button>
+                        <button type="button" data-day="5" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Sex</button>
+                        <button type="button" data-day="6" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Sáb</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="number" id="p" placeholder="Preço R$" class="w-full p-4 rounded-xl bg-zinc-700 outline-none">
+                    <input type="number" id="p-promo" placeholder="Promo R$" class="w-full p-4 rounded-xl bg-zinc-700 border-2 border-amber-900 outline-none">
+                </div>
+                <input type="file" id="fileInput" accept="image/*" class="text-xs w-full text-zinc-500">
+                <canvas id="canvas" style="display:none;"></canvas>
+                <button onclick="salvar()" id="btnSalvarProd" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase shadow-lg">Salvar Produto</button>
+            </div>
+            <div id="lista-produtos" class="grid gap-2"></div>
+        </div>
+
+        <!-- ABA RELATÓRIOS (Com Exclusão) -->
+        <div id="tab-relatorios" class="tab-content hidden space-y-6">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+                <div class="grid grid-cols-2 gap-4 mb-6 text-center">
+                    <div class="bg-zinc-900 p-5 rounded-2xl border border-zinc-700">
+                        <p class="text-[9px] text-zinc-500 uppercase font-black">Pedidos Hoje</p>
+                        <p id="resumo-qtd-hoje" class="text-3xl font-black text-white">0</p>
+                    </div>
+                    <div class="bg-zinc-900 p-5 rounded-2xl border border-zinc-700">
+                        <p class="text-[9px] text-zinc-500 uppercase font-black">Faturamento Hoje</p>
+                        <p id="resumo-valor-hoje" class="text-3xl font-black text-green-500">R$ 0,00</p>
+                    </div>
+                </div>
+                <div class="space-y-3 max-h-96 overflow-y-auto pr-2" id="lista-vendas-historico"></div>
+                <button onclick="listarRelatorios()" class="w-full mt-4 bg-zinc-700 py-3 rounded-xl font-black text-[10px] uppercase">🔄 Atualizar Relatório</button>
+            </div>
+        </div>
+
+        <!-- ABA EQUIPE (Com Edição) -->
+        <div id="tab-usuarios" class="tab-content hidden space-y-4">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+                <input type="hidden" id="edit-user-id">
+                <input type="text" id="new-user" placeholder="Nome do Usuário" class="w-full p-4 mb-3 rounded-xl bg-zinc-700 outline-none">
+                <input type="password" id="new-pass" placeholder="Nova Senha" class="w-full p-4 mb-4 rounded-xl bg-zinc-700 outline-none">
+                <button onclick="cadastrarUsuario()" id="btn-save-user" class="w-full bg-green-600 py-4 rounded-xl font-black uppercase text-xs">Criar / Salvar Acesso</button>
+                <div id="lista-usuarios" class="mt-8 space-y-2"></div>
+            </div>
+        </div>
+
+        <!-- ASSINATURA DPTech -->
+        <footer class="mt-12 text-center">
+            <p class="text-[9px] text-zinc-600 font-bold uppercase tracking-[3px]">Powered by <span class="text-amber-600">DPTech Solutions</span></p>
+        </footer>
+    </div>
+
+    <script>
+        const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/"; 
+        const DB_URL = DB_BASE + "produtos.json";
+        const CAT_URL = DB_BASE + "categorias.json";
+        const LOGO_URL = DB_BASE + "configuracao/logo.json";
+        const USER_URL = DB_BASE + "usuarios.json";
+        const VENDAS_URL = DB_BASE + "vendas.json";
+
+        let imagemBase64 = "", logoBase64 = "", diasSelecionados = [];
+
+        // LOGIN E SESSÃO
+        function verificarSessao() {
+            const sessao = localStorage.getItem('point_sessao');
+            if (sessao && new Date().getTime() < parseInt(sessao)) permitirAcesso();
+        }
+
+        async function fazerLogin() {
+            const u = document.getElementById('user-login').value;
+            const p = document.getElementById('pass-login').value;
+            let logado = (u === "admin" && p === "Root@8505");
+            if(!logado) {
+                const res = await fetch(USER_URL);
+                const users = await res.json();
+                for(let id in users) { if(users[id].user === u && users[id].pass === p) logado = true; }
+            }
+            if(logado) {
+                localStorage.setItem('point_sessao', new Date().getTime() + (30 * 60 * 1000));
+                permitirAcesso();
+            } else alert("Dados incorretos!");
+        }
+
+        function permitirAcesso() {
+            document.getElementById('login').classList.add('hidden');
+            document.getElementById('painel').classList.remove('hidden');
+            carregarLogo(); carregarCategorias(); listarProdutos(); listarUsuarios(); listarRelatorios();
+        }
+
+        function logout() { localStorage.removeItem('point_sessao'); location.reload(); }
+
+        function changeTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById('btn-' + tabId.split('-')[1]).classList.add('active');
+        }
+
+        // LOGO
+        async function carregarLogo() {
+            const res = await fetch(LOGO_URL);
+            const data = await res.json();
+            if(data) { document.getElementById('logo-img-view').src = data; document.getElementById('logo-img-view').classList.remove('hidden'); document.getElementById('logo-placeholder').classList.add('hidden'); }
+        }
+
+        async function salvarLogo() {
+            if(!logoBase64) return alert("Selecione uma imagem!");
+            await fetch(LOGO_URL, { method: 'PUT', body: JSON.stringify(logoBase64) });
+            alert("Logo atualizada!");
+        }
+
+        document.getElementById('logoInput').addEventListener('change', (e) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const cv = document.createElement('canvas'); cv.width = 300; cv.height = 300;
+                    cv.getContext('2d').drawImage(img, 0, 0, 300, 300);
+                    logoBase64 = cv.toDataURL('image/png');
+                    document.getElementById('logo-img-view').src = logoBase64;
+                    document.getElementById('logo-img-view').classList.remove('hidden');
+                    document.getElementById('logo-placeholder').classList.add('hidden');
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        });
+
+        // CATEGORIAS
+        async function carregarCategorias() {
+            const res = await fetch(CAT_URL);
+            const data = await res.json() || ["Geral"];
+            const list = document.getElementById('sortable-list');
+            list.innerHTML = data.map(c => `<div class="bg-zinc-700 p-4 rounded-xl flex justify-between items-center handle" data-id="${c}"><span>☰ ${c}</span><button onclick="removerCategoria('${c}')" class="text-red-500 font-bold">X</button></div>`).join('');
+            document.getElementById('c').innerHTML = data.map(c => `<option value="${c}">${c}</option>`).join('');
+            new Sortable(list, { animation: 150, handle: '.handle' });
+        }
+
+        async function adicionarCategoria() {
+            const nInput = document.getElementById('nova-cat');
+            const n = nInput.value.trim(); if(!n) return;
+            const res = await fetch(CAT_URL); let data = await res.json() || [];
+            if(!data.includes(n)) { data.push(n); await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(data) }); nInput.value = ""; carregarCategorias(); }
+        }
+
+        async function salvarOrdemCategorias() {
+            const ordem = Array.from(document.querySelectorAll('#sortable-list > div')).map(i => i.dataset.id);
+            await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(ordem) });
+            alert("Ordem salva!");
+        }
+
+        async function removerCategoria(n) { if(confirm("Excluir?")) { const res = await fetch(CAT_URL); let data = await res.json(); data = data.filter(c => c !== n); await fetch(CAT_URL, { method: 'PUT', body: JSON.stringify(data) }); carregarCategorias(); } }
+
+        // PRODUTOS
+        document.querySelectorAll('.day-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const d = btn.dataset.day;
+                if(diasSelecionados.includes(d)) diasSelecionados = diasSelecionados.filter(x => x !== d);
+                else diasSelecionados.push(d);
+                btn.classList.toggle('active');
+            });
+        });
+
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const cv = document.getElementById('canvas'); cv.width = 400; cv.height = 400;
+                    cv.getContext('2d').drawImage(img, 0, 0, 400, 400);
+                    imagemBase64 = cv.toDataURL('image/jpeg', 0.8);
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        });
+
+        async function salvar() {
+            const id = document.getElementById('edit-id').value;
+            const item = { nome: document.getElementById('n').value, categoria: document.getElementById('c').value, preco: parseFloat(document.getElementById('p').value), precoPromo: parseFloat(document.getElementById('p-promo').value) || null, dias: diasSelecionados };
+            if(!item.nome || !item.preco) return alert("Preencha Nome e Preço!");
+            const url = id ? DB_BASE + "produtos/" + id + ".json" : DB_BASE + "produtos/" + Date.now() + ".json";
+            if(imagemBase64) item.img = imagemBase64;
+            else if(id) { const r = await fetch(url); const d = await r.json(); item.img = d.img; }
+            else return alert("Foto obrigatória!");
+            await fetch(url, { method: 'PUT', body: JSON.stringify(item) });
+            alert("Salvo!"); location.reload();
+        }
+
+        async function listarProdutos() {
+            const res = await fetch(DB_URL); const data = await res.json();
+            const list = document.getElementById('lista-produtos'); list.innerHTML = "";
+            if(!data) return;
+            for(let id in data) list.innerHTML += `<div class="bg-zinc-800 p-4 rounded-2xl flex justify-between items-center border border-zinc-700 mb-2"><div class="flex items-center gap-3"><img src="${data[id].img}" class="w-10 h-10 object-cover rounded-xl"><div><p class="font-bold text-xs">${data[id].nome}</p></div></div><div class="flex gap-2"><button onclick="prepararEdicao('${id}')" class="bg-zinc-700 px-3 py-1 rounded-lg text-[9px]">Editar</button><button onclick="removerProduto('${id}')" class="text-red-500 font-bold text-xs px-2">X</button></div></div>`;
+        }
+
+        async function prepararEdicao(id) {
+            const res = await fetch(DB_BASE + "produtos/" + id + ".json"); const p = await res.json();
+            document.getElementById('edit-id').value = id; document.getElementById('n').value = p.nome; document.getElementById('p').value = p.preco; document.getElementById('p-promo').value = p.precoPromo || ""; document.getElementById('c').value = p.categoria;
+            diasSelecionados = p.dias ? p.dias.map(String) : [];
+            document.querySelectorAll('.day-btn').forEach(b => b.classList.toggle('active', diasSelecionados.includes(b.dataset.day)));
+            window.scrollTo(0,0);
+        }
+
+        async function removerProduto(id) { if(confirm("Excluir?")) { await fetch(DB_BASE + "produtos/" + id + ".json", { method: 'DELETE' }); listarProdutos(); } }
+
+        // RELATÓRIOS (Com Excluir Venda)
+        async function listarRelatorios() {
+            const res = await fetch(VENDAS_URL); const vendas = await res.json();
+            const container = document.getElementById('lista-vendas-historico');
+            const hoje = new Date().toLocaleDateString('pt-BR');
+            let qtdHoje = 0, valorHoje = 0, html = "";
+            if (!vendas) { container.innerHTML = "<p class='text-center text-zinc-500 text-xs py-10'>Nenhum pedido.</p>"; return; }
+            Object.keys(vendas).reverse().forEach(id => {
+                const v = vendas[id]; if (v.dataLocal === hoje) { qtdHoje++; valorHoje += v.total; }
+                html += `<div class="bg-zinc-900 p-4 rounded-2xl border-l-4 ${v.dataLocal === hoje ? 'border-green-500' : 'border-zinc-700'} mb-2"><div class="flex justify-between items-start"><div><p class="text-white font-black text-xs uppercase">${v.cliente}</p><p class="text-[9px] text-zinc-500">${v.dataLocal} • ${new Date(v.data).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}</p></div><div class="text-right"><p class="text-green-500 font-black text-sm">R$ ${v.total.toFixed(2)}</p><button onclick="removerVenda('${id}')" class="text-zinc-600 text-[10px] uppercase font-bold hover:text-red-500">Excluir</button></div></div></div>`;
+            });
+            document.getElementById('resumo-qtd-hoje').innerText = qtdHoje; document.getElementById('resumo-valor-hoje').innerText = `R$ ${valorHoje.toFixed(2)}`;
+            container.innerHTML = html;
+        }
+
+        async function removerVenda(id) { if(confirm("Excluir pedido do histórico?")) { await fetch(DB_BASE + "vendas/" + id + ".json", { method: 'DELETE' }); listarRelatorios(); } }
+
+        // EQUIPE (Com Editar Usuário)
+        async function cadastrarUsuario() {
+            const u = document.getElementById('new-user').value, p = document.getElementById('new-pass').value, id = document.getElementById('edit-user-id').value;
+            if(!u || !p) return alert("Preencha todos os campos!");
+            const url = id ? USER_URL.replace('.json', `/${id}.json`) : USER_URL.replace('.json', `/${Date.now()}.json`);
+            await fetch(url, { method: 'PUT', body: JSON.stringify({user:u, pass:p}) });
+            document.getElementById('new-user').value = ""; document.getElementById('new-pass').value = ""; document.getElementById('edit-user-id').value = "";
+            alert("Usuário salvo!"); listarUsuarios();
+        }
+
+        async function listarUsuarios() {
+            const res = await fetch(USER_URL); const data = await res.json();
+            const list = document.getElementById('lista-usuarios'); list.innerHTML = "";
+            if(!data) return;
+            for(let id in data) list.innerHTML += `<div class="bg-zinc-700 p-4 rounded-xl flex justify-between items-center text-[10px] mb-2 font-bold"><span>👤 ${data[id].user}</span><div class="flex gap-3"><button onclick="prepararEdicaoUsuario('${id}')" class="text-amber-500 uppercase">Editar</button><button onclick="removerUsuario('${id}')" class="text-red-400 uppercase">X</button></div></div>`;
+        }
+
+        async function prepararEdicaoUsuario(id) {
+            const res = await fetch(USER_URL.replace('.json', `/${id}.json`)); const u = await res.json();
+            document.getElementById('edit-user-id').value = id; document.getElementById('new-user').value = u.user; document.getElementById('new-pass').value = u.pass;
+        }
+
+        async function removerUsuario(id) { if(confirm("Remover?")) { await fetch(USER_URL.replace('.json', `/${id}.json`), { method: 'DELETE' }); listarUsuarios(); } }
+
+        verificarSessao();
+    </script>
+</body>
+</html>
