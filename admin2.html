@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Master - DPTech Solutions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <!-- Toastify JS para notificações não intrusivas -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <style>
+        .day-btn.active { background-color: #d97706; color: white; border-color: #d97706; }
+        .tab-btn.active { border-bottom: 4px solid #d97706; color: #d97706; }
+        .tab-content.hidden { display: none; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
+        .loading-spinner { border: 4px solid rgba(255,255,255,.3); border-radius: 50%; border-top: 4px solid #d97706; width: 20px; height: 20px; -webkit-animation: spin 1s linear infinite; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-left: 10px; }
+        @-webkit-keyframes spin { 0% { -webkit-transform: rotate(0deg); } 100% { -webkit-transform: rotate(360deg); } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-zinc-900 text-zinc-100 p-4 font-sans text-left">
+
+    <!-- LOGIN -->
+    <div id="login" class="max-w-sm mx-auto mt-20 bg-white p-8 rounded-3xl text-zinc-900 shadow-2xl">
+        <h2 class="text-2xl font-black mb-6 text-center text-amber-900 uppercase tracking-tighter">DPTech Admin</h2>
+        <input type="text" id="user-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-4 outline-none" placeholder="Usuário">
+        <input type="password" id="pass-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-6 outline-none" placeholder="Senha">
+        <button onclick="handleLogin()" class="w-full bg-amber-900 text-white py-4 rounded-xl font-bold uppercase">Entrar</button>
+        <p id="login-error" class="text-red-500 text-center mt-3 hidden">Usuário ou senha incorretos.</p>
+    </div>
+
+    <!-- PAINEL -->
+    <div id="painel" class="hidden max-w-2xl mx-auto py-4">
+        <div class="flex justify-between items-center mb-6 px-2">
+            <span class="text-[10px] text-amber-500 font-black uppercase tracking-widest">Painel Administrativo</span>
+            <button onclick="logout()" class="text-red-500 text-[10px] font-black uppercase underline">Sair</button>
+        </div>
+        
+        <div class="flex justify-around mb-8 border-b border-zinc-800 font-bold uppercase text-[9px] tracking-widest overflow-x-auto">
+            <button onclick="changeTab('tab-loja')" class="tab-btn pb-2 px-2 active" id="btn-loja">Loja</button>
+            <button onclick="changeTab('tab-categorias')" class="tab-btn pb-2 px-2" id="btn-categorias">Categorias</button>
+            <button onclick="changeTab('tab-produtos')" class="tab-btn pb-2 px-2" id="btn-produtos">Produtos</button>
+            <button onclick="changeTab('tab-relatorios')" class="tab-btn pb-2 px-2" id="btn-relatorios">Relatórios</button>
+            <button onclick="changeTab('tab-usuarios')" class="tab-btn pb-2 px-2" id="btn-usuarios">Equipe</button>
+            <button onclick="changeTab('tab-configuracoes')" class="tab-btn pb-2 px-2" id="btn-configuracoes">Configurações</button>
+        </div>
+
+        <!-- ABA LOJA (Logo e Info Básicas) -->
+        <div id="tab-loja" class="tab-content text-center space-y-6">
+            <div class="bg-zinc-800 p-8 rounded-3xl border border-zinc-700">
+                <h3 class="text-lg font-bold mb-4">Logotipo da Loja</h3>
+                <div class="w-32 h-32 bg-zinc-900 mx-auto rounded-full border-2 border-amber-600 overflow-hidden flex items-center justify-center mb-6">
+                    <img id="logo-img-view" class="hidden w-full h-full object-cover" alt="Logotipo da Loja">
+                    <span id="logo-placeholder" class="text-xs text-zinc-600 font-bold uppercase">Sem Logo</span>
+                </div>
+                <input type="file" id="logoInput" accept="image/*" class="text-xs mb-6 block w-full text-zinc-400">
+                <button onclick="salvarLogo()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase text-xs">Salvar Logotipo</button>
+            </div>
+            <div class="bg-zinc-800 p-8 rounded-3xl border border-zinc-700">
+                <h3 class="text-lg font-bold mb-4">Informações da Loja</h3>
+                <input type="text" id="store-name" placeholder="Nome da Loja" class="w-full p-4 rounded-xl bg-zinc-700 outline-none border-none mb-3">
+                <textarea id="store-description" placeholder="Descrição da Loja" class="w-full p-4 rounded-xl bg-zinc-700 outline-none border-none mb-3"></textarea>
+                <input type="text" id="store-address" placeholder="Endereço" class="w-full p-4 rounded-xl bg-zinc-700 outline-none border-none mb-3">
+                <input type="text" id="store-phone" placeholder="Telefone" class="w-full p-4 rounded-xl bg-zinc-700 outline-none border-none mb-3">
+                <button onclick="salvarInfoLoja()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase text-xs">Salvar Informações</button>
+            </div>
+        </div>
+
+        <!-- ABA CATEGORIAS -->
+        <div id="tab-categorias" class="tab-content hidden">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+                <h3 class="text-lg font-bold mb-4">Gerenciar Categorias</h3>
+                <div class="flex gap-2 mb-6">
+                    <input type="text" id="nova-cat" placeholder="Nova Categoria" class="flex-1 p-4 rounded-xl bg-zinc-700 outline-none text-sm border-none">
+                    <button onclick="adicionarCategoria()" class="bg-green-600 px-6 rounded-xl font-black text-xl">+</button>
+                </div>
+                <div id="sortable-list" class="space-y-2 mb-6"></div>
+                <button onclick="salvarOrdemCategorias()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase text-xs">Salvar Ordem</button>
+            </div>
+        </div>
+
+        <!-- ABA PRODUTOS -->
+        <div id="tab-produtos" class="tab-content hidden space-y-4">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700 space-y-4 shadow-xl">
+                <h3 class="text-lg font-bold mb-4">Adicionar/Editar Produto</h3>
+                <input type="hidden" id="edit-id">
+                <input type="text" id="n" placeholder="Nome do Produto" class="w-full p-4 rounded-xl bg-zinc-700 outline-none border-none" required>
+                <select id="c" class="w-full p-4 rounded-xl bg-zinc-700 outline-none text-sm border-none"></select>
+                
+                <div class="p-4 bg-zinc-900 rounded-2xl space-y-2">
+                    <label class="text-[9px] font-black text-amber-500 uppercase">Disponível em:</label>
+                    <div class="flex flex-wrap gap-2" id="dias-semana">
+                        <button type="button" data-day="0" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Dom</button>
+                        <button type="button" data-day="1" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Seg</button>
+                        <button type="button" data-day="2" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Ter</button>
+                        <button type="button" data-day="3" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Qua</button>
+                        <button type="button" data-day="4" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Qui</button>
+                        <button type="button" data-day="5" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Sex</button>
+                        <button type="button" data-day="6" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Sáb</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="number" id="p" placeholder="Preço R$" class="w-full p-4 rounded-xl bg-zinc-700 outline-none" step="0.01" required>
+                    <input type="number" id="p-promo" placeholder="Promo R$" class="w-full p-4 rounded-xl bg-zinc-700 border-2 border-amber-900 outline-none" step="0.01">
+                </div>
+                <input type="file" id="fileInput" accept="image/*" class="text-xs w-full text-zinc-500">
+                <canvas id="canvas" style="display:none;"></canvas>
+                <button onclick="salvarProduto()" id="btnSalvarProd" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase shadow-lg">Salvar Produto</button>
+            </div>
+            <div id="lista-produtos" class="grid gap-2"></div>
+        </div>
+
+        <!-- ABA RELATÓRIOS (Com Exclusão) -->
+        <div id="tab-relatorios" class="tab-content hidden space-y-6">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+                <h3 class="text-lg font-bold mb-4">Resumo de Vendas</h3>
+                <div class="grid grid-cols-2 gap-4 mb-6 text-center">
+                    <div class="bg-zinc-900 p-5 rounded-2xl border border-zinc-700">
+                        <p class="text-[9px] text-zinc-500 uppercase font-black">Pedidos Hoje</p>
+                        <p id="resumo-qtd-hoje" class="text-3xl font-black text-white">0</p>
+                    </div>
+                    <div class="bg-zinc-900 p-5 rounded-2xl border border-zinc-700">
+                        <p class="text-[9px] text-zinc-500 uppercase font-black">Faturamento Hoje</p>
+                        <p id="resumo-valor-hoje" class="text-3xl font-black text-green-500">R$ 0,00</p>
+                    </div>
+                </div>
+                <div class="space-y-3 max-h-96 overflow-y-auto pr-2" id="lista-vendas-historico"></div>
+                <button onclick="listarRelatorios()" class="w-full mt-4 bg-zinc-700 py-3 rounded-xl font-black text-[10px] uppercase">🔄 Atualizar Relatório</button>
+            </div>
+        </div>
+
+        <!-- ABA EQUIPE (Com Edição) -->
+        <div id="tab-usuarios" class="tab-content hidden space-y-4">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+                <h3 class="text-lg font-bold mb-4">Gerenciar Equipe</h3>
+                <input type="hidden" id="edit-user-id">
+                <input type="text" id="new-user" placeholder="Nome do Usuário" class="w-full p-4 mb-3 rounded-xl bg-zinc-700 outline-none" required>
+                <input type="password" id="new-pass" placeholder="Nova Senha" class="w-full p-4 mb-4 rounded-xl bg-zinc-700 outline-none" required>
+                <button onclick="cadastrarUsuario()" id="btn-save-user" class="w-full bg-green-600 py-4 rounded-xl font-black uppercase text-xs">Criar / Salvar Acesso</button>
+                <div id="lista-usuarios" class="mt-8 space-y-2"></div>
+            </div>
+        </div>
+
+        <!-- ABA CONFIGURAÇÕES (Nova) -->
+        <div id="tab-configuracoes" class="tab-content hidden space-y-4">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+                <h3 class="text-lg font-bold mb-4">Configurações Gerais</h3>
+                <p class="text-zinc-400 text-sm mb-4">Aqui você pode gerenciar configurações avançadas da sua loja.</p>
+                <!-- Exemplo de configuração futura: Horário de funcionamento -->
+                <div class="bg-zinc-700 p-4 rounded-xl">
+                    <label class="block text-xs font-bold uppercase text-amber-500 mb-2">Horário de Funcionamento</label>
+                    <input type="text" placeholder="Ex: Seg-Sex: 08h-18h, Sáb: 08h-12h" class="w-full p-3 rounded-lg bg-zinc-800 outline-none border-none text-sm">
+                </div>
+                <button class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase text-xs mt-4">Salvar Configurações</button>
+            </div>
+        </div>
+
+        <!-- ASSINATURA DPTech -->
+        <footer class="mt-12 text-center">
+            <p class="text-[9px] text-zinc-600 font-bold uppercase tracking-[3px]">Powered by <span class="text-amber-600">DPTech Solutions</span></p>
+        </footer>
+    </div>
+
+    <script>
+        // Configurações do Firebase (Substitua com suas próprias URLs e chaves de API)
+        const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/"; 
+        const DB_URL = DB_BASE + "produtos.json";
+        const CAT_URL = DB_BASE + "categorias.json";
+        const LOGO_URL = DB_BASE + "configuracao/logo.json";
+        const USER_URL = DB_BASE + "usuarios.json";
+        const VENDAS_URL = DB_BASE + "vendas.json";
+        const STORE_INFO_URL = DB_BASE + "configuracao/storeInfo.json"; // Nova URL para informações da loja
+
+        let imagemBase64 = "", logoBase64 = "", diasSelecionados = [];
+
+        // --- UTILITIES --- //
+        function showToast(message, type = 'success') {
+            Toastify({
+                text: message,
+                duration: 3000,
+                close: true,
+                gravity: "top",
+                position: "right",
+                backgroundColor: type === 'success' ? "linear-gradient(to right, #10B981, #059669)" : "linear-gradient(to right, #EF4444, #DC2626)",
+                stopOnFocus: true,
+            }).showToast();
+        }
+
+        function showLoading(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.insertAdjacentHTML('beforeend', '<span class="loading-spinner"></span>');
+            }
+        }
+
+        function hideLoading(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                const spinner = element.querySelector('.loading-spinner');
+                if (spinner) spinner.remove();
+            }
+        }
+
+        async function fetchData(url, method = 'GET', body = null) {
+            try {
+                const options = { method };
+                if (body) options.body = JSON.stringify(body);
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error("Erro na requisição:", error);
+                showToast(`Erro ao carregar dados: ${error.message}`, 'error');
+                return null;
+            }
+        }
+
+        // --- LOGIN E SESSÃO --- //
+        function verificarSessao() {
+            const sessao = localStorage.getItem('point_sessao');
+            // Em um ambiente real, você validaria o token de sessão com um backend
+            if (sessao && new Date().getTime() < parseInt(sessao)) {
+                permitirAcesso();
+            } else {
+                document.getElementById('login').classList.remove('hidden');
+            }
+        }
+
+        async function handleLogin() {
+            const u = document.getElementById('user-login').value;
+            const p = document.getElementById('pass-login').value;
+            const loginError = document.getElementById('login-error');
+            loginError.classList.add('hidden');
+
+            // Simulação de login. EM PRODUÇÃO, USE FIREBASE AUTHENTICATION OU UM BACKEND SEGURO.
+            // NUNCA armazene credenciais fixas no frontend.
+            let logado = false;
+            if (u === "admin" && p === "Root@8505") { // Credenciais de fallback/desenvolvimento
+                logado = true;
+            } else {
+                try {
+                    const users = await fetchData(USER_URL);
+                    for (let id in users) {
+                        if (users[id].user === u && users[id].pass === p) {
+                            logado = true;
+                            break;
+                        }
+                    }
+                } catch (error) {
+                    console.error("Erro ao verificar usuários:", error);
+                }
+            }
+
+            if (logado) {
+                // Em um sistema real, um token JWT seria gerado pelo backend e armazenado aqui.
+                localStorage.setItem('point_sessao', new Date().getTime() + (30 * 60 * 1000)); // Sessão de 30 minutos
+                permitirAcesso();
+                showToast("Login realizado com sucesso!");
+            } else {
+                loginError.classList.remove('hidden');
+                showToast("Dados incorretos!", 'error');
+            }
+        }
+
+        function permitirAcesso() {
+            document.getElementById('login').classList.add('hidden');
+            document.getElementById('painel').classList.remove('hidden');
+            // Carregamento inicial de dados para a aba ativa (Loja)
+            carregarLogo();
+            carregarInfoLoja();
+            // Outras abas serão carregadas sob demanda
+        }
+
+        function logout() {
+            localStorage.removeItem('point_sessao');
+            showToast("Sessão encerrada.");
+            location.reload();
+        }
+
+        let currentActiveTab = 'tab-loja';
+        async function changeTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById('btn-' + tabId.split('-')[1]).classList.add('active');
+            currentActiveTab = tabId;
+
+            // Carregamento sob demanda para cada aba
+            switch (tabId) {
+                case 'tab-loja':
+                    carregarLogo();
+                    carregarInfoLoja();
+                    break;
+                case 'tab-categorias':
+                    carregarCategorias();
+                    break;
+                case 'tab-produtos':
+                    carregarCategoriasParaProdutos(); // Carrega categorias para o select de produtos
+                    listarProdutos();
+                    break;
+                case 'tab-relatorios':
+                    listarRelatorios();
+                    break;
+                case 'tab-usuarios':
+                    listarUsuarios();
+                    break;
+                case 'tab-configuracoes':
+                    // Futuras configurações aqui
+                    break;
+            }
+        }
+
+        // --- ABA LOJA (LOGO E INFORMAÇÕES) --- //
+        async function carregarLogo() {
+            const data = await fetchData(LOGO_URL);
+            if (data) {
+                document.getElementById('logo-img-view').src = data;
+                document.getElementById('logo-img-view').classList.remove('hidden');
+                document.getElementById('logo-placeholder').classList.add('hidden');
+            } else {
+                document.getElementById('logo-img-view').classList.add('hidden');
+                document.getElementById('logo-placeholder').classList.remove('hidden');
+            }
+        }
+
+        async function salvarLogo() {
+            if (!logoBase64) {
+                showToast("Selecione uma imagem para o logotipo!", 'error');
+                return;
+            }
+            showLoading('logoInput');
+            const result = await fetchData(LOGO_URL, 'PUT', logoBase64);
+            hideLoading('logoInput');
+            if (result) {
+                showToast("Logotipo atualizado com sucesso!");
+                carregarLogo();
+            }
+        }
+
+        document.getElementById('logoInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_SIZE = 200; // Max width/height for logo
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_SIZE) {
+                            height *= MAX_SIZE / width;
+                            width = MAX_SIZE;
+                        }
+                    } else {
+                        if (height > MAX_SIZE) {
+                            width *= MAX_SIZE / height;
+                            height = MAX_SIZE;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                    logoBase64 = canvas.toDataURL('image/png');
+                    document.getElementById('logo-img-view').src = logoBase64;
+                    document.getElementById('logo-img-view').classList.remove('hidden');
+                    document.getElementById('logo-placeholder').classList.add('hidden');
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        async function carregarInfoLoja() {
+            const info = await fetchData(STORE_INFO_URL);
+            if (info) {
+                document.getElementById('store-name').value = info.name || '';
+                document.getElementById('store-description').value = info.description || '';
+                document.getElementById('store-address').value = info.address || '';
+                document.getElementById('store-phone').value = info.phone || '';
+            }
+        }
+
+        async function salvarInfoLoja() {
+            const name = document.getElementById('store-name').value.trim();
+            const description = document.getElementById('store-description').value.trim();
+            const address = document.getElementById('store-address').value.trim();
+            const phone = document.getElementById('store-phone').value.trim();
+
+            if (!name) {
+                showToast("O nome da loja é obrigatório!", 'error');
+                return;
+            }
+
+            const storeInfo = { name, description, address, phone };
+            showLoading('tab-loja'); // Adiciona spinner no botão de salvar info loja
+            const result = await fetchData(STORE_INFO_URL, 'PUT', storeInfo);
+            hideLoading('tab-loja');
+            if (result) {
+                showToast("Informações da loja salvas com sucesso!");
+            }
+        }
+
+        // --- ABA CATEGORIAS --- //
+        async function carregarCategorias() {
+            showLoading('sortable-list');
+            const data = await fetchData(CAT_URL) || [];
+            const list = document.getElementById('sortable-list');
+            list.innerHTML = data.map(c => `<div class="bg-zinc-700 p-4 rounded-xl flex justify-between items-center handle" data-id="${c}"><span>☰ ${c}</span><button onclick="removerCategoria('${c}')" class="text-red-500 font-bold">X</button></div>`).join('');
+            hideLoading('sortable-list');
+            new Sortable(list, { animation: 150, handle: '.handle' });
+        }
+
+        async function adicionarCategoria() {
+            const nInput = document.getElementById('nova-cat');
+            const n = nInput.value.trim();
+            if (!n) {
+                showToast("Digite o nome da nova categoria!", 'error');
+                return;
+            }
+            showLoading('nova-cat');
+            let data = await fetchData(CAT_URL) || [];
+            if (!data.includes(n)) {
+                data.push(n);
+                const result = await fetchData(CAT_URL, 'PUT', data);
+                hideLoading('nova-cat');
+                if (result) {
+                    nInput.value = "";
+                    carregarCategorias();
+                    showToast("Categoria adicionada!");
+                }
+            } else {
+                hideLoading('nova-cat');
+                showToast("Categoria já existe!", 'error');
+            }
+        }
+
+        async function salvarOrdemCategorias() {
+            const ordem = Array.from(document.querySelectorAll('#sortable-list > div')).map(i => i.dataset.id);
+            showLoading('sortable-list');
+            const result = await fetchData(CAT_URL, 'PUT', ordem);
+            hideLoading('sortable-list');
+            if (result) {
+                showToast("Ordem das categorias salva!");
+            }
+        }
+
+        async function removerCategoria(n) {
+            if (confirm("Tem certeza que deseja excluir esta categoria?")) {
+                showLoading('sortable-list');
+                let data = await fetchData(CAT_URL);
+                data = data.filter(c => c !== n);
+                const result = await fetchData(CAT_URL, 'PUT', data);
+                hideLoading('sortable-list');
+                if (result) {
+                    carregarCategorias();
+                    showToast("Categoria removida!");
+                }
+            }
+        }
+
+        // --- ABA PRODUTOS --- //
+        async function carregarCategoriasParaProdutos() {
+            const data = await fetchData(CAT_URL) || [];
+            const selectCat = document.getElementById('c');
+            selectCat.innerHTML = data.map(c => `<option value="${c}">${c}</option>`).join('');
+        }
+
+        document.querySelectorAll('.day-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const d = btn.dataset.day;
+                if (diasSelecionados.includes(d)) {
+                    diasSelecionados = diasSelecionados.filter(x => x !== d);
+                } else {
+                    diasSelecionados.push(d);
+                }
+                btn.classList.toggle('active');
+            });
+        });
+
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.getElementById('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const MAX_SIZE = 400; // Max width/height for product image
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_SIZE) {
+                            height *= MAX_SIZE / width;
+                            width = MAX_SIZE;
+                        }
+                    } else {
+                        if (height > MAX_SIZE) {
+                            width *= MAX_SIZE / height;
+                            height = MAX_SIZE;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    imagemBase64 = canvas.toDataURL('image/jpeg', 0.8); // Comprimir imagem
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        async function salvarProduto() {
+            const id = document.getElementById('edit-id').value;
+            const nome = document.getElementById('n').value.trim();
+            const categoria = document.getElementById('c').value;
+            const preco = parseFloat(document.getElementById('p').value);
+            const precoPromo = parseFloat(document.getElementById('p-promo').value) || null;
+
+            if (!nome || isNaN(preco)) {
+                showToast("Preencha o Nome e o Preço do produto!", 'error');
+                return;
+            }
+
+            let item = { nome, categoria, preco, precoPromo, dias: diasSelecionados };
+
+            if (imagemBase64) {
+                item.img = imagemBase64;
+            } else if (id) {
+                // Se estiver editando e nenhuma nova imagem for selecionada, mantém a existente
+                const existingProduct = await fetchData(DB_BASE + "produtos/" + id + ".json");
+                if (existingProduct && existingProduct.img) {
+                    item.img = existingProduct.img;
+                } else {
+                    showToast("Foto do produto é obrigatória!", 'error');
+                    return;
+                }
+            } else {
+                showToast("Foto do produto é obrigatória!", 'error');
+                return;
+            }
+
+            const url = id ? DB_BASE + "produtos/" + id + ".json" : DB_BASE + "produtos/" + Date.now() + ".json";
+            showLoading('btnSalvarProd');
+            const result = await fetchData(url, 'PUT', item);
+            hideLoading('btnSalvarProd');
+            if (result) {
+                showToast("Produto salvo com sucesso!");
+                limparFormularioProduto();
+                listarProdutos();
+            }
+        }
+
+        async function listarProdutos() {
+            showLoading('lista-produtos');
+            const data = await fetchData(DB_URL);
+            const list = document.getElementById('lista-produtos');
+            list.innerHTML = "";
+            if (!data) {
+                list.innerHTML = "<p class='text-center text-zinc-500 text-xs py-10'>Nenhum produto cadastrado.</p>";
+                hideLoading('lista-produtos');
+                return;
+            }
+            for (let id in data) {
+                const p = data[id];
+                const diasDisp = p.dias ? p.dias.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][parseInt(d)]).join(', ') : 'Nenhum';
+                list.innerHTML += `
+                    <div class="bg-zinc-800 p-4 rounded-2xl flex justify-between items-center border border-zinc-700 mb-2">
+                        <div class="flex items-center gap-3">
+                            <img src="${p.img}" class="w-10 h-10 object-cover rounded-xl" alt="${p.nome}">
+                            <div>
+                                <p class="font-bold text-xs">${p.nome}</p>
+                                <p class="text-[9px] text-zinc-400">${p.categoria} | ${diasDisp}</p>
+                                <p class="text-amber-500 text-xs">R$ ${p.preco.toFixed(2)} ${p.precoPromo ? `(Promo: R$ ${p.precoPromo.toFixed(2)})` : ''}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="prepararEdicaoProduto('${id}')" class="bg-zinc-700 px-3 py-1 rounded-lg text-[9px]">Editar</button>
+                            <button onclick="removerProduto('${id}')" class="text-red-500 font-bold text-xs px-2">X</button>
+                        </div>
+                    </div>
+                `;
+            }
+            hideLoading('lista-produtos');
+        }
+
+        async function prepararEdicaoProduto(id) {
+            const p = await fetchData(DB_BASE + "produtos/" + id + ".json");
+            if (p) {
+                document.getElementById('edit-id').value = id;
+                document.getElementById('n').value = p.nome;
+                document.getElementById('p').value = p.preco;
+                document.getElementById('p-promo').value = p.precoPromo || "";
+                document.getElementById('c').value = p.categoria;
+                diasSelecionados = p.dias ? p.dias.map(String) : [];
+                document.querySelectorAll('.day-btn').forEach(b => b.classList.toggle('active', diasSelecionados.includes(b.dataset.day)));
+                imagemBase64 = p.img; // Mantém a imagem existente para edição
+                window.scrollTo(0, 0);
+                showToast("Produto pronto para edição.");
+            }
+        }
+
+        async function removerProduto(id) {
+            if (confirm("Tem certeza que deseja excluir este produto?")) {
+                showLoading('lista-produtos');
+                const result = await fetchData(DB_BASE + "produtos/" + id + ".json", 'DELETE');
+                hideLoading('lista-produtos');
+                if (result !== null) { // Firebase DELETE retorna null em sucesso
+                    showToast("Produto removido!");
+                    listarProdutos();
+                }
+            }
+        }
+
+        function limparFormularioProduto() {
+            document.getElementById('edit-id').value = "";
+            document.getElementById('n').value = "";
+            document.getElementById('p').value = "";
+            document.getElementById('p-promo').value = "";
+            document.getElementById('fileInput').value = ""; // Limpa o input de arquivo
+            imagemBase64 = "";
+            diasSelecionados = [];
+            document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+        }
+
+        // --- ABA RELATÓRIOS --- //
+        async function listarRelatorios() {
+            showLoading('lista-vendas-historico');
+            const vendas = await fetchData(VENDAS_URL);
+            const container = document.getElementById('lista-vendas-historico');
+            const hoje = new Date().toLocaleDateString('pt-BR');
+            let qtdHoje = 0, valorHoje = 0, html = "";
+
+            if (!vendas) {
+                container.innerHTML = "<p class='text-center text-zinc-500 text-xs py-10'>Nenhum pedido registrado.</p>";
+                document.getElementById('resumo-qtd-hoje').innerText = 0;
+                document.getElementById('resumo-valor-hoje').innerText = `R$ 0,00`;
+                hideLoading('lista-vendas-historico');
+                return;
+            }
+
+            const vendasArray = Object.keys(vendas).map(id => ({ id, ...vendas[id] }));
+            vendasArray.sort((a, b) => new Date(b.data) - new Date(a.data)); // Ordena por data mais recente
+
+            vendasArray.forEach(v => {
+                if (v.dataLocal === hoje) {
+                    qtdHoje++;
+                    valorHoje += v.total;
+                }
+                html += `
+                    <div class="bg-zinc-900 p-4 rounded-2xl border-l-4 ${v.dataLocal === hoje ? 'border-green-500' : 'border-zinc-700'} mb-2">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-white font-black text-xs uppercase">${v.cliente || 'Cliente Desconhecido'}</p>
+                                <p class="text-[9px] text-zinc-500">${v.dataLocal} • ${new Date(v.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                                <p class="text-[9px] text-zinc-500">Itens: ${v.itens ? v.itens.map(item => item.nome).join(', ') : 'N/A'}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-green-500 font-black text-sm">R$ ${v.total.toFixed(2)}</p>
+                                <button onclick="removerVenda('${v.id}')" class="text-zinc-600 text-[10px] uppercase font-bold hover:text-red-500">Excluir</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('resumo-qtd-hoje').innerText = qtdHoje;
+            document.getElementById('resumo-valor-hoje').innerText = `R$ ${valorHoje.toFixed(2)}`;
+            container.innerHTML = html;
+            hideLoading('lista-vendas-historico');
+        }
+
+        async function removerVenda(id) {
+            if (confirm("Tem certeza que deseja excluir este pedido do histórico?")) {
+                showLoading('lista-vendas-historico');
+                const result = await fetchData(DB_BASE + "vendas/" + id + ".json", 'DELETE');
+                hideLoading('lista-vendas-historico');
+                if (result !== null) {
+                    showToast("Pedido removido do histórico!");
+                    listarRelatorios();
+                }
+            }
+        }
+
+        // --- ABA EQUIPE --- //
+        async function cadastrarUsuario() {
+            const uInput = document.getElementById('new-user');
+            const pInput = document.getElementById('new-pass');
+            const id = document.getElementById('edit-user-id').value;
+            const u = uInput.value.trim();
+            const p = pInput.value.trim();
+
+            if (!u || !p) {
+                showToast("Preencha usuário e senha para cadastrar!", 'error');
+                return;
+            }
+
+            const url = id ? USER_URL.replace('.json', `/${id}.json`) : USER_URL.replace('.json', `/${Date.now()}.json`);
+            showLoading('btn-save-user');
+            const result = await fetchData(url, 'PUT', { user: u, pass: p });
+            hideLoading('btn-save-user');
+            if (result) {
+                uInput.value = "";
+                pInput.value = "";
+                document.getElementById('edit-user-id').value = "";
+                showToast("Usuário salvo com sucesso!");
+                listarUsuarios();
+            }
+        }
+
+        async function listarUsuarios() {
+            showLoading('lista-usuarios');
+            const data = await fetchData(USER_URL);
+            const list = document.getElementById('lista-usuarios');
+            list.innerHTML = "";
+            if (!data) {
+                list.innerHTML = "<p class='text-center text-zinc-500 text-xs py-10'>Nenhum usuário cadastrado.</p>";
+                hideLoading('lista-usuarios');
+                return;
+            }
+            for (let id in data) {
+                list.innerHTML += `
+                    <div class="bg-zinc-700 p-4 rounded-xl flex justify-between items-center text-[10px] mb-2 font-bold">
+                        <span>👤 ${data[id].user}</span>
+                        <div class="flex gap-3">
+                            <button onclick="prepararEdicaoUsuario('${id}')" class="text-amber-500 uppercase">Editar</button>
+                            <button onclick="removerUsuario('${id}')" class="text-red-400 uppercase">X</button>
+                        </div>
+                    </div>
+                `;
+            }
+            hideLoading('lista-usuarios');
+        }
+
+        async function prepararEdicaoUsuario(id) {
+            const u = await fetchData(USER_URL.replace('.json', `/${id}.json`));
+            if (u) {
+                document.getElementById('edit-user-id').value = id;
+                document.getElementById('new-user').value = u.user;
+                document.getElementById('new-pass').value = u.pass;
+                showToast("Usuário pronto para edição.");
+            }
+        }
+
+        async function removerUsuario(id) {
+            if (confirm("Tem certeza que deseja remover este usuário?")) {
+                showLoading('lista-usuarios');
+                const result = await fetchData(USER_URL.replace('.json', `/${id}.json`), 'DELETE');
+                hideLoading('lista-usuarios');
+                if (result !== null) {
+                    showToast("Usuário removido!");
+                    listarUsuarios();
+                }
+            }
+        }
+
+        // --- INICIALIZAÇÃO --- //
+        document.addEventListener('DOMContentLoaded', () => {
+            verificarSessao();
+            // Garante que a aba inicial 'Loja' esteja ativa e carregada
+            changeTab('tab-loja'); 
+        });
+    </script>
+</body>
+</html>
