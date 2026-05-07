@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status do Pedido - Point do Café</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Montserrat', sans-serif; }
+        .step { position: relative; }
+        .step::after { content: ''; position: absolute; left: 19px; top: 40px; height: 40px; width: 2px; background: #e4e4e7; }
+        .step:last-child::after { display: none; }
+        .active-dot { background: #d97706; box-shadow: 0 0 15px rgba(217,119,6,0.5); border-color: #d97706 !important; color: white !important; }
+    </style>
+</head>
+<body class="bg-zinc-50 flex flex-col items-center justify-center min-h-screen p-6">
+
+    <div class="w-full max-w-md bg-white rounded-[3rem] shadow-2xl p-10 border-t-8 border-amber-600">
+        <header class="text-center mb-8">
+            <div class="text-4xl mb-4">☕</div>
+            <h1 class="text-2xl font-black uppercase italic tracking-tighter">Acompanhe seu Pedido</h1>
+            <p id="order-id" class="text-[10px] font-bold text-zinc-400 mt-2 uppercase tracking-widest"></p>
+        </header>
+
+        <div class="space-y-10">
+            <div id="step-pendente" class="step flex items-center gap-6">
+                <div class="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center font-bold text-zinc-400 border-2 border-zinc-200 z-10 transition-all">1</div>
+                <div><h3 class="font-black text-sm uppercase text-zinc-400">Recebido</h3><p class="text-[10px] text-zinc-400">Aguardando confirmação</p></div>
+            </div>
+
+            <div id="step-preparo" class="step flex items-center gap-6">
+                <div class="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center font-bold text-zinc-400 border-2 border-zinc-200 z-10 transition-all">2</div>
+                <div><h3 class="font-black text-sm uppercase text-zinc-400">Em Preparo</h3><p class="text-[10px] text-zinc-400">Estamos preparando com carinho</p></div>
+            </div>
+
+            <div id="step-pronto" class="step flex items-center gap-6">
+                <div class="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center font-bold text-zinc-400 border-2 border-zinc-200 z-10 transition-all">3</div>
+                <div><h3 class="font-black text-sm uppercase text-zinc-400">Pronto / Saiu</h3><p class="text-[10px] text-zinc-400">Seu pedido está pronto ou a caminho!</p></div>
+            </div>
+        </div>
+
+        <div class="mt-12 text-center">
+            <p class="text-[9px] font-bold text-zinc-300 uppercase mb-4">Esta página atualiza sozinha</p>
+            <a href="pedidos.html" class="bg-zinc-100 px-6 py-3 rounded-2xl text-zinc-500 font-black text-[10px] uppercase">Voltar ao Início</a>
+        </div>
+    </div>
+
+    <script>
+        const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
+        const id = new URLSearchParams(window.location.search).get('id');
+        document.getElementById('order-id').innerText = `ID: #${id ? id.slice(-6) : '...'}`;
+
+        async function atualizarStatus() {
+            if(!id) return;
+            try {
+                const res = await fetch(`${DB_BASE}vendas/${id}/status.json`);
+                const status = await res.json();
+                
+                const steps = ["pendente", "preparo", "pronto"];
+                const index = steps.indexOf(status || "pendente");
+
+                steps.forEach((s, i) => {
+                    const el = document.getElementById(`step-${s}`);
+                    const dot = el.querySelector('div');
+                    const text = el.querySelector('h3');
+                    if(i <= index) {
+                        dot.classList.add('active-dot');
+                        text.classList.remove('text-zinc-400');
+                        text.classList.add('text-amber-900');
+                    }
+                });
+            } catch(e) { console.error("Erro ao buscar status"); }
+        }
+
+        setInterval(atualizarStatus, 5000);
+        atualizarStatus();
+    </script>
+</body>
+</html>
