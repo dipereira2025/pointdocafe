@@ -2,232 +2,104 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Point do Café - Cardápio Digital</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cardápio - Point do Café</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .btn-qty { transition: all 0.2s active; }
-        .btn-qty:active { transform: scale(0.9); }
-        .cart-float { animation: slideUp 0.3s ease-out; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        ::-webkit-scrollbar { width: 0; background: transparent; }
-    </style>
+    <style>body { font-family: 'Montserrat', sans-serif; }</style>
 </head>
-<body class="bg-[#fdfcf9] text-zinc-800">
+<body class="bg-zinc-50">
 
-    <!-- CABEÇALHO -->
-    <header class="bg-white pt-10 pb-8 px-4 text-center border-b-8 border-[#d97706] shadow-md">
-        <div id="logo-header" class="w-28 h-28 bg-zinc-50 mx-auto rounded-full mb-4 overflow-hidden border-4 border-[#f3e8d2] flex items-center justify-center shadow-sm">
-            <img id="img-logo" src="" class="hidden w-full h-full object-cover">
-            <span id="placeholder-logo" class="text-[10px] font-bold text-zinc-300 uppercase italic">Point do Café</span>
-        </div>
-        <h1 class="text-3xl font-black text-[#4b2c20] uppercase tracking-tighter">Point do Café</h1>
-        <p class="text-[10px] font-bold text-[#d97706] uppercase tracking-[1px] mt-2">Lanchonete e Restaurante - Comida caseira sempre quentinha.</p>
-    </header>
+    <div id="app" class="max-w-md mx-auto p-4 pb-24">
+        <header class="text-center py-10">
+            <h1 class="text-3xl font-black italic text-amber-900">POINT DO CAFÉ</h1>
+        </header>
 
-    <!-- CONTAINER DO MENU -->
-    <main class="max-w-md mx-auto p-4 pb-40" id="categorias-container">
-        <div class="text-center py-20">
-            <div class="animate-spin inline-block w-10 h-10 border-4 border-[#d97706] border-t-transparent rounded-full mb-4"></div>
-            <p class="text-xs font-bold text-zinc-400 uppercase tracking-widest">Sincronizando Cardápio...</p>
-        </div>
-    </main>
-
-    <!-- BOTÃO FINALIZAR (FLUTUANTE) -->
-    <div id="cart-bar" class="hidden fixed bottom-8 left-0 right-0 px-6 z-50">
-        <button onclick="abrirCheckout()" class="cart-float w-full max-w-md mx-auto bg-[#22c55e] text-white py-6 rounded-[2rem] font-black uppercase text-sm shadow-[0_20px_50px_rgba(34,197,94,0.3)] flex justify-between px-10 items-center">
-            <div class="flex items-center gap-3">
-                <span class="bg-[#166534] px-3 py-1 rounded-full text-[10px]" id="cart-count">0</span>
-                <span>Finalizar Pedido</span>
-            </div>
-            <span id="cart-total" class="text-lg">R$ 0,00</span>
-        </button>
-    </div>
-
-    <!-- MODAL CHECKOUT -->
-    <div id="modal-checkout" class="hidden fixed inset-0 bg-[#4b2c20]/90 z-[60] p-4 flex items-center justify-center backdrop-blur-md">
-        <div class="bg-white w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl">
-            <div class="p-8 bg-zinc-50 border-b border-zinc-100 flex justify-between items-center">
-                <h2 class="font-black uppercase text-[#4b2c20] tracking-tight">Finalizar no WhatsApp</h2>
-                <button onclick="fecharCheckout()" class="text-zinc-300 hover:text-red-500 transition-colors font-black text-xl">&times;</button>
-            </div>
-            <div class="p-8 space-y-5">
-                <input type="text" id="cliente-nome" placeholder="Seu Nome" class="w-full p-5 bg-zinc-100 rounded-2xl outline-none font-bold text-zinc-700 placeholder:text-zinc-400 focus:ring-2 ring-amber-500">
-                <input type="text" id="cliente-endereco" placeholder="Endereço para entrega" class="w-full p-5 bg-zinc-100 rounded-2xl outline-none text-zinc-700 placeholder:text-zinc-400 focus:ring-2 ring-amber-500">
-                <textarea id="cliente-obs" placeholder="Observações do pedido..." class="w-full p-5 bg-zinc-100 rounded-2xl outline-none h-24 text-sm text-zinc-700 placeholder:text-zinc-400 focus:ring-2 ring-amber-500"></textarea>
-                <select id="cliente-pgto" class="w-full p-5 bg-zinc-100 rounded-2xl outline-none font-black text-[#4b2c20] appearance-none cursor-pointer">
-                    <option value="Pix">💳 Pagamento: Pix</option>
-                    <option value="Cartão">💳 Pagamento: Cartão</option>
-                    <option value="Dinheiro">💵 Pagamento: Dinheiro</option>
+        <div id="checkout-modal" class="bg-white p-6 rounded-3xl shadow-2xl border-t-8 border-amber-600">
+            <h2 class="text-xl font-black mb-4 uppercase tracking-tighter">Finalizar Pedido</h2>
+            
+            <div class="space-y-4">
+                <input type="text" id="c-nome" placeholder="Seu Nome" class="w-full p-4 bg-zinc-100 rounded-2xl outline-none font-bold">
+                
+                <select id="c-entrega" onchange="calcularTotal()" class="w-full p-4 bg-zinc-100 rounded-2xl outline-none font-bold text-amber-900">
+                    <option value="retirada">Vou retirar no local (Grátis)</option>
+                    <option value="entrega">Quero Entrega (+ R$ 5,00)</option>
                 </select>
-                <button onclick="enviarPedido()" class="w-full bg-[#22c55e] text-white py-6 rounded-2xl font-black uppercase shadow-xl hover:bg-[#16a34a] transition-all">Enviar Pedido Agora</button>
+
+                <input type="text" id="c-endereco" placeholder="Endereço Completo" class="w-full p-4 bg-zinc-100 rounded-2xl outline-none">
+
+                <select id="c-pgto" onchange="toggleTroco()" class="w-full p-4 bg-zinc-100 rounded-2xl outline-none font-bold text-amber-900">
+                    <option value="Pix">Pix</option>
+                    <option value="Cartão">Cartão</option>
+                    <option value="Dinheiro">Dinheiro</option>
+                </select>
+
+                <div id="div-troco" class="hidden">
+                    <input type="number" id="c-troco" placeholder="Troco para quanto?" class="w-full p-4 bg-amber-50 border-2 border-amber-200 rounded-2xl outline-none font-bold">
+                </div>
+
+                <textarea id="c-obs" placeholder="Alguma observação?" class="w-full p-4 bg-zinc-100 rounded-2xl outline-none text-sm h-20"></textarea>
+
+                <div class="py-4 border-t border-zinc-100">
+                    <div class="flex justify-between font-black text-xl text-zinc-800">
+                        <span>TOTAL FINAL:</span>
+                        <span id="total-final">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <button onclick="confirmarPedido()" class="w-full bg-green-600 text-white py-5 rounded-2xl font-black uppercase shadow-lg shadow-green-200">Confirmar e Ver Status</button>
             </div>
         </div>
     </div>
 
     <script>
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
-        const diaHoje = new Date().getDay(); 
-        let produtosLocal = [];
+        let subtotalGlobal = 0; // Isso deve vir da soma dos itens no carrinho que você já tem
 
-        async function init() {
-            await carregarLogo();
-            await loadMenu();
+        function calcularTotal() {
+            const entrega = document.getElementById('c-entrega').value;
+            const taxa = entrega === 'entrega' ? 5.00 : 0.00;
+            // Pegue o subtotal real da sua lógica de carrinho
+            const total = subtotalGlobal + taxa;
+            document.getElementById('total-final').innerText = `R$ ${total.toFixed(2)}`;
+            return total;
         }
 
-        async function carregarLogo() {
-            try {
-                const res = await fetch(DB_BASE + "configuracao/logo.json");
-                const logo = await res.json();
-                if(logo) {
-                    const img = document.getElementById('img-logo');
-                    img.src = logo;
-                    img.classList.remove('hidden');
-                    document.getElementById('placeholder-logo').classList.add('hidden');
-                }
-            } catch(e) {}
+        function toggleTroco() {
+            const pgto = document.getElementById('c-pgto').value;
+            document.getElementById('div-troco').classList.toggle('hidden', pgto !== 'Dinheiro');
         }
 
-        async function loadMenu() {
-            try {
-                const resProd = await fetch(DB_BASE + "produtos.json");
-                const dataProd = await resProd.json();
-                if(!dataProd) return;
+        async function confirmarPedido() {
+            const nome = document.getElementById('c-nome').value;
+            if(!nome) return alert("Por favor, digite seu nome!");
 
-                produtosLocal = Object.keys(dataProd).map(key => ({ id: key, ...dataProd[key], qty: 0 }));
-
-                // TRAVA DE SEGURANÇA: Só mostra se NÃO estiver pausado no estoque
-                const produtosDisponiveis = produtosLocal.filter(p => {
-                    const naoEstaPausado = p.pausado !== true;
-                    const isSempreDisponivel = !p.dias || p.dias.length === 0;
-                    const isDeHoje = p.dias && p.dias.includes(diaHoje.toString());
-                    return naoEstaPausado && (isSempreDisponivel || isDeHoje);
-                });
-
-                const resCat = await fetch(DB_BASE + "categorias.json");
-                let categorias = await resCat.json() || [];
-
-                let html = "";
-                
-                // 1. Renderiza Sugestões do Dia
-                const sugestoes = produtosDisponiveis.filter(p => p.dias && p.dias.includes(diaHoje.toString()));
-                if(sugestoes.length > 0) html += renderSection("⭐ Sugestão de Hoje", sugestoes);
-
-                // 2. Renderiza demais Categorias
-                categorias.forEach(cat => {
-                    const itensNaCat = produtosDisponiveis.filter(p => 
-                        p.categoria === cat && (!p.dias || !p.dias.includes(diaHoje.toString()))
-                    );
-                    if(itensNaCat.length > 0) html += renderSection(cat, itensNaCat);
-                });
-
-                document.getElementById('categorias-container').innerHTML = html || "<p class='text-center py-20 font-bold text-zinc-300 uppercase text-xs'>Estamos fechados ou sem itens no momento.</p>";
-            } catch(e) { console.error(e); }
-        }
-
-        function renderSection(titulo, itens) {
-            return `
-                <div class="mb-10">
-                    <h2 class="text-[11px] font-black uppercase text-[#d97706] tracking-[2px] mb-6 flex items-center gap-3">
-                        ${titulo} <span class="h-[2px] bg-[#f3e8d2] flex-1"></span>
-                    </h2>
-                    <div class="space-y-4">
-                        ${itens.map(p => `
-                            <div class="bg-white p-4 rounded-[1.5rem] shadow-sm border border-[#f3e8d2] flex items-center gap-4">
-                                <div class="w-24 h-24 flex-shrink-0">
-                                    <img src="${p.img}" class="w-full h-full object-cover rounded-2xl shadow-inner bg-zinc-50">
-                                </div>
-                                <div class="flex-1">
-                                    <h3 class="font-bold text-sm text-[#4b2c20] leading-tight mb-2">${p.nome}</h3>
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-[#22c55e] font-black text-base">R$ ${(p.precoPromo || p.preco).toFixed(2)}</span>
-                                        ${p.precoPromo ? `<span class="text-[10px] text-zinc-300 line-through font-bold">R$ ${p.preco.toFixed(2)}</span>` : ''}
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-3 bg-zinc-50 p-1.5 rounded-2xl border border-zinc-100">
-                                    <button onclick="updateQty('${p.id}', -1)" class="w-9 h-9 flex items-center justify-center font-black text-zinc-300 hover:text-red-500 transition-colors">-</button>
-                                    <span id="qty-${p.id}" class="font-black text-sm w-5 text-center text-[#4b2c20]">0</span>
-                                    <button onclick="updateQty('${p.id}', 1)" class="w-9 h-9 flex items-center justify-center font-black text-[#d97706] hover:scale-110 transition-transform">+</button>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
-
-        function updateQty(id, delta) {
-            const p = produtosLocal.find(x => x.id === id);
-            if(!p) return;
-            p.qty = Math.max(0, p.qty + delta);
-            const el = document.getElementById(`qty-${id}`);
-            if(el) el.innerText = p.qty;
-            updateCartBar();
-        }
-
-        function updateCartBar() {
-            const itensNoCarrinho = produtosLocal.filter(p => p.qty > 0);
-            const total = itensNoCarrinho.reduce((acc, p) => acc + ((p.precoPromo || p.preco) * p.qty), 0);
-            const count = itensNoCarrinho.reduce((acc, p) => acc + p.qty, 0);
-
-            const bar = document.getElementById('cart-bar');
-            if(count > 0) {
-                bar.classList.remove('hidden');
-                document.getElementById('cart-total').innerText = `R$ ${total.toFixed(2)}`;
-                document.getElementById('cart-count').innerText = count;
-            } else {
-                bar.classList.add('hidden');
-            }
-        }
-
-        function abrirCheckout() { document.getElementById('modal-checkout').classList.remove('hidden'); }
-        function fecharCheckout() { document.getElementById('modal-checkout').classList.add('hidden'); }
-
-        async function enviarPedido() {
-            const nome = document.getElementById('cliente-nome').value;
-            const endereco = document.getElementById('cliente-endereco').value;
-            const obs = document.getElementById('cliente-obs').value;
-            const pgto = document.getElementById('cliente-pgto').value;
-            const itens = produtosLocal.filter(p => p.qty > 0);
-
-            if(!nome || !endereco) return alert("Por favor, preencha seu nome e endereço de entrega!");
-
-            const total = itens.reduce((acc, p) => acc + ((p.precoPromo || p.preco) * p.qty), 0);
-            const pedidoId = Date.now();
+            const idVenda = Date.now();
+            const total = calcularTotal();
             
-            const pedidoDB = {
-                id: pedidoId,
+            const pedido = {
                 cliente: nome,
-                endereco: endereco,
-                observacao: obs,
-                pagamento: pgto,
+                endereco: document.getElementById('c-endereco').value,
+                pagamento: document.getElementById('c-pgto').value,
+                troco: document.getElementById('c-troco').value,
+                tipoEntrega: document.getElementById('c-entrega').value,
+                obs: document.getElementById('c-obs').value,
                 total: total,
+                status: "pendente",
                 dataLocal: new Date().toLocaleDateString('pt-BR'),
-                data: new Date().toISOString(),
-                itens: itens.map(i => ({ nome: i.nome, qty: i.qty, preco: (i.precoPromo || i.preco) }))
+                itens: [] // Aqui você deve mapear os itens do seu carrinho atual
             };
 
-            try {
-                await fetch(DB_BASE + `vendas/${pedidoId}.json`, { method: 'PUT', body: JSON.stringify(pedidoDB) });
+            await fetch(`${DB_BASE}vendas/${idVenda}.json`, {
+                method: 'PUT',
+                body: JSON.stringify(pedido)
+            });
 
-                let msg = `*PEDIDO POINT DO CAFÉ*\n--------------------------\n`;
-                msg += `*Cliente:* ${nome}\n*Endereço:* ${endereco}\n`;
-                if(obs) msg += `*OBS:* ${obs}\n`;
-                msg += `--------------------------\n`;
-                itens.forEach(i => msg += `${i.qty}x ${i.nome}\n`);
-                msg += `--------------------------\n`;
-                msg += `*Total: R$ ${total.toFixed(2)}*\n*Pagamento:* ${pgto}`;
+            // Envia para o WhatsApp (Opcional, já que agora tem o Status)
+            // window.open(...);
 
-                window.open(`https://wa.me/5561994348505?text=${encodeURIComponent(msg)}`);
-                location.reload();
-            } catch (e) {
-                alert("Erro ao enviar pedido. Tente novamente.");
-            }
+            window.location.href = `status.html?id=${idVenda}`;
         }
-
-        init();
     </script>
 </body>
 </html>
