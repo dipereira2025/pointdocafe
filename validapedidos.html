@@ -2,164 +2,266 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Validação de Pedidos - Point do Café</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cardápio - Point do Café</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Montserrat', sans-serif; }
+        body { font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .cart-float { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        ::-webkit-scrollbar { width: 0; background: transparent; }
         .hidden { display: none; }
     </style>
 </head>
-<body class="bg-zinc-50 pb-20">
+<body class="bg-zinc-50 text-zinc-800">
 
-    <div class="max-w-md mx-auto p-4">
-        <header class="text-center py-10">
-            <h1 class="text-3xl font-black italic text-amber-900">VALIDAÇÃO POINT</h1>
-            <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Ambiente de Testes</p>
-        </header>
+    <header class="bg-white pt-10 pb-8 px-4 text-center border-b-8 border-[#d97706] shadow-md">
+        <div id="logo-header" class="w-24 h-24 bg-zinc-50 mx-auto rounded-full mb-4 overflow-hidden border-4 border-[#f3e8d2] flex items-center justify-center">
+            <img id="img-logo" src="" class="hidden w-full h-full object-cover">
+            <span id="placeholder-logo" class="text-[10px] font-bold text-zinc-300 uppercase italic">Point do Café</span>
+        </div>
+        <h1 class="text-3xl font-black text-[#4b2c20] uppercase tracking-tighter italic">Point do Café</h1>
+    </header>
 
-        <div class="bg-white p-6 rounded-3xl shadow-sm mb-6 border border-zinc-100">
-            <h2 class="font-black uppercase text-xs mb-4 text-zinc-400">Itens no Carrinho (Simulação)</h2>
-            <div id="lista-itens-teste" class="space-y-2">
-                <div class="flex justify-between font-bold text-sm">
-                    <span>2x Café Expresso</span>
-                    <span>R$ 25,00</span>
-                </div>
+    <main id="etapa-cardapio" class="max-w-md mx-auto p-4 pb-32">
+        <div id="categorias-container" class="space-y-8">
+            <div class="text-center py-20">
+                <div class="animate-spin inline-block w-10 h-10 border-4 border-[#d97706] border-t-transparent rounded-full"></div>
             </div>
         </div>
+    </main>
 
-        <div class="bg-white p-6 rounded-[2.5rem] shadow-2xl border-t-8 border-amber-600">
-            <h2 class="text-xl font-black mb-6 uppercase tracking-tighter">Finalizar Pedido</h2>
+    <div id="cart-bar" class="hidden fixed bottom-8 left-0 right-0 px-6 z-40">
+        <button onclick="irParaCheckout()" class="cart-float w-full max-w-md mx-auto bg-[#22c55e] text-white py-6 rounded-[2rem] font-black uppercase text-sm shadow-xl flex justify-between px-10 items-center">
+            <div class="flex items-center gap-3">
+                <span class="bg-[#166534] px-3 py-1 rounded-full text-[10px]" id="cart-count">0</span>
+                <span>Ver Pedido</span>
+            </div>
+            <span id="cart-total-bar">R$ 0,00</span>
+        </button>
+    </div>
+
+    <div id="etapa-checkout" class="hidden fixed inset-0 bg-white z-50 overflow-y-auto p-6">
+        <div class="max-w-md mx-auto">
+            <button onclick="voltarParaCardapio()" class="text-[#d97706] font-black text-xs uppercase mb-6 flex items-center gap-2">⬅️ Voltar ao Cardápio</button>
             
-            <div class="space-y-4">
+            <h2 class="text-2xl font-black text-[#4b2c20] uppercase mb-8 tracking-tighter">Finalizar Pedido</h2>
+            
+            <div class="space-y-6">
                 <div>
-                    <label class="text-[10px] font-black uppercase ml-2 text-zinc-400">Seu Nome</label>
-                    <input type="text" id="c-nome" placeholder="Ex: João Silva" class="w-full p-4 bg-zinc-100 rounded-2xl outline-none font-bold">
+                    <label class="text-[10px] font-black uppercase text-zinc-400 ml-2">Seu Nome</label>
+                    <input type="text" id="c-nome" placeholder="Como te chamamos?" class="w-full p-5 bg-zinc-100 rounded-2xl outline-none font-bold">
                 </div>
-                
+
                 <div>
-                    <label class="text-[10px] font-black uppercase ml-2 text-zinc-400">Forma de Recebimento</label>
-                    <select id="c-entrega" onchange="atualizarInterfaceTotal()" class="w-full p-4 bg-zinc-100 rounded-2xl outline-none font-bold text-amber-900">
+                    <label class="text-[10px] font-black uppercase text-zinc-400 ml-2">Como deseja receber?</label>
+                    <select id="c-entrega" onchange="recalcularResumo()" class="w-full p-5 bg-zinc-100 rounded-2xl outline-none font-bold text-[#d97706]">
                         <option value="retirada">🛍️ Vou retirar no local (Grátis)</option>
                         <option value="entrega">🚚 Quero Entrega (+ R$ 5,00)</option>
                     </select>
                 </div>
 
-                <div id="area-endereco">
-                    <label class="text-[10px] font-black uppercase ml-2 text-zinc-400">Endereço de Entrega</label>
-                    <input type="text" id="c-endereco" placeholder="Rua, Número, Bairro" class="w-full p-4 bg-zinc-100 rounded-2xl outline-none">
+                <div id="div-endereco">
+                    <label class="text-[10px] font-black uppercase text-zinc-400 ml-2">Endereço de Entrega</label>
+                    <input type="text" id="c-endereco" placeholder="Rua, Número, Bairro" class="w-full p-5 bg-zinc-100 rounded-2xl outline-none">
                 </div>
 
                 <div>
-                    <label class="text-[10px] font-black uppercase ml-2 text-zinc-400">Forma de Pagamento</label>
-                    <select id="c-pgto" onchange="verificarTroco()" class="w-full p-4 bg-zinc-100 rounded-2xl outline-none font-bold text-amber-900">
+                    <label class="text-[10px] font-black uppercase text-zinc-400 ml-2">Forma de Pagamento</label>
+                    <select id="c-pgto" onchange="verificarTroco()" class="w-full p-5 bg-zinc-100 rounded-2xl outline-none font-bold text-[#d97706]">
                         <option value="Pix">Pix</option>
-                        <option value="Cartão">Cartão (Maquininha)</option>
+                        <option value="Cartão">Cartão na Entrega</option>
                         <option value="Dinheiro">Dinheiro</option>
                     </select>
                 </div>
 
                 <div id="div-troco" class="hidden">
-                    <label class="text-[10px] font-black uppercase ml-2 text-amber-600">Troco para quanto?</label>
-                    <input type="number" id="c-troco" placeholder="Ex: 50" class="w-full p-4 bg-amber-50 border-2 border-amber-200 rounded-2xl outline-none font-bold">
+                    <label class="text-[10px] font-black uppercase text-amber-600 ml-2">Troco para quanto?</label>
+                    <input type="number" id="c-troco" placeholder="Ex: 50" class="w-full p-5 bg-amber-50 border-2 border-amber-200 rounded-2xl outline-none font-bold">
                 </div>
 
                 <div>
-                    <label class="text-[10px] font-black uppercase ml-2 text-zinc-400">Observações</label>
-                    <textarea id="c-obs" placeholder="Ex: Sem açúcar, tirar gelo..." class="w-full p-4 bg-zinc-100 rounded-2xl outline-none text-sm h-20"></textarea>
+                    <label class="text-[10px] font-black uppercase text-zinc-400 ml-2">Observações</label>
+                    <textarea id="c-obs" placeholder="Ex: Sem açúcar, tirar gelo..." class="w-full p-5 bg-zinc-100 rounded-2xl outline-none text-sm h-24"></textarea>
                 </div>
 
-                <div class="py-4 border-t border-zinc-100 mt-6">
-                    <div class="flex justify-between text-zinc-400 text-xs font-bold uppercase">
-                        <span>Subtotal:</span>
-                        <span id="resumo-subtotal">R$ 25,00</span>
+                <div class="p-8 bg-zinc-50 rounded-[2rem] border border-zinc-100 mt-10">
+                    <div class="flex justify-between text-zinc-400 text-[10px] font-black uppercase mb-2">
+                        <span>Produtos:</span>
+                        <span id="resumo-subtotal">R$ 0,00</span>
                     </div>
-                    <div class="flex justify-between text-zinc-400 text-xs font-bold uppercase mt-1">
+                    <div class="flex justify-between text-zinc-400 text-[10px] font-black uppercase mb-4">
                         <span>Taxa de Entrega:</span>
                         <span id="resumo-taxa">R$ 0,00</span>
                     </div>
-                    <div class="flex justify-between font-black text-xl text-zinc-800 mt-2">
+                    <div class="flex justify-between font-black text-2xl text-[#4b2c20] pt-4 border-t border-zinc-200">
                         <span>TOTAL:</span>
-                        <span id="total-final" class="text-amber-600">R$ 25,00</span>
+                        <span id="resumo-total">R$ 0,00</span>
                     </div>
                 </div>
 
-                <button onclick="processarTeste()" class="w-full bg-green-600 text-white py-5 rounded-3xl font-black uppercase shadow-lg shadow-green-200 hover:scale-95 transition-all">
-                    Confirmar Pedido Teste
-                </button>
+                <button onclick="confirmarPedidoFinal()" class="w-full bg-[#22c55e] text-white py-6 rounded-[2rem] font-black uppercase shadow-xl">Confirmar Pedido Agora</button>
             </div>
         </div>
     </div>
 
     <script>
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
-        
-        // Simulação de valores para o teste
-        let valorProdutosNoCarrinho = 25.00; 
+        const diaHoje = new Date().getDay();
+        let produtosLocal = [];
 
-        function atualizarInterfaceTotal() {
+        async function init() {
+            await carregarLogo();
+            await loadMenu();
+        }
+
+        async function carregarLogo() {
+            try {
+                const res = await fetch(DB_BASE + "configuracao/logo.json");
+                const logo = await res.json();
+                if(logo) {
+                    document.getElementById('img-logo').src = logo;
+                    document.getElementById('img-logo').classList.remove('hidden');
+                    document.getElementById('placeholder-logo').classList.add('hidden');
+                }
+            } catch(e) {}
+        }
+
+        async function loadMenu() {
+            try {
+                const resProd = await fetch(DB_BASE + "produtos.json");
+                const dataProd = await resProd.json();
+                if(!dataProd) return;
+
+                produtosLocal = Object.keys(dataProd).map(key => ({ id: key, ...dataProd[key], qty: 0 }));
+
+                // Filtro de Segurança
+                const disponiveis = produtosLocal.filter(p => {
+                    const naoPausado = p.pausado !== true;
+                    const isDeHoje = !p.dias || p.dias.length === 0 || p.dias.includes(diaHoje.toString());
+                    return naoPausado && isDeHoje;
+                });
+
+                const resCat = await fetch(DB_BASE + "categorias.json");
+                let categorias = await resCat.json() || [];
+
+                let html = "";
+                categorias.forEach(cat => {
+                    const itens = disponiveis.filter(p => p.categoria === cat);
+                    if(itens.length > 0) {
+                        html += `<div class="mb-8">
+                            <h2 class="text-[11px] font-black uppercase text-[#d97706] tracking-[2px] mb-6 flex items-center gap-3">
+                                ${cat} <span class="h-[2px] bg-[#f3e8d2] flex-1"></span>
+                            </h2>
+                            <div class="space-y-4">
+                                ${itens.map(p => `
+                                    <div class="bg-white p-4 rounded-[1.5rem] shadow-sm border border-[#f3e8d2] flex items-center gap-4">
+                                        <img src="${p.img}" class="w-20 h-20 object-cover rounded-2xl">
+                                        <div class="flex-1">
+                                            <h3 class="font-bold text-sm text-[#4b2c20] leading-tight mb-2">${p.nome}</h3>
+                                            <span class="text-[#22c55e] font-black text-base">R$ ${(p.precoPromo || p.preco).toFixed(2)}</span>
+                                        </div>
+                                        <div class="flex items-center gap-3 bg-zinc-50 p-1.5 rounded-2xl border border-zinc-100">
+                                            <button onclick="updateQty('${p.id}', -1)" class="w-8 h-8 font-black text-zinc-300">-</button>
+                                            <span id="qty-${p.id}" class="font-black text-sm w-4 text-center">0</span>
+                                            <button onclick="updateQty('${p.id}', 1)" class="w-8 h-8 font-black text-[#d97706]">+</button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>`;
+                    }
+                });
+                document.getElementById('categorias-container').innerHTML = html;
+            } catch(e) { console.error(e); }
+        }
+
+        function updateQty(id, delta) {
+            const p = produtosLocal.find(x => x.id === id);
+            p.qty = Math.max(0, p.qty + delta);
+            document.getElementById(`qty-${id}`).innerText = p.qty;
+            
+            const totalItens = produtosLocal.reduce((acc, x) => acc + x.qty, 0);
+            const totalValor = produtosLocal.reduce((acc, x) => acc + (x.qty * (x.precoPromo || x.preco)), 0);
+            
+            const bar = document.getElementById('cart-bar');
+            if(totalItens > 0) {
+                bar.classList.remove('hidden');
+                document.getElementById('cart-count').innerText = totalItens;
+                document.getElementById('cart-total-bar').innerText = `R$ ${totalValor.toFixed(2)}`;
+            } else {
+                bar.classList.add('hidden');
+            }
+        }
+
+        function irParaCheckout() {
+            document.getElementById('etapa-cardapio').classList.add('hidden');
+            document.getElementById('cart-bar').classList.add('hidden');
+            document.getElementById('etapa-checkout').classList.remove('hidden');
+            recalcularResumo();
+            window.scrollTo(0,0);
+        }
+
+        function voltarParaCardapio() {
+            document.getElementById('etapa-checkout').classList.add('hidden');
+            document.getElementById('etapa-cardapio').classList.remove('hidden');
+            document.getElementById('cart-bar').classList.remove('hidden');
+        }
+
+        function recalcularResumo() {
+            const subtotal = produtosLocal.reduce((acc, x) => acc + (x.qty * (x.precoPromo || x.preco)), 0);
             const tipoEntrega = document.getElementById('c-entrega').value;
             const taxa = tipoEntrega === 'entrega' ? 5.00 : 0.00;
-            const total = valorProdutosNoCarrinho + taxa;
+            const total = subtotal + taxa;
 
+            document.getElementById('resumo-subtotal').innerText = `R$ ${subtotal.toFixed(2)}`;
             document.getElementById('resumo-taxa').innerText = `R$ ${taxa.toFixed(2)}`;
-            document.getElementById('total-final').innerText = `R$ ${total.toFixed(2)}`;
+            document.getElementById('resumo-total').innerText = `R$ ${total.toFixed(2)}`;
             
-            // Esconder endereço se for retirada
-            document.getElementById('area-endereco').style.opacity = tipoEntrega === 'entrega' ? '1' : '0.5';
-            
-            return total;
+            document.getElementById('div-endereco').classList.toggle('hidden', tipoEntrega !== 'entrega');
         }
 
         function verificarTroco() {
             const pgto = document.getElementById('c-pgto').value;
-            const divTroco = document.getElementById('div-troco');
-            divTroco.classList.toggle('hidden', pgto !== 'Dinheiro');
+            document.getElementById('div-troco').classList.toggle('hidden', pgto !== 'Dinheiro');
         }
 
-        async function processarTeste() {
+        async function confirmarPedidoFinal() {
             const nome = document.getElementById('c-nome').value;
-            if(!nome) return alert("Digite o nome para o teste!");
+            if(!nome) return alert("Por favor, informe seu nome!");
 
             const idVenda = Date.now();
-            const totalFinal = atualizarInterfaceTotal();
-            
-            const dadosPedido = {
+            const itensSelecionados = produtosLocal.filter(p => p.qty > 0).map(p => ({
+                nome: p.nome,
+                qty: p.qty,
+                preco: (p.precoPromo || p.preco)
+            }));
+
+            const subtotal = produtosLocal.reduce((acc, x) => acc + (x.qty * (x.precoPromo || x.preco)), 0);
+            const tipoEntrega = document.getElementById('c-entrega').value;
+            const total = tipoEntrega === 'entrega' ? subtotal + 5.00 : subtotal;
+
+            const pedido = {
                 cliente: nome,
                 endereco: document.getElementById('c-endereco').value,
                 pagamento: document.getElementById('c-pgto').value,
                 troco: document.getElementById('c-troco').value || null,
-                tipoEntrega: document.getElementById('c-entrega').value,
+                tipoEntrega: tipoEntrega,
                 obs: document.getElementById('c-obs').value,
-                total: totalFinal,
+                total: total,
                 status: "pendente",
                 dataLocal: new Date().toLocaleDateString('pt-BR'),
-                itens: [
-                    {nome: "Café Expresso (TESTE)", qty: 2, preco: 12.50}
-                ]
+                itens: itensSelecionados
             };
 
-            try {
-                // Salva no Firebase
-                await fetch(`${DB_BASE}vendas/${idVenda}.json`, {
-                    method: 'PUT',
-                    body: JSON.stringify(dadosPedido)
-                });
-
-                alert("Sucesso! O pedido apareceu no Atendimento? Vamos para a tela de Status.");
-                
-                // Vai para a página de status
-                window.location.href = `status.html?id=${idVenda}`;
-                
-            } catch (error) {
-                console.error(error);
-                alert("Erro ao conectar com Firebase. Verifique o link do banco.");
-            }
+            await fetch(`${DB_BASE}vendas/${idVenda}.json`, { method: 'PUT', body: JSON.stringify(pedido) });
+            
+            // Redireciona para o Status
+            window.location.href = `status.html?id=${idVenda}`;
         }
 
-        // Inicia o total ao abrir a página
-        atualizarInterfaceTotal();
+        init();
     </script>
 </body>
 </html>
