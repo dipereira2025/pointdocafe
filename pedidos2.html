@@ -1,78 +1,156 @@
-<div id="modal-checkout" class="fixed inset-0 bg-black/70 hidden z-50 p-4 flex items-center justify-center">
-    <div class="bg-white w-full max-w-md rounded-3xl p-6 overflow-y-auto max-h-[90vh]">
-        <h2 class="text-xl font-black text-amber-900 uppercase mb-4 italic">Seus Dados</h2>
-        
-        <div class="space-y-3">
-            <label class="text-[10px] font-bold text-zinc-400 uppercase ml-2">Nome</label>
-            <input type="text" id="cli-nome" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent focus:border-amber-500">
-            
-            <label class="text-[10px] font-bold text-zinc-400 uppercase ml-2">WhatsApp (DDD + Número)</label>
-            <input type="tel" id="cli-zap" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent focus:border-amber-500">
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cardápio Digital - Point do Café</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <style>
+        .bg-coffee { background-color: #fffcf7; }
+        .loading-overlay { background: rgba(255,252,247,0.9); z-index: 100; }
+        input:focus { border-color: #d97706 !important; }
+    </style>
+</head>
+<body class="bg-coffee pb-24 font-sans text-gray-900">
+    
+    <div id="loader" class="fixed inset-0 loading-overlay flex flex-col items-center justify-center">
+        <div class="w-10 h-10 border-4 border-amber-600 border-t-transparent rounded-full animate-spin mb-2"></div>
+        <p class="text-amber-900 font-bold text-xs uppercase">Carregando Cardápio...</p>
+    </div>
 
-            <label class="text-[10px] font-bold text-zinc-400 uppercase ml-2">Endereço de Entrega</label>
-            <input type="text" id="cli-end" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent focus:border-amber-500">
-            
-            <label class="text-[10px] font-bold text-zinc-400 uppercase ml-2">Observações</label>
-            <textarea id="cli-obs" class="w-full p-4 bg-gray-100 rounded-xl text-sm h-20 outline-none border-2 border-transparent focus:border-amber-500"></textarea>
+    <header class="bg-white p-6 shadow-sm mb-6 flex flex-col items-center border-b-4 border-amber-600 text-center">
+        <h1 class="text-2xl font-black text-amber-900 uppercase italic">Point do Café</h1>
+        <p class="text-amber-700 font-medium text-[10px] uppercase tracking-widest">Sincronizado com a Cozinha</p>
+    </header>
 
-            <button onclick="finalizarPedidoAutomatico()" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-xl uppercase mt-4">
-                🚀 Confirmar e Pedir
-            </button>
-            <button onclick="document.getElementById('modal-checkout').classList.add('hidden')" class="w-full text-gray-400 font-bold py-2 text-xs uppercase">Voltar ao cardápio</button>
+    <main id="categorias-container" class="max-w-md mx-auto p-4 space-y-4"></main>
+
+    <div id="cart-float" class="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-xs px-4 hidden z-40">
+        <button onclick="abrirCheckout()" class="w-full bg-green-600 text-white py-4 rounded-full shadow-2xl font-black uppercase text-sm border-4 border-white">
+            🛒 <span id="cart-summary">0 itens | R$ 0,00</span>
+        </button>
+    </div>
+
+    <div id="modal-checkout" class="fixed inset-0 bg-black/70 hidden z-50 p-4 flex items-center justify-center">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 overflow-y-auto max-h-[90vh]">
+            <h2 class="text-xl font-black text-amber-900 uppercase mb-4 italic">Confirmar Pedido</h2>
+            
+            <div id="resumo-itens" class="mb-6 space-y-2 text-sm border-b pb-4 text-zinc-600"></div>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="text-[10px] font-bold text-zinc-400 uppercase ml-1">Seu Nome</label>
+                    <input type="text" id="cli-nome" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-zinc-400 uppercase ml-1">WhatsApp (Com DDD)</label>
+                    <input type="tel" id="cli-zap" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-zinc-400 uppercase ml-1">Endereço de Entrega</label>
+                    <input type="text" id="cli-end" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-zinc-400 uppercase ml-1">Observação (Opcional)</label>
+                    <textarea id="cli-obs" class="w-full p-4 bg-gray-100 rounded-xl text-sm h-20 outline-none border-2 border-transparent"></textarea>
+                </div>
+
+                <button onclick="finalizarPedidoAutomatico()" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-xl uppercase mt-4 hover:bg-green-700 transition-all">
+                    🚀 Concluir e Acompanhar
+                </button>
+                <button onclick="document.getElementById('modal-checkout').classList.add('hidden')" class="w-full text-gray-400 font-bold py-2 text-xs uppercase">Voltar</button>
+            </div>
         </div>
     </div>
-</div>
 
-<script type="module">
-    const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
+    <script type="module">
+        const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
+        let carrinho = [];
 
-    // 1. FUNÇÃO PARA CARREGAR DADOS (URL ou MEMÓRIA)
-    function autoPreencher() {
-        const params = new URLSearchParams(window.location.search);
-        
-        // Tenta pegar da URL (Link Mágico)
-        const urlNome = params.get('nome');
-        const urlTel = params.get('tel');
+        async function init() {
+            try {
+                const resP = await fetch(`${DB_BASE}produtos.json`);
+                const produtos = await resP.json();
+                renderMenu(produtos);
+                autoPreencher();
+                document.getElementById('loader').classList.add('hidden');
+            } catch (e) { console.error(e); }
+        }
 
-        // Tenta pegar da Memória do Navegador
-        const memNome = localStorage.getItem('cafe_nome');
-        const memTel = localStorage.getItem('cafe_tel');
-        const memEnd = localStorage.getItem('cafe_end');
+        function renderMenu(produtos) {
+            const container = document.getElementById('categorias-container');
+            container.innerHTML = "";
+            for (let id in produtos) {
+                if(produtos[id].pausado) continue;
+                container.innerHTML += `
+                    <div class="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center border border-amber-50">
+                        <div class="flex items-center gap-3">
+                            <img src="${produtos[id].img || ''}" class="w-16 h-16 object-cover rounded-xl bg-zinc-100">
+                            <div>
+                                <h3 class="font-bold text-amber-900 text-sm uppercase italic leading-none">${produtos[id].nome}</h3>
+                                <p class="text-green-700 font-black text-sm mt-1">R$ ${produtos[id].preco.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <button onclick="addCart('${id}', '${produtos[id].nome}', ${produtos[id].preco})" class="bg-amber-600 text-white px-5 py-2 rounded-xl font-black shadow-md hover:scale-105 active:scale-90 transition-all">+</button>
+                    </div>`;
+            }
+        }
 
-        // Preenche os campos respeitando a prioridade
-        if (urlNome || memNome) document.getElementById('cli-nome').value = urlNome || memNome;
-        if (urlTel || memTel) document.getElementById('cli-zap').value = urlTel || memTel;
-        if (memEnd) document.getElementById('cli-end').value = memEnd;
-    }
-
-    // 2. FUNÇÃO PARA FINALIZAR E SALVAR
-    window.finalizarPedidoAutomatico = async () => {
-        const n = document.getElementById('cli-nome').value.trim();
-        const z = document.getElementById('cli-zap').value.trim().replace(/\D/g, "");
-        const e = document.getElementById('cli-end').value.trim();
-        const obs = document.getElementById('cli-obs').value.trim();
-
-        if(!n || !z || !e) return alert("Por favor, preencha Nome, WhatsApp e Endereço.");
-
-        // SALVA NA MEMÓRIA PARA O PRÓXIMO PEDIDO
-        localStorage.setItem('cafe_nome', n);
-        localStorage.setItem('cafe_tel', z);
-        localStorage.setItem('cafe_end', e);
-
-        const pedidoId = "PED-" + Date.now().toString().slice(-6);
-        const pedido = {
-            id: pedidoId, cliente: n, telefone: z, endereco: e, observacao: obs,
-            status: 'pendente', data: new Date().toISOString(),
-            dataLocal: new Date().toLocaleDateString('pt-BR'),
-            itens: carrinho // assume que sua variável de carrinho está global
+        window.addCart = (id, nome, preco) => {
+            carrinho.push({id, nome, preco});
+            const total = carrinho.reduce((acc, i) => acc + i.preco, 0);
+            document.getElementById('cart-summary').innerText = `${carrinho.length} itens | R$ ${total.toFixed(2)}`;
+            document.getElementById('cart-float').classList.toggle('hidden', carrinho.length === 0);
+            Toastify({text: "Adicionado!", duration: 1000, style: {background: "#d97706"}}).showToast();
         };
 
-        // Salva no Firebase
-        await fetch(`${DB_BASE}vendas/${pedidoId}.json`, { method: 'PUT', body: JSON.stringify(pedido) });
+        window.abrirCheckout = () => {
+            document.getElementById('resumo-itens').innerHTML = carrinho.map(i => `<div class="flex justify-between py-1"><span>1x ${i.nome}</span><span class="font-bold">R$ ${i.preco.toFixed(2)}</span></div>`).join('');
+            document.getElementById('modal-checkout').classList.remove('hidden');
+        };
 
-        window.location.href = `status2.html?id=${pedidoId}`;
-    };
+        // LÓGICA DE MEMÓRIA E LINKS MÁGICOS
+        function autoPreencher() {
+            const params = new URLSearchParams(window.location.search);
+            // Prioridade: 1. URL (Link Mágico) | 2. Memória Local
+            const nome = params.get('nome') || localStorage.getItem('cafe_nome');
+            const tel = params.get('tel') || localStorage.getItem('cafe_tel');
+            const end = localStorage.getItem('cafe_end');
 
-    // Executa ao abrir a página
-    window.onload = autoPreencher;
-</script>
+            if(nome) document.getElementById('cli-nome').value = nome;
+            if(tel) document.getElementById('cli-zap').value = tel;
+            if(end) document.getElementById('cli-end').value = end;
+        }
+
+        window.finalizarPedidoAutomatico = async () => {
+            const n = document.getElementById('cli-nome').value.trim();
+            const z = document.getElementById('cli-zap').value.trim().replace(/\D/g, "");
+            const e = document.getElementById('cli-end').value.trim();
+            const obs = document.getElementById('cli-obs').value.trim();
+
+            if(!n || !z || !e) return alert("Por favor, preencha Nome, WhatsApp e Endereço.");
+
+            // Salva na memória do navegador do cliente
+            localStorage.setItem('cafe_nome', n);
+            localStorage.setItem('cafe_tel', z);
+            localStorage.setItem('cafe_end', e);
+
+            const pedidoId = "PED-" + Date.now().toString().slice(-6);
+            const totalGeral = carrinho.reduce((acc, i) => acc + i.preco, 0);
+            
+            const pedido = {
+                id: pedidoId, cliente: n, telefone: z, endereco: e, observacao: obs, 
+                itens: carrinho, total: totalGeral, status: 'pendente', 
+                data: new Date().toISOString(), dataLocal: new Date().toLocaleDateString('pt-BR')
+            };
+
+            await fetch(`${DB_BASE}vendas/${pedidoId}.json`, { method: 'PUT', body: JSON.stringify(pedido) });
+            window.location.href = `status2.html?id=${pedidoId}`;
+        };
+
+        init();
+    </script>
+</body>
+</html>
