@@ -36,11 +36,17 @@
             <div class="space-y-3">
                 <input type="text" id="cli-nome" placeholder="Seu Nome *" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-none">
                 <input type="text" id="cli-end" placeholder="Endereço Completo *" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-none">
-                <select id="cli-pgto" class="w-full p-4 bg-gray-100 rounded-xl border-none">
-                    <option value="Pix">Pix</option>
-                    <option value="Dinheiro">Dinheiro</option>
-                    <option value="Cartão">Cartão</option>
-                </select>
+                <input type="text" id="cli-ref" placeholder="Ponto de Referência" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-none">
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <select id="cli-pgto" onchange="toggleTroco(this.value)" class="w-full p-4 bg-gray-100 rounded-xl border-none">
+                        <option value="Pix">Pix</option>
+                        <option value="Dinheiro">Dinheiro</option>
+                        <option value="Cartão">Cartão</option>
+                    </select>
+                    <input type="text" id="cli-troco" placeholder="Troco para?" class="w-full p-4 bg-gray-100 rounded-xl border-none hidden">
+                </div>
+
                 <button onclick="enviarPedidoFinal()" id="btnConfirmar" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-xl uppercase">✅ Enviar e Acompanhar</button>
                 <button onclick="fecharCheckout()" class="w-full text-gray-400 font-bold py-2 text-xs uppercase">Voltar</button>
             </div>
@@ -60,17 +66,27 @@
                 container.innerHTML = "";
                 for (let id in produtos) {
                     if(produtos[id].pausado) continue;
+                    // Ajuste da Foto do Produto
+                    const fotoHtml = produtos[id].img ? `<img src="${produtos[id].img}" class="w-16 h-16 object-cover rounded-xl bg-amber-50" alt="${produtos[id].nome}">` : `<div class="w-16 h-16 bg-amber-100 rounded-xl"></div>`;
+                    
                     container.innerHTML += `
                         <div class="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center border border-amber-100">
-                            <div>
-                                <h3 class="font-bold text-amber-900">${produtos[id].nome}</h3>
-                                <p class="text-green-700 font-black">R$ ${produtos[id].preco.toFixed(2)}</p>
+                            <div class="flex items-center gap-3">
+                                ${fotoHtml}
+                                <div>
+                                    <h3 class="font-bold text-amber-900">${produtos[id].nome}</h3>
+                                    <p class="text-green-700 font-black">R$ ${produtos[id].preco.toFixed(2)}</p>
+                                </div>
                             </div>
                             <button onclick="addCart('${id}', '${produtos[id].nome}', ${produtos[id].preco})" class="bg-amber-600 text-white px-4 py-2 rounded-xl font-bold">+</button>
                         </div>`;
                 }
             } catch (e) { console.error("Erro ao carregar:", e); }
         }
+
+        window.toggleTroco = (val) => {
+            document.getElementById('cli-troco').classList.toggle('hidden', val !== 'Dinheiro');
+        };
 
         window.addCart = (id, nome, preco) => {
             carrinho.push({id, nome, preco});
@@ -95,6 +111,9 @@
         window.enviarPedidoFinal = async () => {
             const n = document.getElementById('cli-nome').value;
             const e = document.getElementById('cli-end').value;
+            const ref = document.getElementById('cli-ref').value; // Ponto de Referência
+            const pgto = document.getElementById('cli-pgto').value;
+            const troco = document.getElementById('cli-troco').value; // Troco
             const btn = document.getElementById('btnConfirmar');
 
             if(!n || !e) return alert("Preencha Nome e Endereço");
@@ -103,13 +122,16 @@
             btn.innerHTML = "Processando...";
 
             const pedidoId = "PED-" + Date.now().toString().slice(-6);
+            const totalGeral = carrinho.reduce((acc, i) => acc + i.preco, 0);
             const pedido = {
                 id: pedidoId,
                 cliente: n,
                 endereco: e,
-                pagamento: document.getElementById('cli-pgto').value,
+                referencia: ref,
+                pagamento: pgto,
+                troco: troco,
                 itens: carrinho,
-                total: carrinho.reduce((acc, i) => acc + i.preco, 0),
+                total: totalGeral,
                 status: 'pendente',
                 data: new Date().toISOString(),
                 dataLocal: new Date().toLocaleDateString('pt-BR')
@@ -117,7 +139,10 @@
 
             try {
                 await fetch(`${DB_BASE}vendas/${pedidoId}.json`, { method: 'PUT', body: JSON.stringify(pedido) });
-                window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent("*NOVO PEDIDO #" + pedidoId + "*")}`, '_blank');
+                let msgWhats = `*NOVO PEDIDO #${pedidoId}*\n*Cliente:* ${n}\n*Total:* R$ ${totalGeral.toFixed(2)}`;
+                if(pgto === 'Dinheiro' && troco) msgWhats += `\n*Troco para:* ${troco}`;
+                
+                window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msgWhats)}`, '_blank');
                 window.location.href = `status2.html?id=${pedidoId}`;
             } catch (err) { alert("Erro ao salvar pedido"); btn.disabled = false; }
         };
