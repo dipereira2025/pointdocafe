@@ -138,7 +138,8 @@
 
             const pedidoId = "PED-" + Date.now().toString().slice(-6);
             const totalGeral = carrinho.reduce((acc, i) => acc + i.preco, 0);
-            const statusLink = window.location.origin + window.location.pathname.replace('pedidos2.html', 'status2.html') + "?id=" + pedidoId;
+            // Adicione o parâmetro de captura automática no link enviado ao WhatsApp
+            const statusLink = window.location.origin + window.location.pathname.replace('pedidos2.html', 'status2.html') + "?id=" + pedidoId + "&cap=true";
             
             const pedido = {
                 id: pedidoId, cliente: n, endereco: e, referencia: ref,
