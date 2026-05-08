@@ -3,150 +3,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terminal de Atendimento - Point do Café</title>
+    <title>Cardápio Digital - Point do Café</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <style>
-        @media print {
-            body * { display: none !important; }
-            #secao-impressao, #secao-impressao * { display: block !important; }
-            #secao-impressao { width: 72mm; font-family: 'Courier New', monospace; font-size: 10pt; padding: 5px; }
-            .divisa { border-bottom: 1px dashed #000; margin: 5px 0; }
-        }
-        .tempo-ok { border-left: 8px solid #10b981; background-color: #f0fdf4; } 
-        .tempo-alerta { border-left: 8px solid #f59e0b; background-color: #fffbeb; } 
-        .tempo-atrasado { border-left: 8px solid #ef4444; background-color: #fef2f2; } 
-        .status-pronto { border-left: 8px solid #6b7280; opacity: 0.6; background-color: #f4f4f5; } 
+        .bg-coffee { background-color: #fffcf7; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #d97706; border-radius: 10px; }
+        .loading-overlay { background: rgba(255,252,247,0.9); z-index: 100; }
     </style>
 </head>
-<body class="bg-zinc-100 p-4 font-sans text-left">
-    <header class="max-w-2xl mx-auto flex justify-between items-center mb-6 bg-white p-6 rounded-3xl shadow-sm border-b-4 border-amber-600">
-        <h1 class="text-xl font-black uppercase italic">Fila de Produção</h1>
-        <div id="relogio" class="font-bold text-zinc-400">00:00:00</div>
+<body class="bg-coffee pb-24 font-sans text-gray-900">
+    
+    <div id="loader" class="fixed inset-0 loading-overlay flex flex-col items-center justify-center">
+        <div class="w-10 h-10 border-4 border-amber-600 border-t-transparent rounded-full animate-spin mb-2"></div>
+        <p class="text-amber-900 font-bold text-xs uppercase tracking-widest">Sincronizando...</p>
+    </div>
+
+    <header class="bg-white p-6 shadow-sm mb-6 flex flex-col items-center border-b-4 border-amber-600 text-center">
+        <div id="logo-container" class="mb-3 hidden">
+            <img id="store-logo" src="" alt="Logo" class="w-24 h-24 rounded-full object-cover border-4 border-amber-100 shadow-md">
+        </div>
+        <h1 id="header-name" class="text-2xl font-black text-amber-900 uppercase italic">Point do Café</h1>
+        <p id="header-desc" class="text-amber-700 font-medium text-[10px] mt-1 uppercase tracking-widest">Peça agora</p>
+        <div id="status-loja" class="mt-2 text-[9px] font-bold px-3 py-1 rounded-full uppercase"></div>
     </header>
 
-    <main id="lista-pedidos" class="max-w-2xl mx-auto space-y-4 pb-10"></main>
-    <div id="secao-impressao" class="hidden"></div>
-    
-    <audio id="alerta-sonoro" src="https://www.soundjay.com/buttons/button-2.mp3" preload="auto"></audio>
+    <main id="categorias-container" class="max-w-md mx-auto p-4 space-y-4"></main>
+
+    <div id="cart-float" class="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-xs px-4 hidden z-40">
+        <button onclick="abrirCheckout()" class="w-full bg-green-600 text-white py-4 rounded-full shadow-2xl font-black flex justify-center gap-2 border-4 border-white items-center uppercase text-sm">
+            🛒 <span id="cart-summary">0 itens | R$ 0,00</span>
+        </button>
+    </div>
+
+    <div id="modal-checkout" class="fixed inset-0 bg-black/70 hidden z-50 p-4 flex items-center justify-center">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 overflow-y-auto max-h-[90vh]">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 class="text-xl font-black text-amber-900 uppercase">Seu Pedido</h2>
+                <button onclick="limparCarrinho()" class="text-[10px] font-black text-red-500 bg-red-50 px-3 py-1 rounded-full uppercase">Limpar Tudo</button>
+            </div>
+            
+            <div id="resumo-itens" class="mb-6 space-y-2 text-sm border-b pb-4"></div>
+            
+            <div class="space-y-3">
+                <input type="text" id="cli-nome" placeholder="Seu Nome *" class="w-full p-4 bg-gray-100 rounded-xl outline-none">
+                <input type="text" id="cli-tel" placeholder="Seu WhatsApp (Ex: 5561999999999) *" class="w-full p-4 bg-gray-100 rounded-xl outline-none">
+                <input type="text" id="cli-end" placeholder="Endereço Completo *" class="w-full p-4 bg-gray-100 rounded-xl outline-none">
+                <input type="text" id="cli-ref" placeholder="Ponto de Referência" class="w-full p-4 bg-gray-100 rounded-xl outline-none">
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <select id="cli-pgto" onchange="toggleTroco(this.value)" class="w-full p-4 bg-gray-100 rounded-xl text-sm outline-none">
+                        <option value="Pix">Pix</option>
+                        <option value="Dinheiro">Dinheiro</option>
+                        <option value="Cartão">Cartão</option>
+                    </select>
+                    <input type="text" id="cli-troco" placeholder="Troco para R$?" class="w-full p-4 bg-gray-100 rounded-xl hidden text-sm outline-none">
+                </div>
+
+                <button onclick="enviarPedidoFinal()" id="btnConfirmar" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-xl uppercase mt-4">✅ Confirmar Pedido</button>
+                <button onclick="fecharCheckout()" class="w-full text-gray-400 font-bold py-2 text-xs uppercase">Voltar ao Menu</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
-        let pedidosIDConhecidos = new Set();
-        const TEMPO_LIMITE_MINUTOS = 25;
+        const WHATSAPP = "5561999521964"; 
+        let carrinho = [];
 
-        // Função para calcular a cor baseada no tempo
-        function calcularClasseTempo(dataIso) {
+        function isNoHorario(inicio, fim) {
+            if(!inicio || !fim) return true;
             const agora = new Date();
-            const pedidoHora = new Date(dataIso);
-            const diffMinutos = Math.floor((agora - pedidoHora) / 1000 / 60);
-
-            if (diffMinutos < 10) return "tempo-ok";
-            if (diffMinutos < TEMPO_LIMITE_MINUTOS) return "tempo-alerta";
-            return "tempo-atrasado";
+            const [hIni, mIni] = inicio.split(':').map(Number);
+            const [hFim, mFim] = fim.split(':').map(Number);
+            const totalAgora = agora.getHours() * 60 + agora.getMinutes();
+            const totalIni = hIni * 60 + mIni;
+            const totalFim = hFim * 60 + mFim;
+            return totalAgora >= totalIni && totalAgora <= totalFim;
         }
 
-        // Função Principal de Carga
-        async function carregar() {
+        async function init() {
             try {
-                const res = await fetch(`${DB_BASE}vendas.json`);
-                const vendas = await res.json();
-                const container = document.getElementById('lista-pedidos');
-                if(!vendas) {
-                    container.innerHTML = "<p class='text-center text-zinc-400 font-bold uppercase py-10'>Aguardando Pedidos...</p>";
-                    return;
+                const resL = await fetch(`${DB_BASE}configuracao/logo.json`);
+                const logo = await resL.json();
+                if(logo) { document.getElementById('store-logo').src = logo; document.getElementById('logo-container').classList.remove('hidden'); }
+                
+                const resI = await fetch(`${DB_BASE}configuracao/storeInfo.json`);
+                const info = await resI.json();
+                if(info) {
+                    if(info.name) document.getElementById('header-name').innerText = info.name;
+                    if(info.description) document.getElementById('header-desc').innerText = info.description;
                 }
 
-                const hoje = new Date().toLocaleDateString('pt-BR');
-                let pedidos = Object.keys(vendas).map(id => ({id, ...vendas[id]}))
-                    .filter(v => v.dataLocal === hoje);
+                const resH = await fetch(`${DB_BASE}configuracao/horarios.json`);
+                const horarios = await resH.json();
+                
+                const resP = await fetch(`${DB_BASE}produtos.json`);
+                const produtos = await resP.json();
 
-                // Ordenação: Pendentes/Preparo primeiro, mais antigos no topo
-                pedidos.sort((a, b) => {
-                    if (a.status === 'pronto' && b.status !== 'pronto') return 1;
-                    if (a.status !== 'pronto' && b.status === 'pronto') return -1;
-                    return new Date(a.data) - new Date(b.data);
-                });
-
-                // Alerta Sonoro
-                let novoPedido = false;
-                pedidos.forEach(p => {
-                    if (!pedidosIDConhecidos.has(p.id)) {
-                        pedidosIDConhecidos.add(p.id);
-                        novoPedido = true;
-                    }
-                });
-                if (novoPedido && pedidosIDConhecidos.size > pedidos.length) {
-                    document.getElementById('alerta-sonoro').play().catch(() => {});
-                }
-
-                container.innerHTML = "";
-                pedidos.forEach(v => {
-                    const classeTempo = v.status === 'pronto' ? 'status-pronto' : calcularClasseTempo(v.data);
-                    const minutosPassados = Math.floor((new Date() - new Date(v.data)) / 1000 / 60);
-                    
-                    container.innerHTML += `
-                        <div class="bg-white p-6 rounded-3xl shadow-sm ${classeTempo} transition-colors duration-500">
-                            <div class="flex justify-between items-center mb-4">
-                                <span class="bg-zinc-800 text-white px-4 py-1 rounded-full font-black">#${v.id.slice(-4)}</span>
-                                <div class="text-right">
-                                    <span class="text-[10px] font-bold uppercase block text-zinc-400">Há ${minutosPassados} min</span>
-                                    <button onclick="imprimir('${v.id}')" class="text-[9px] font-bold text-amber-600 underline uppercase">Imprimir</button>
-                                </div>
-                            </div>
-                            <div class="mb-4 text-xs font-bold uppercase">
-                                <p class="text-zinc-900">${v.cliente}</p>
-                                <p class="font-normal text-zinc-500">${v.endereco} ${v.referencia ? `(${v.referencia})` : ''}</p>
-                                ${v.troco ? `<p class="text-red-600">Troco: R$ ${v.troco}</p>` : ''}
-                            </div>
-                            <div class="mb-6 font-bold text-sm text-zinc-700">
-                                ${v.itens.map(i => `<div class="border-b border-zinc-100 py-1">1x ${i.nome}</div>`).join('')}
-                            </div>
-                            <div class="flex gap-2">
-                                ${v.status === 'pendente' ? `<button onclick="alterarStatus('${v.id}', 'preparo')" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black uppercase text-xs">🔥 Iniciar Preparo</button>` : ''}
-                                ${v.status === 'preparo' ? `<button onclick="alterarStatus('${v.id}', 'pronto')" class="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black uppercase text-xs">✅ Finalizar</button>` : ''}
-                                ${v.status === 'pronto' ? `<button onclick="alterarStatus('${v.id}', 'preparo')" class="flex-1 py-2 bg-zinc-200 text-zinc-500 rounded-xl font-bold uppercase text-[10px]">↩️ Reabrir</button>` : ''}
-                            </div>
-                        </div>`;
-                });
+                renderMenu(produtos, horarios);
+                document.getElementById('loader').classList.add('hidden');
             } catch (e) { console.error(e); }
         }
 
-        // Função para Alterar Status
-        window.alterarStatus = async (id, s) => { 
-            try {
-                await fetch(`${DB_BASE}vendas/${id}/status.json`, { 
-                    method: 'PUT', 
-                    body: JSON.stringify(s) 
-                }); 
-                carregar(); 
-            } catch (err) {
-                console.error("Erro ao mudar status:", err);
+        function renderMenu(produtos, horarios) {
+            const container = document.getElementById('categorias-container');
+            container.innerHTML = "";
+            const abertoGeral = isNoHorario(horarios?.geral?.abre, horarios?.geral?.fecha);
+            const abertoRefeicao = isNoHorario(horarios?.refeicao?.abre, horarios?.refeicao?.fecha);
+
+            const statusLoja = document.getElementById('status-loja');
+            if(abertoGeral) {
+                statusLoja.innerText = "● Loja Aberta";
+                statusLoja.classList.add('bg-green-100', 'text-green-700');
+            } else {
+                statusLoja.innerText = "● Loja Fechada";
+                statusLoja.classList.add('bg-red-100', 'text-red-700');
             }
+
+            for (let id in produtos) {
+                const p = produtos[id];
+                if(p.pausado) continue;
+                let mostrar = false;
+                if(p.tipo === 'refeicao') { if(abertoRefeicao) mostrar = true; } 
+                else { if(abertoGeral) mostrar = true; }
+
+                if(!mostrar) continue;
+                const foto = p.img ? `<img src="${p.img}" class="w-16 h-16 object-cover rounded-xl">` : `<div class="w-16 h-16 bg-amber-50 rounded-xl"></div>`;
+                container.innerHTML += `
+                    <div class="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center border border-amber-50">
+                        <div class="flex items-center gap-3">
+                            ${foto}
+                            <div>
+                                <h3 class="font-bold text-amber-900 text-sm leading-tight">${p.nome}</h3>
+                                <p class="text-green-700 font-black text-sm">R$ ${p.preco.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <button onclick="addCart('${id}', '${p.nome}', ${p.preco})" class="bg-amber-600 text-white px-5 py-2 rounded-xl font-black shadow-md hover:bg-amber-700">+</button>
+                    </div>`;
+            }
+        }
+
+        window.toggleTroco = (val) => document.getElementById('cli-troco').classList.toggle('hidden', val !== 'Dinheiro');
+        window.addCart = (id, nome, preco) => {
+            carrinho.push({id, nome, preco});
+            updateCart();
+            Toastify({text: "Adicionado ao carrinho", duration: 1500, style: {background: "#d97706"}}).showToast();
         };
 
-        // Função de Impressão
-        window.imprimir = async (id) => {
-            const res = await fetch(`${DB_BASE}vendas/${id}.json`);
-            const v = await res.json();
-            document.getElementById('secao-impressao').innerHTML = `
-                <div style="text-align:center; text-transform:uppercase;">
-                    <h2 style="margin:0;">POINT DO CAFÉ</h2><p>PEDIDO #${id.slice(-4)}</p>
-                    <div class="divisa"></div>
-                    <div style="text-align:left;">
-                        <b>CLIENTE:</b> ${v.cliente}<br><b>END:</b> ${v.endereco}<br>
-                        ${v.referencia ? `<b>REF:</b> ${v.referencia}<br>` : ''}<b>PAGTO:</b> ${v.pagamento}<br>
-                        ${v.troco ? `<b>TROCO P/:</b> R$ ${v.troco}<br>` : ''}
-                        <div class="divisa"></div>${v.itens.map(i => `1x ${i.nome}`).join('<br>')}
-                        <div class="divisa"></div><b>TOTAL: R$ ${v.total.toFixed(2)}</b>
-                    </div>
-                </div>`;
-            window.print();
+        window.limparCarrinho = () => {
+            if(confirm("Deseja esvaziar o seu carrinho?")) { carrinho = []; updateCart(); fecharCheckout(); }
         };
 
-        // Intervalos e Carga Inicial
-        setInterval(carregar, 5000); 
-        setInterval(() => document.getElementById('relogio').innerText = new Date().toLocaleTimeString(), 1000);
-        carregar();
+        function updateCart() {
+            const total = carrinho.reduce((acc, i) => acc + i.preco, 0);
+            document.getElementById('cart-summary').innerText = `${carrinho.length} itens | R$ ${total.toFixed(2)}`;
+            document.getElementById('cart-float').classList.toggle('hidden', carrinho.length === 0);
+        }
+
+        window.abrirCheckout = () => {
+            document.getElementById('resumo-itens').innerHTML = carrinho.map(i => `<div class="flex justify-between py-1"><span>1x ${i.nome}</span><span>R$ ${i.preco.toFixed(2)}</span></div>`).join('');
+            document.getElementById('modal-checkout').classList.remove('hidden');
+        };
+
+        window.fecharCheckout = () => document.getElementById('modal-checkout').classList.add('hidden');
+
+        window.enviarPedidoFinal = async () => {
+            const n = document.getElementById('cli-nome').value.trim();
+            const tel = document.getElementById('cli-tel').value.trim();
+            const e = document.getElementById('cli-end').value.trim();
+            const ref = document.getElementById('cli-ref').value.trim();
+            const pgto = document.getElementById('cli-pgto').value;
+            const troco = document.getElementById('cli-troco').value.trim();
+
+            if(!n || !e || !tel) return alert("Preencha Nome, WhatsApp e Endereço.");
+
+            const pedidoId = "PED-" + Date.now().toString().slice(-6);
+            const totalGeral = carrinho.reduce((acc, i) => acc + i.preco, 0);
+            const statusLink = window.location.origin + "/status2.html?id=" + pedidoId;
+            
+            const pedido = {
+                id: pedidoId, cliente: n, telefone: tel, endereco: e, referencia: ref,
+                pagamento: pgto, troco: troco, itens: carrinho, total: totalGeral, status: 'pendente', 
+                data: new Date().toISOString(), dataLocal: new Date().toLocaleDateString('pt-BR')
+            };
+
+            await fetch(`${DB_BASE}vendas/${pedidoId}.json`, { method: 'PUT', body: JSON.stringify(pedido) });
+
+            let msg = `*☕ NOVO PEDIDO - POINT DO CAFÉ*\n`;
+            msg += `----------------------------------\n`;
+            msg += `*ID:* #${pedidoId}\n`;
+            msg += `*Cliente:* ${n}\n`;
+            msg += `*Endereço:* ${e}\n`;
+            msg += `*Acompanhe seu pedido aqui:* ${statusLink}\n`;
+            msg += `----------------------------------\n`;
+            msg += `*ITENS:*\n`;
+            carrinho.forEach(item => { msg += `• 1x ${item.nome} - R$ ${item.preco.toFixed(2)}\n`; });
+            msg += `----------------------------------\n`;
+            msg += `*TOTAL: R$ ${totalGeral.toFixed(2)}*`;
+
+            window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
+            window.location.href = `status2.html?id=${pedidoId}`;
+        };
+
+        init();
     </script>
 </body>
 </html>
