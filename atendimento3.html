@@ -3,181 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terminal de Atendimento - Point do Café</title>
+    <title>Cozinha - Point do Café</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <style>
-        @media print {
-            body * { display: none !important; }
-            #secao-impressao, #secao-impressao * { display: block !important; }
-            #secao-impressao { width: 72mm; font-family: 'Courier New', monospace; font-size: 10pt; padding: 5px; }
-            .divisa { border-bottom: 1px dashed #000; margin: 5px 0; }
-        }
-        .tempo-ok { border-left: 8px solid #10b981; background-color: #f0fdf4; } 
-        .tempo-alerta { border-left: 8px solid #f59e0b; background-color: #fffbeb; } 
-        .tempo-atrasado { border-left: 8px solid #ef4444; background-color: #fef2f2; } 
-        .status-pronto { border-left: 8px solid #6b7280; opacity: 0.6; background-color: #f4f4f5; } 
-        .aba-content.hidden { display: none; }
-        .tab-active { background-color: #d97706 !important; color: white !important; }
+        .tempo-ok { border-left: 8px solid #10b981; background-color: #fff; } 
+        .tempo-atrasado { border-left: 8px solid #ef4444; background-color: #fff; border-right: 8px solid #ef4444; } 
+        .status-pronto { opacity: 0.5; grayscale: 100%; }
     </style>
 </head>
-<body class="bg-zinc-100 p-4 font-sans text-left">
-    
-    <nav class="max-w-2xl mx-auto flex gap-2 mb-6">
-        <button onclick="mudarAba('pedidos')" id="btn-pedidos" class="flex-1 py-4 rounded-2xl font-black uppercase text-xs shadow-sm bg-white text-zinc-400 tab-active">📋 Pedidos</button>
-        <button onclick="mudarAba('estoque')" id="btn-estoque" class="flex-1 py-4 rounded-2xl font-black uppercase text-xs shadow-sm bg-white text-zinc-400">🚫 Pausar Itens</button>
-    </nav>
-
+<body class="bg-zinc-100 p-4 font-sans">
     <header class="max-w-2xl mx-auto flex justify-between items-center mb-6 bg-white p-6 rounded-3xl shadow-sm border-b-4 border-amber-600">
-        <h1 id="titulo-aba" class="text-xl font-black uppercase italic text-zinc-800">Fila de Produção</h1>
+        <h1 class="text-xl font-black uppercase italic">Fila de Produção</h1>
         <div id="relogio" class="font-bold text-zinc-400">00:00:00</div>
     </header>
 
-    <main id="aba-pedidos" class="aba-content max-w-2xl mx-auto space-y-4 pb-10"></main>
-    <main id="aba-estoque" class="aba-content hidden max-w-2xl mx-auto space-y-2 pb-10"></main>
-
-    <div id="secao-impressao" class="hidden"></div>
+    <main id="lista-pedidos" class="max-w-2xl mx-auto space-y-4 pb-10"></main>
     <audio id="alerta-sonoro" src="https://www.soundjay.com/buttons/button-2.mp3" preload="auto"></audio>
 
     <script type="module">
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
         let pedidosIDConhecidos = new Set();
-        const TEMPO_LIMITE_MINUTOS = 25;
-
-        window.mudarAba = (aba) => {
-            document.querySelectorAll('.aba-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('nav button').forEach(el => el.classList.remove('tab-active'));
-            if(aba === 'pedidos') {
-                document.getElementById('aba-pedidos').classList.remove('hidden');
-                document.getElementById('btn-pedidos').classList.add('tab-active');
-                carregar();
-            } else {
-                document.getElementById('aba-estoque').classList.remove('hidden');
-                document.getElementById('btn-estoque').classList.add('tab-active');
-                carregarEstoque();
-            }
-        };
 
         async function carregar() {
             try {
                 const res = await fetch(`${DB_BASE}vendas.json`);
                 const vendas = await res.json();
-                const container = document.getElementById('aba-pedidos');
+                const container = document.getElementById('lista-pedidos');
                 if(!vendas) return;
 
                 const hoje = new Date().toLocaleDateString('pt-BR');
                 let pedidos = Object.keys(vendas).map(id => ({id, ...vendas[id]}))
                     .filter(v => v.dataLocal === hoje);
 
-                pedidos.sort((a, b) => {
-                    if (a.status === 'pronto' && b.status !== 'pronto') return 1;
-                    if (a.status !== 'pronto' && b.status === 'pronto') return -1;
-                    return new Date(a.data) - new Date(b.data);
-                });
+                pedidos.sort((a, b) => new Date(a.data) - new Date(b.data));
 
-                let novoPedido = false;
-                pedidos.forEach(p => { if (!pedidosIDConhecidos.has(p.id)) { pedidosIDConhecidos.add(p.id); novoPedido = true; } });
-                if (novoPedido && pedidosIDConhecidos.size > pedidos.length) document.getElementById('alerta-sonoro').play().catch(() => {});
+                // Alerta sonoro para novos pedidos
+                pedidos.forEach(p => { 
+                    if (!pedidosIDConhecidos.has(p.id) && p.status === 'pendente') { 
+                        pedidosIDConhecidos.add(p.id); 
+                        document.getElementById('alerta-sonoro').play().catch(() => {});
+                    } 
+                });
 
                 container.innerHTML = "";
                 pedidos.forEach(v => {
-                    const diffMin = Math.floor((new Date() - new Date(v.data)) / 1000 / 60);
-                    const classeTempo = v.status === 'pronto' ? 'status-pronto' : (diffMin < 10 ? "tempo-ok" : (diffMin < 25 ? "tempo-alerta" : "tempo-atrasado"));
-                    
-                    // Lógica do botão de WhatsApp Inteligente
-                    const botaoWhatsapp = v.telefone ? 
-                        `<button onclick="avisarWhatsApp('${v.telefone}', '${v.cliente}', '${v.id}')" class="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black uppercase text-xs">✅ Avisar Pronto</button>` :
-                        `<div class="flex flex-col w-full gap-1">
-                            <input type="text" id="tel-manual-${v.id}" placeholder="WhatsApp (DDD+Número)" class="p-2 bg-zinc-50 border border-zinc-200 rounded-xl text-[10px] outline-none">
-                            <button onclick="vincularEAvisar('${v.id}', '${v.cliente}')" class="w-full py-2 bg-zinc-800 text-white rounded-xl font-black uppercase text-[9px]">Vincular e Finalizar</button>
-                         </div>`;
+                    if(v.status === 'finalizado') return;
 
+                    const diffMin = Math.floor((new Date() - new Date(v.data)) / 1000 / 60);
+                    const classeTempo = diffMin > 20 ? 'tempo-atrasado' : 'tempo-ok';
+                    const pronto = v.status === 'pronto' ? 'status-pronto' : '';
+                    
                     container.innerHTML += `
-                        <div class="bg-white p-6 rounded-3xl shadow-sm ${classeTempo}">
-                            <div class="flex justify-between items-center mb-4">
-                                <span class="bg-zinc-800 text-white px-4 py-1 rounded-full font-black">#${v.id.slice(-4)}</span>
-                                <button onclick="imprimir('${v.id}')" class="text-[9px] font-bold text-amber-600 underline uppercase">Imprimir</button>
+                        <div class="bg-white p-6 rounded-3xl shadow-sm ${classeTempo} ${pronto} transition-all">
+                            <div class="flex justify-between items-start mb-4">
+                                <span class="bg-zinc-800 text-white px-4 py-1 rounded-full font-black text-xs">#${v.id.slice(-4)}</span>
+                                <span class="text-[10px] font-bold uppercase text-zinc-400">${diffMin} min atrás</span>
                             </div>
-                            <div class="mb-4 text-xs font-black uppercase text-zinc-900">${v.cliente}</div>
+                            <div class="mb-4">
+                                <p class="font-black text-sm uppercase italic">${v.cliente}</p>
+                                <p class="text-[10px] text-zinc-500 font-bold">${v.endereco}</p>
+                            </div>
                             <div class="mb-6 space-y-1">
-                                ${v.itens.map(i => `<div class="p-2 bg-zinc-50 rounded-lg text-xs uppercase font-bold">1x ${i.nome}</div>`).join('')}
-                                ${v.observacao ? `<div class="text-[9px] text-red-500 font-bold italic mt-2">OBS: ${v.observacao}</div>` : ''}
+                                ${v.itens.map(i => `<div class="p-2 bg-zinc-50 rounded-lg text-xs font-bold uppercase">1x ${i.nome}</div>`).join('')}
+                                ${v.observacao ? `<p class="text-[10px] text-red-500 font-bold italic mt-2">OBS: ${v.observacao}</p>` : ''}
                             </div>
                             <div class="flex gap-2">
-                                ${v.status === 'pendente' ? `<button onclick="alterarStatus('${v.id}', 'preparo')" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black uppercase text-xs">🔥 Iniciar</button>` : ''}
-                                ${v.status === 'preparo' ? botaoWhatsapp : ''}
-                                ${v.status === 'pronto' ? `<span class="w-full text-center text-green-600 font-black py-2">CONCLUÍDO</span>` : ''}
+                                ${v.status === 'pendente' ? `<button onclick="mudarStatus('${v.id}', 'preparo')" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black uppercase text-xs">🔥 Iniciar</button>` : ''}
+                                ${v.status === 'preparo' ? `<button onclick="finalizarEAvisar('${v.id}', '${v.telefone}', '${v.cliente}')" class="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black uppercase text-xs">✅ Finalizar e Avisar</button>` : ''}
+                                ${v.status === 'pronto' ? `<button onclick="mudarStatus('${v.id}', 'finalizado')" class="flex-1 py-2 bg-zinc-200 rounded-xl font-bold uppercase text-[10px]">Arquivar</button>` : ''}
                             </div>
                         </div>`;
                 });
             } catch (e) { console.error(e); }
         }
 
-        window.alterarStatus = async (id, s) => { 
+        window.mudarStatus = async (id, s) => { 
             await fetch(`${DB_BASE}vendas/${id}/status.json`, { method: 'PUT', body: JSON.stringify(s) }); 
             carregar(); 
         };
 
-        window.vincularEAvisar = async (id, nome) => {
-            const tel = document.getElementById(`tel-manual-${id}`).value.trim().replace(/\D/g, "");
-            if(tel.length < 10) return alert("Insira um número válido (Ex: 61999999999)");
-            
-            // Salva o telefone no banco para futuras referências e finaliza
-            await fetch(`${DB_BASE}vendas/${id}/telefone.json`, { method: 'PUT', body: JSON.stringify(tel) });
+        window.finalizarEAvisar = async (id, tel, nome) => {
             await fetch(`${DB_BASE}vendas/${id}/status.json`, { method: 'PUT', body: JSON.stringify('pronto') });
-            
-            avisarWhatsApp(tel, nome, id);
-        };
-
-        window.avisarWhatsApp = (tel, nome, id) => {
             const statusLink = window.location.origin + window.location.pathname.replace('atendimento3.html', 'status2.html') + "?id=" + id;
-            const msg = `Olá *${nome}*! Seu pedido do *Point do Café* está pronto e saiu para entrega! 🛵☕\nAcompanhe aqui: ${statusLink}`;
-            window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+            const msg = `Olá *${nome}*! Seu pedido do *Point do Café* saiu para entrega! 🛵☕\nAcompanhe aqui: ${statusLink}`;
+            window.open(`https://wa.me/55${tel}?text=${encodeURIComponent(msg)}`, '_blank');
             carregar();
         };
 
-        async function carregarEstoque() {
-            const res = await fetch(`${DB_BASE}produtos.json`);
-            const prods = await res.json();
-            const container = document.getElementById('aba-estoque');
-            container.innerHTML = "<h2 class='text-[10px] font-bold text-zinc-400 uppercase mb-4 px-2'>Pausar itens que acabaram</h2>";
-            for(let id in prods) {
-                const p = prods[id];
-                container.innerHTML += `
-                    <div class="bg-white p-4 rounded-2xl flex justify-between items-center border ${p.pausado ? 'bg-red-50' : ''}">
-                        <span class="font-bold text-xs uppercase">${p.nome}</span>
-                        <button onclick="togglePausa('${id}', ${p.pausado})" class="px-4 py-2 rounded-xl font-black text-[9px] uppercase ${p.pausado ? 'bg-green-600' : 'bg-red-500'} text-white">
-                            ${p.pausado ? 'Ativar' : 'Pausar'}
-                        </button>
-                    </div>`;
-            }
-        }
-
-        window.togglePausa = async (id, status) => {
-            await fetch(`${DB_BASE}produtos/${id}/pausado.json`, { method: 'PUT', body: JSON.stringify(!status) });
-            carregarEstoque();
-        };
-
-        window.imprimir = async (id) => {
-            const res = await fetch(`${DB_BASE}vendas/${id}.json`);
-            const v = await res.json();
-            document.getElementById('secao-impressao').innerHTML = `
-                <div style="text-align:center; text-transform:uppercase;">
-                    <h2>POINT DO CAFÉ</h2><p>PEDIDO #${id.slice(-4)}</p>
-                    <div class="divisa"></div>
-                    <div style="text-align:left; font-size: 11pt;">
-                        <b>CLIENTE:</b> ${v.cliente}<br><b>END:</b> ${v.endereco}<br>
-                        <b>PAGTO:</b> ${v.pagamento}<br>
-                        <div class="divisa"></div>
-                        ${v.itens.map(i => `1x ${i.nome}`).join('<br>')}
-                        <div class="divisa"></div><b>TOTAL: R$ ${v.total.toFixed(2)}</b>
-                    </div>
-                </div>`;
-            window.print();
-        };
-
-        setInterval(() => { if(!document.getElementById('aba-pedidos').classList.contains('hidden')) carregar(); }, 5000); 
+        setInterval(carregar, 5000); 
         setInterval(() => document.getElementById('relogio').innerText = new Date().toLocaleTimeString(), 1000);
         carregar();
     </script>
