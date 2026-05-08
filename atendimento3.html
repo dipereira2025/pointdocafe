@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terminal - Point do Café</title>
+    <title>Terminal de Atendimento - Point do Café</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @media print {
@@ -12,56 +12,103 @@
             #secao-impressao { width: 72mm; font-family: 'Courier New', monospace; font-size: 10pt; padding: 5px; }
             .divisa { border-bottom: 1px dashed #000; margin: 5px 0; }
         }
-        .status-pendente { border-left: 8px solid #f59e0b; }
-        .status-preparo { border-left: 8px solid #3b82f6; }
-        .status-pronto { border-left: 8px solid #10b981; opacity: 0.6; }
+        /* Cores baseadas no tempo de espera */
+        .tempo-ok { border-left: 8px solid #10b981; background-color: #f0fdf4; } /* Verde */
+        .tempo-alerta { border-left: 8px solid #f59e0b; background-color: #fffbeb; } /* Amarelo */
+        .tempo-atrasado { border-left: 8px solid #ef4444; background-color: #fef2f2; } /* Vermelho */
+        .status-pronto { border-left: 8px solid #6b7280; opacity: 0.6; background-color: #f4f4f5; } /* Cinza */
     </style>
 </head>
 <body class="bg-zinc-100 p-4 font-sans text-left">
     <header class="max-w-2xl mx-auto flex justify-between items-center mb-6 bg-white p-6 rounded-3xl shadow-sm border-b-4 border-amber-600">
-        <h1 class="text-xl font-black uppercase italic">Fila de Pedidos</h1>
+        <h1 class="text-xl font-black uppercase italic">Fila de Produção</h1>
         <div id="relogio" class="font-bold text-zinc-400">00:00:00</div>
     </header>
 
     <main id="lista-pedidos" class="max-w-2xl mx-auto space-y-4 pb-10"></main>
     <div id="secao-impressao" class="hidden"></div>
-    <audio id="alerta" src="https://www.soundjay.com/buttons/button-2.mp3" preload="auto"></audio>
+    
+    <audio id="alerta-sonoro" src="https://www.soundjay.com/buttons/button-2.mp3" preload="auto"></audio>
 
     <script type="module">
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
-        let ultimaQtd = 0;
+        let pedidosIDConhecidos = new Set();
+        const TEMPO_LIMITE_MINUTOS = 25;
+
+        function calcularClasseTempo(dataIso) {
+            const agora = new Date();
+            const pedidoHora = new Date(dataIso);
+            const diffMinutos = Math.floor((agora - pedidoHora) / 1000 / 60);
+
+            if (diffMinutos < 10) return "tempo-ok";
+            if (diffMinutos < TEMPO_LIMITE_MINUTOS) return "tempo-alerta";
+            return "tempo-atrasado";
+        }
 
         async function carregar() {
-            const res = await fetch(`${DB_BASE}vendas.json`);
-            const vendas = await res.json();
-            const container = document.getElementById('lista-pedidos');
-            if(!vendas) return;
+            try {
+                const res = await fetch(`${DB_BASE}vendas.json`);
+                const vendas = await res.json();
+                const container = document.getElementById('lista-pedidos');
+                if(!vendas) return;
 
-            const hoje = new Date().toLocaleDateString('pt-BR');
-            const pedidos = Object.keys(vendas).map(id => ({id, ...vendas[id]})).filter(v => v.dataLocal === hoje);
+                const hoje = new Date().toLocaleDateString('pt-BR');
+                
+                // Converter para array e filtrar pedidos de hoje
+                let pedidos = Object.keys(vendas).map(id => ({id, ...vendas[id]}))
+                    .filter(v => v.dataLocal === hoje);
 
-            if(pedidos.length > ultimaQtd && ultimaQtd !== 0) document.getElementById('alerta').play().catch(() => {});
-            ultimaQtd = pedidos.length;
+                // ORDENAÇÃO: Mais antigos primeiro (Pendentes e Preparo), depois Prontos
+                pedidos.sort((a, b) => {
+                    if (a.status === 'pronto' && b.status !== 'pronto') return 1;
+                    if (a.status !== 'pronto' && b.status === 'pronto') return -1;
+                    return new Date(a.data) - new Date(b.data);
+                });
 
-            container.innerHTML = "";
-            pedidos.reverse().forEach(v => {
-                container.innerHTML += `
-                    <div class="bg-white p-6 rounded-3xl shadow-sm status-${v.status}">
-                        <div class="flex justify-between items-center mb-4">
-                            <span class="bg-zinc-800 text-white px-4 py-1 rounded-full font-black">#${v.id.slice(-4)}</span>
-                            <button onclick="imprimir('${v.id}')" class="text-[10px] font-bold text-zinc-400 underline uppercase">Reimprimir Nota</button>
-                        </div>
-                        <div class="mb-4 text-xs font-bold uppercase">
-                            <p>${v.cliente}</p><p class="font-normal text-zinc-500">${v.endereco} ${v.referencia ? `(${v.referencia})` : ''}</p>
-                            ${v.troco ? `<p class="text-red-600">Troco: R$ ${v.troco}</p>` : ''}
-                        </div>
-                        <div class="mb-6 font-bold text-sm text-zinc-700">${v.itens.map(i => `<div>1x ${i.nome}</div>`).join('')}</div>
-                        <div class="flex gap-2">
-                            ${v.status === 'pendente' ? `<button onclick="status('${v.id}', 'preparo')" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black uppercase text-xs">🔥 Iniciar</button>` : ''}
-                            ${v.status === 'preparo' ? `<button onclick="status('${v.id}', 'pronto')" class="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black uppercase text-xs">✅ Finalizar</button>` : ''}
-                        </div>
-                    </div>`;
-            });
+                // ALERTA SONORO: Verifica se entrou ID novo
+                let novoPedidoEncontrado = false;
+                pedidos.forEach(p => {
+                    if (!pedidosIDConhecidos.has(p.id)) {
+                        pedidosIDConhecidos.add(p.id);
+                        novoPedidoEncontrado = true;
+                    }
+                });
+
+                if (novoPedidoEncontrado && pedidosIDConhecidos.size > pedidos.length) {
+                    // Toca apenas se não for o primeiro carregamento da página
+                    document.getElementById('alerta-sonoro').play().catch(() => {});
+                }
+
+                container.innerHTML = "";
+                pedidos.forEach(v => {
+                    const classeTempo = v.status === 'pronto' ? 'status-pronto' : calcularClasseTempo(v.data);
+                    const minutosPassados = Math.floor((new Date() - new Date(v.data)) / 1000 / 60);
+                    
+                    container.innerHTML += `
+                        <div class="bg-white p-6 rounded-3xl shadow-sm ${classeTempo} transition-colors duration-500">
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="bg-zinc-800 text-white px-4 py-1 rounded-full font-black">#${v.id.slice(-4)}</span>
+                                <div class="text-right">
+                                    <span class="text-[10px] font-bold uppercase block text-zinc-400">Há ${minutosPassados} min</span>
+                                    <button onclick="imprimir('${v.id}')" class="text-[9px] font-bold text-amber-600 underline uppercase">Imprimir</button>
+                                </div>
+                            </div>
+                            <div class="mb-4 text-xs font-bold uppercase">
+                                <p class="text-zinc-900">${v.cliente}</p>
+                                <p class="font-normal text-zinc-500">${v.endereco} ${v.referencia ? `(${v.referencia})` : ''}</p>
+                                ${v.troco ? `<p class="text-red-600">Troco: R$ ${v.troco}</p>` : ''}
+                            </div>
+                            <div class="mb-6 font-bold text-sm text-zinc-700">
+                                ${v.itens.map(i => `<div class="border-b border-zinc-100 py-1">1x ${i.nome}</div>`).join('')}
+                            </div>
+                            <div class="flex gap-2">
+                                ${v.status === 'pendente' ? `<button onclick="status('${v.id}', 'preparo')" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black uppercase text-xs">🔥 Iniciar Preparo</button>` : ''}
+                                ${v.status === 'preparo' ? `<button onclick="status('${v.id}', 'pronto')" class="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black uppercase text-xs">✅ Finalizar</button>` : ''}
+                                ${v.status === 'pronto' ? `<button onclick="status('${v.id}', 'preparo')" class="flex-1 py-2 bg-zinc-200 text-zinc-500 rounded-xl font-bold uppercase text-[10px]">↩️ Reabrir</button>` : ''}
+                            </div>
+                        </div>`;
+                });
+            } catch (e) { console.error("Erro na atualização:", e); }
         }
 
         window.imprimir = async (id) => {
@@ -82,9 +129,16 @@
             window.print();
         };
 
-        window.status = async (id, s) => { await fetch(`${DB_BASE}vendas/${id}/status.json`, { method: 'PUT', body: JSON.stringify(s) }); carregar(); };
-        setInterval(carregar, 5000);
+        window.status = async (id, s) => { 
+            await fetch(`${DB_BASE}vendas/${id}/status.json`, { method: 'PUT', body: JSON.stringify(s) }); 
+            carregar(); 
+        };
+
+        // Atualização rápida do relógio e dados
+        setInterval(carregar, 5000); 
         setInterval(() => document.getElementById('relogio').innerText = new Date().toLocaleTimeString(), 1000);
+        
+        // Carga inicial
         carregar();
     </script>
 </body>
