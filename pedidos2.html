@@ -75,3 +75,72 @@
                 if(info) {
                     if(info.name) document.getElementById('header-name').innerText = info.name;
                     if(info.description) document.getElementById('header-desc').innerText = info.description;
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadMenu() {
+            const res = await fetch(`${DB_BASE}produtos.json`);
+            const produtos = await res.json();
+            const container = document.getElementById('categorias-container');
+            container.innerHTML = "";
+            for (let id in produtos) {
+                if(produtos[id].pausado) continue;
+                const foto = produtos[id].img ? `<img src="${produtos[id].img}" class="w-16 h-16 object-cover rounded-xl shadow-sm">` : `<div class="w-16 h-16 bg-amber-50 rounded-xl"></div>`;
+                container.innerHTML += `
+                    <div class="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center border border-amber-50">
+                        <div class="flex items-center gap-3">
+                            ${foto}
+                            <div>
+                                <h3 class="font-bold text-amber-900 text-sm leading-tight">${produtos[id].nome}</h3>
+                                <p class="text-green-700 font-black text-sm">R$ ${produtos[id].preco.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <button onclick="addCart('${id}', '${produtos[id].nome}', ${produtos[id].preco})" class="bg-amber-600 text-white px-4 py-2 rounded-xl font-bold">+</button>
+                    </div>`;
+            }
+        }
+
+        window.toggleTroco = (val) => document.getElementById('cli-troco').classList.toggle('hidden', val !== 'Dinheiro');
+        window.addCart = (id, nome, preco) => {
+            carrinho.push({id, nome, preco});
+            updateCart();
+            Toastify({text: "Adicionado!", duration: 1000, style: {background: "#d97706"}}).showToast();
+        };
+
+        function updateCart() {
+            const total = carrinho.reduce((acc, i) => acc + i.preco, 0);
+            document.getElementById('cart-summary').innerText = `${carrinho.length} itens | R$ ${total.toFixed(2)}`;
+            document.getElementById('cart-float').classList.toggle('hidden', carrinho.length === 0);
+        }
+
+        window.abrirCheckout = () => {
+            document.getElementById('resumo-itens').innerHTML = carrinho.map(i => `<div class="flex justify-between"><span>1x ${i.nome}</span><span>R$ ${i.preco.toFixed(2)}</span></div>`).join('');
+            document.getElementById('modal-checkout').classList.remove('hidden');
+        };
+        window.fecharCheckout = () => document.getElementById('modal-checkout').classList.add('hidden');
+
+        window.enviarPedidoFinal = async () => {
+            const n = document.getElementById('cli-nome').value;
+            const e = document.getElementById('cli-end').value;
+            if(!n || !e) return alert("Preencha Nome e Endereço");
+
+            const pedidoId = "PED-" + Date.now().toString().slice(-6);
+            const totalGeral = carrinho.reduce((acc, i) => acc + i.preco, 0);
+            const pedido = {
+                id: pedidoId, cliente: n, endereco: e, referencia: document.getElementById('cli-ref').value,
+                pagamento: document.getElementById('cli-pgto').value, troco: document.getElementById('cli-troco').value,
+                itens: carrinho, total: totalGeral, status: 'pendente', data: new Date().toISOString(), dataLocal: new Date().toLocaleDateString('pt-BR')
+            };
+
+            await fetch(`${DB_BASE}vendas/${pedidoId}.json`, { method: 'PUT', body: JSON.stringify(pedido) });
+            let msg = `*NOVO PEDIDO #${pedidoId}*\n*Cliente:* ${n}\n*Total:* R$ ${totalGeral.toFixed(2)}`;
+            window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
+            window.location.href = `status2.html?id=${pedidoId}`;
+        };
+
+        carregarIdentidade();
+        loadMenu();
+    </script>
+</body>
+</html>
