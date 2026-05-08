@@ -3,60 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Status do Pedido - Point do Café</title>
+    <title>Acompanhar Pedido - Point do Café</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-zinc-50 p-6 flex flex-col items-center min-h-screen font-sans">
     
-    <div id="status-card" class="bg-white w-full max-w-md p-8 rounded-[2.5rem] shadow-xl text-center border-t-8 border-amber-600">
-        <h1 class="text-zinc-400 text-xs font-black uppercase tracking-widest mb-2">Pedido</h1>
-        <h2 id="ped-id" class="text-2xl font-black text-zinc-900 mb-6">#0000</h2>
+    <div id="status-card" class="bg-white w-full max-w-md p-8 rounded-[3rem] shadow-xl text-center border-t-8 border-amber-600 mt-10">
+        <h1 class="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">Pedido Registrado</h1>
+        <h2 id="ped-id" class="text-2xl font-black text-zinc-900 mb-8 italic">#----</h2>
         
-        <div id="status-icon" class="w-24 h-24 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">⏳</div>
-        <h3 id="status-txt" class="text-xl font-black text-amber-600 uppercase italic mb-8">Recebido</h3>
+        <div id="status-icon" class="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl animate-pulse">⏳</div>
+        <h3 id="status-txt" class="text-xl font-black text-amber-600 uppercase italic mb-10">Aguardando Cozinha</h3>
 
-        <div class="space-y-4 text-left border-t pt-6">
-            <p class="text-xs font-bold text-zinc-400 uppercase">Resumo:</p>
-            <div id="ped-itens" class="text-sm text-zinc-800 space-y-1"></div>
+        <div class="text-left border-t pt-6 space-y-4">
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-2 bg-amber-600 rounded-full"></div>
+                <p class="text-xs text-zinc-600 font-bold uppercase">Pedido em Preparo</p>
+            </div>
+            <div class="flex items-center gap-3 opacity-30" id="step-entrega">
+                <div class="w-2 h-2 bg-zinc-400 rounded-full"></div>
+                <p class="text-xs text-zinc-600 font-bold uppercase">Saiu para Entrega</p>
+            </div>
         </div>
     </div>
 
+    <p class="mt-10 text-[10px] text-zinc-400 font-bold uppercase">Point do Café - Qualidade em cada grão</p>
+
     <script>
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
-        const params = new URLSearchParams(window.location.search);
-        const pedidoId = params.get('id');
-        const capturar = params.get('cap');
+        const pedidoId = new URLSearchParams(window.location.search).get('id');
 
-        async function initStatus() {
+        async function atualizarStatus() {
             if(!pedidoId) return;
-            
             const res = await fetch(`${DB_BASE}vendas/${pedidoId}.json`);
             const v = await res.json();
             if(!v) return;
 
-            document.getElementById('ped-id').innerText = "#" + pedidoId.slice(-4);
-            document.getElementById('ped-itens').innerHTML = v.itens.map(i => `<div>1x ${i.nome}</div>`).join('');
+            document.getElementById('ped-id').innerText = "#" + v.id.slice(-4);
             
-            const st = v.status;
-            const icon = document.getElementById('status-icon');
-            const txt = document.getElementById('status-txt');
-
-            if(st === 'preparo') { icon.innerText = "🔥"; txt.innerText = "Em Preparo"; txt.className = "text-xl font-black text-orange-500 uppercase italic mb-8"; }
-            if(st === 'pronto') { icon.innerText = "🛵"; txt.innerText = "Saiu para Entrega!"; txt.className = "text-xl font-black text-green-600 uppercase italic mb-8"; }
-
-            // LÓGICA DE CAPTURA DA SOLUÇÃO 1
-            // Se o atendente clicar no link vindo do WhatsApp, vamos tentar salvar o telefone
-            if(capturar && !v.telefone) {
-                // Como não podemos ler o número do WhatsApp diretamente por segurança do navegador,
-                // vamos pedir para o atendente confirmar apenas uma vez ou automatizar se você usar uma URL formatada.
-                // Mas a forma mais simples: Quando você abre o link no seu PC/Celular, o sistema identifica que é o dono e salva.
-                console.log("Tentando vincular número...");
-                // Note: Esta parte depende de você clicar no link que o cliente enviou.
+            if(v.status === 'preparo') {
+                document.getElementById('status-icon').innerText = "🔥";
+                document.getElementById('status-txt').innerText = "Em Preparo";
+            }
+            if(v.status === 'pronto') {
+                document.getElementById('status-icon').innerText = "🛵";
+                document.getElementById('status-icon').classList.remove('animate-pulse');
+                document.getElementById('status-txt').innerText = "Saiu para Entrega!";
+                document.getElementById('status-txt').classList.replace('text-amber-600', 'text-green-600');
+                document.getElementById('step-entrega').classList.remove('opacity-30');
             }
         }
 
-        setInterval(initStatus, 5000);
-        initStatus();
+        setInterval(atualizarStatus, 5000);
+        atualizarStatus();
     </script>
 </body>
 </html>
