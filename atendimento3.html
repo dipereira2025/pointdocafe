@@ -12,11 +12,10 @@
             #secao-impressao { width: 72mm; font-family: 'Courier New', monospace; font-size: 10pt; padding: 5px; }
             .divisa { border-bottom: 1px dashed #000; margin: 5px 0; }
         }
-        /* Cores baseadas no tempo de espera */
-        .tempo-ok { border-left: 8px solid #10b981; background-color: #f0fdf4; } /* Verde */
-        .tempo-alerta { border-left: 8px solid #f59e0b; background-color: #fffbeb; } /* Amarelo */
-        .tempo-atrasado { border-left: 8px solid #ef4444; background-color: #fef2f2; } /* Vermelho */
-        .status-pronto { border-left: 8px solid #6b7280; opacity: 0.6; background-color: #f4f4f5; } /* Cinza */
+        .tempo-ok { border-left: 8px solid #10b981; background-color: #f0fdf4; } 
+        .tempo-alerta { border-left: 8px solid #f59e0b; background-color: #fffbeb; } 
+        .tempo-atrasado { border-left: 8px solid #ef4444; background-color: #fef2f2; } 
+        .status-pronto { border-left: 8px solid #6b7280; opacity: 0.6; background-color: #f4f4f5; } 
     </style>
 </head>
 <body class="bg-zinc-100 p-4 font-sans text-left">
@@ -35,6 +34,7 @@
         let pedidosIDConhecidos = new Set();
         const TEMPO_LIMITE_MINUTOS = 25;
 
+        // Função para calcular a cor baseada no tempo
         function calcularClasseTempo(dataIso) {
             const agora = new Date();
             const pedidoHora = new Date(dataIso);
@@ -45,37 +45,37 @@
             return "tempo-atrasado";
         }
 
+        // Função Principal de Carga
         async function carregar() {
             try {
                 const res = await fetch(`${DB_BASE}vendas.json`);
                 const vendas = await res.json();
                 const container = document.getElementById('lista-pedidos');
-                if(!vendas) return;
+                if(!vendas) {
+                    container.innerHTML = "<p class='text-center text-zinc-400 font-bold uppercase py-10'>Aguardando Pedidos...</p>";
+                    return;
+                }
 
                 const hoje = new Date().toLocaleDateString('pt-BR');
-                
-                // Converter para array e filtrar pedidos de hoje
                 let pedidos = Object.keys(vendas).map(id => ({id, ...vendas[id]}))
                     .filter(v => v.dataLocal === hoje);
 
-                // ORDENAÇÃO: Mais antigos primeiro (Pendentes e Preparo), depois Prontos
+                // Ordenação: Pendentes/Preparo primeiro, mais antigos no topo
                 pedidos.sort((a, b) => {
                     if (a.status === 'pronto' && b.status !== 'pronto') return 1;
                     if (a.status !== 'pronto' && b.status === 'pronto') return -1;
                     return new Date(a.data) - new Date(b.data);
                 });
 
-                // ALERTA SONORO: Verifica se entrou ID novo
-                let novoPedidoEncontrado = false;
+                // Alerta Sonoro
+                let novoPedido = false;
                 pedidos.forEach(p => {
                     if (!pedidosIDConhecidos.has(p.id)) {
                         pedidosIDConhecidos.add(p.id);
-                        novoPedidoEncontrado = true;
+                        novoPedido = true;
                     }
                 });
-
-                if (novoPedidoEncontrado && pedidosIDConhecidos.size > pedidos.length) {
-                    // Toca apenas se não for o primeiro carregamento da página
+                if (novoPedido && pedidosIDConhecidos.size > pedidos.length) {
                     document.getElementById('alerta-sonoro').play().catch(() => {});
                 }
 
@@ -102,15 +102,29 @@
                                 ${v.itens.map(i => `<div class="border-b border-zinc-100 py-1">1x ${i.nome}</div>`).join('')}
                             </div>
                             <div class="flex gap-2">
-                                ${v.status === 'pendente' ? `<button onclick="status('${v.id}', 'preparo')" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black uppercase text-xs">🔥 Iniciar Preparo</button>` : ''}
-                                ${v.status === 'preparo' ? `<button onclick="status('${v.id}', 'pronto')" class="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black uppercase text-xs">✅ Finalizar</button>` : ''}
-                                ${v.status === 'pronto' ? `<button onclick="status('${v.id}', 'preparo')" class="flex-1 py-2 bg-zinc-200 text-zinc-500 rounded-xl font-bold uppercase text-[10px]">↩️ Reabrir</button>` : ''}
+                                ${v.status === 'pendente' ? `<button onclick="alterarStatus('${v.id}', 'preparo')" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black uppercase text-xs">🔥 Iniciar Preparo</button>` : ''}
+                                ${v.status === 'preparo' ? `<button onclick="alterarStatus('${v.id}', 'pronto')" class="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black uppercase text-xs">✅ Finalizar</button>` : ''}
+                                ${v.status === 'pronto' ? `<button onclick="alterarStatus('${v.id}', 'preparo')" class="flex-1 py-2 bg-zinc-200 text-zinc-500 rounded-xl font-bold uppercase text-[10px]">↩️ Reabrir</button>` : ''}
                             </div>
                         </div>`;
                 });
-            } catch (e) { console.error("Erro na atualização:", e); }
+            } catch (e) { console.error(e); }
         }
 
+        // Função para Alterar Status
+        window.alterarStatus = async (id, s) => { 
+            try {
+                await fetch(`${DB_BASE}vendas/${id}/status.json`, { 
+                    method: 'PUT', 
+                    body: JSON.stringify(s) 
+                }); 
+                carregar(); 
+            } catch (err) {
+                console.error("Erro ao mudar status:", err);
+            }
+        };
+
+        // Função de Impressão
         window.imprimir = async (id) => {
             const res = await fetch(`${DB_BASE}vendas/${id}.json`);
             const v = await res.json();
@@ -129,16 +143,9 @@
             window.print();
         };
 
-        window.status = async (id, s) => { 
-            await fetch(`${DB_BASE}vendas/${id}/status.json`, { method: 'PUT', body: JSON.stringify(s) }); 
-            carregar(); 
-        };
-
-        // Atualização rápida do relógio e dados
+        // Intervalos e Carga Inicial
         setInterval(carregar, 5000); 
         setInterval(() => document.getElementById('relogio').innerText = new Date().toLocaleTimeString(), 1000);
-        
-        // Carga inicial
         carregar();
     </script>
 </body>
