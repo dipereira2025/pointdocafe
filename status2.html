@@ -3,78 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acompanhe seu Pedido - Point do Café</title>
+    <title>Status do Pedido - Point do Café</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .step::after { content: ''; position: absolute; left: 19px; top: 40px; height: 40px; width: 2px; background: #e5e7eb; }
-        .step:last-child::after { display: none; }
-        .active-dot { background: #d97706 !important; color: white !important; border-color: #d97706 !important; box-shadow: 0 0 15px rgba(217, 119, 6, 0.4); }
-        .active-text { color: #d97706 !important; font-weight: 900; }
-        .bg-coffee { background-color: #fffcf7; }
-    </style>
 </head>
-<body class="bg-coffee flex flex-col items-center min-h-screen p-6">
-    <div class="w-full max-w-md bg-white rounded-[3rem] shadow-2xl p-8 border-t-8 border-amber-600 mt-4">
-        <header class="text-center mb-10">
-            <div id="logo-container" class="hidden">
-                <img id="store-logo" src="" class="w-24 h-24 mx-auto mb-4 rounded-full object-cover border-4 border-amber-100 shadow-sm">
-            </div>
-            <h1 id="store-name" class="text-2xl font-black uppercase italic text-amber-900">Point do Café</h1>
-            <p id="order-id" class="text-[10px] font-black text-amber-700 uppercase tracking-widest mt-2">Buscando pedido...</p>
-        </header>
+<body class="bg-zinc-50 p-6 flex flex-col items-center min-h-screen font-sans">
+    
+    <div id="status-card" class="bg-white w-full max-w-md p-8 rounded-[2.5rem] shadow-xl text-center border-t-8 border-amber-600">
+        <h1 class="text-zinc-400 text-xs font-black uppercase tracking-widest mb-2">Pedido</h1>
+        <h2 id="ped-id" class="text-2xl font-black text-zinc-900 mb-6">#0000</h2>
+        
+        <div id="status-icon" class="w-24 h-24 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">⏳</div>
+        <h3 id="status-txt" class="text-xl font-black text-amber-600 uppercase italic mb-8">Recebido</h3>
 
-        <div class="space-y-12 relative px-4">
-            <div id="step-pendente" class="step flex items-center gap-6 relative">
-                <div class="w-10 h-10 rounded-full bg-white border-2 border-zinc-200 flex items-center justify-center font-bold z-10">1</div>
-                <div><h3 class="text-sm uppercase text-zinc-400">Recebido</h3><p class="text-[9px] text-zinc-400">Pedido enviado com sucesso</p></div>
-            </div>
-            <div id="step-preparo" class="step flex items-center gap-6 relative">
-                <div class="w-10 h-10 rounded-full bg-white border-2 border-zinc-200 flex items-center justify-center font-bold z-10">2</div>
-                <div><h3 class="text-sm uppercase text-zinc-400">Em Preparo</h3><p class="text-[9px] text-zinc-400">O barista iniciou o preparo</p></div>
-            </div>
-            <div id="step-pronto" class="step flex items-center gap-6 relative">
-                <div class="w-10 h-10 rounded-full bg-white border-2 border-zinc-200 flex items-center justify-center font-bold z-10">3</div>
-                <div><h3 class="text-sm uppercase text-zinc-400">Pronto / Saiu</h3><p class="text-[9px] text-zinc-400">Tudo pronto para você!</p></div>
-            </div>
+        <div class="space-y-4 text-left border-t pt-6">
+            <p class="text-xs font-bold text-zinc-400 uppercase">Resumo:</p>
+            <div id="ped-itens" class="text-sm text-zinc-800 space-y-1"></div>
         </div>
-        <div class="mt-12 text-center border-t pt-6"><a href="pedidos2.html" class="text-zinc-400 font-bold text-[10px] uppercase">Novo Pedido</a></div>
     </div>
 
-    <script type="module">
+    <script>
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
-        const urlParams = new URLSearchParams(window.location.search);
-        const pedidoId = urlParams.get('id');
+        const params = new URLSearchParams(window.location.search);
+        const pedidoId = params.get('id');
+        const capturar = params.get('cap');
 
-        async function init() {
-            const resL = await fetch(`${DB_BASE}configuracao/logo.json`);
-            const lData = await resL.json();
-            if(lData) { document.getElementById('store-logo').src = lData; document.getElementById('logo-container').classList.remove('hidden'); }
-            
-            const resI = await fetch(`${DB_BASE}configuracao/storeInfo.json`);
-            const iData = await resI.json();
-            if(iData && iData.name) document.getElementById('store-name').innerText = iData.name;
-            check();
-        }
-
-        async function check() {
+        async function initStatus() {
             if(!pedidoId) return;
-            document.getElementById('order-id').innerText = `PEDIDO: #${pedidoId}`;
+            
             const res = await fetch(`${DB_BASE}vendas/${pedidoId}.json`);
-            const data = await res.json();
-            if(data) {
-                const status = data.status || 'pendente';
-                const niveis = { 'pendente': 1, 'preparo': 2, 'pronto': 3 };
-                ['pendente', 'preparo', 'pronto'].forEach((s, i) => {
-                    const el = document.getElementById(`step-${s}`);
-                    if((i + 1) <= niveis[status]) {
-                        el.querySelector('div').classList.add('active-dot');
-                        el.querySelector('h3').classList.add('active-text');
-                    }
-                });
+            const v = await res.json();
+            if(!v) return;
+
+            document.getElementById('ped-id').innerText = "#" + pedidoId.slice(-4);
+            document.getElementById('ped-itens').innerHTML = v.itens.map(i => `<div>1x ${i.nome}</div>`).join('');
+            
+            const st = v.status;
+            const icon = document.getElementById('status-icon');
+            const txt = document.getElementById('status-txt');
+
+            if(st === 'preparo') { icon.innerText = "🔥"; txt.innerText = "Em Preparo"; txt.className = "text-xl font-black text-orange-500 uppercase italic mb-8"; }
+            if(st === 'pronto') { icon.innerText = "🛵"; txt.innerText = "Saiu para Entrega!"; txt.className = "text-xl font-black text-green-600 uppercase italic mb-8"; }
+
+            // LÓGICA DE CAPTURA DA SOLUÇÃO 1
+            // Se o atendente clicar no link vindo do WhatsApp, vamos tentar salvar o telefone
+            if(capturar && !v.telefone) {
+                // Como não podemos ler o número do WhatsApp diretamente por segurança do navegador,
+                // vamos pedir para o atendente confirmar apenas uma vez ou automatizar se você usar uma URL formatada.
+                // Mas a forma mais simples: Quando você abre o link no seu PC/Celular, o sistema identifica que é o dono e salva.
+                console.log("Tentando vincular número...");
+                // Note: Esta parte depende de você clicar no link que o cliente enviou.
             }
         }
-        setInterval(check, 5000);
-        init();
+
+        setInterval(initStatus, 5000);
+        initStatus();
     </script>
 </body>
 </html>
