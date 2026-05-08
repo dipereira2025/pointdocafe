@@ -100,8 +100,7 @@
             await fetch(`${DB_BASE}vendas/${id}/status.json`, { method: 'PUT', body: JSON.stringify('pronto') }); 
 
             if(telInput.length >= 10) {
-                // Adicione o parâmetro de captura automática no link enviado ao WhatsApp
-                const statusLink = window.location.origin + window.location.pathname.replace('pedidos2.html', 'status2.html') + "?id=" + pedidoId + "&cap=true";
+                const statusLink = window.location.origin + window.location.pathname.replace('atendimento3.html', 'status2.html') + "?id=" + id;
                 const msg = `Olá *${nome}*! Seu pedido do *Point do Café* acabou de sair para entrega! 🛵☕\nAcompanhe aqui: ${statusLink}`;
                 window.open(`https://wa.me/${telInput}?text=${encodeURIComponent(msg)}`, '_blank');
             }
