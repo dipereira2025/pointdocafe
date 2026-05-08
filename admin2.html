@@ -5,236 +5,251 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Administração Point do Café</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <style>
-        /* Estilização para botões de abas maiores e responsivos */
-        .tab-btn { 
-            transition: all 0.3s; 
-            font-size: 16px; 
-            padding: 16px 32px; 
-            border-radius: 12px; 
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #a1a1aa;
-        }
-        .tab-btn.active { 
-            background-color: #d97706; 
-            color: white; 
-            box-shadow: 0 4px 20px rgba(217, 119, 6, 0.4); 
-        }
+        .tab-btn { transition: all 0.3s; color: #71717a; border-bottom: 3px solid transparent; cursor: pointer; }
+        .tab-btn.active { color: #d97706; border-bottom: 3px solid #d97706; }
         .tab-content.hidden { display: none; }
-        .day-btn { padding: 10px; border-radius: 8px; border: 1px solid #3f3f46; font-size: 12px; transition: 0.2s; min-width: 50px; text-align: center; }
-        .day-btn.selected { background: #d97706; border-color: #d97706; color: white; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-thumb { background: #d97706; border-radius: 10px; }
-        .card-item { background: #27272a; border: 1px solid #3f3f46; border-radius: 20px; transition: 0.3s; }
-        .card-item:hover { border-color: #d97706; }
+        .card-item { background: #18181b; border: 1px solid #27272a; border-radius: 15px; }
+        .loading-spin { border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top: 3px solid #d97706; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 font-sans min-h-screen flex flex-col">
+<body class="bg-zinc-950 text-zinc-100 font-sans min-h-screen">
 
-    <div id="login-screen" class="fixed inset-0 bg-zinc-950 z-[100] flex items-center justify-center p-4">
-        <div class="bg-zinc-900 p-10 rounded-[3rem] border border-zinc-800 w-full max-w-md shadow-2xl">
-            <h2 class="text-3xl font-black text-amber-600 mb-8 text-center uppercase italic">Painel de Controle</h2>
-            <input type="text" id="login-user" placeholder="Usuário" class="w-full p-5 bg-zinc-800 rounded-2xl mb-4 outline-none border border-zinc-700 focus:border-amber-600">
-            <input type="password" id="login-pass" placeholder="Senha" class="w-full p-5 bg-zinc-800 rounded-2xl mb-8 outline-none border border-zinc-700 focus:border-amber-600">
-            <button onclick="autenticar()" class="w-full bg-amber-600 py-5 rounded-2xl font-black uppercase text-lg shadow-lg hover:bg-amber-700">Entrar</button>
+    <div id="login-screen" class="fixed inset-0 bg-zinc-950 z-[100] flex items-center justify-center">
+        <div class="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800 w-full max-w-sm">
+            <h2 class="text-2xl font-black text-amber-600 mb-6 text-center uppercase italic">Admin Console</h2>
+            <input type="text" id="login-user" placeholder="Usuário" class="w-full p-4 bg-zinc-800 rounded-2xl mb-4 outline-none border border-zinc-700 focus:border-amber-600">
+            <input type="password" id="login-pass" placeholder="Senha" class="w-full p-4 bg-zinc-800 rounded-2xl mb-6 outline-none border border-zinc-700 focus:border-amber-600">
+            <button onclick="autenticar()" class="w-full bg-amber-600 py-4 rounded-2xl font-black uppercase shadow-lg">Entrar</button>
         </div>
     </div>
 
-    <div id="painel" class="max-w-6xl mx-auto w-full p-6 flex-grow hidden">
-        <header class="flex justify-between items-center mb-10 border-b border-zinc-800 pb-6">
-            <h1 class="text-4xl font-black uppercase text-amber-500 italic tracking-tighter">Administração Point do Café</h1>
-            <button onclick="location.reload()" class="bg-zinc-800 px-8 py-3 rounded-full uppercase text-xs font-black hover:bg-red-900 transition">Sair do Sistema</button>
+    <div id="painel" class="hidden max-w-6xl mx-auto p-6">
+        <header class="flex justify-between items-center py-8 border-b border-zinc-800 mb-8">
+            <h1 class="text-3xl font-black uppercase text-amber-500 italic">Point do Café</h1>
+            <button onclick="location.reload()" class="bg-zinc-900 border border-zinc-800 px-6 py-2 rounded-full text-[10px] font-black uppercase hover:bg-red-950 transition">Sair</button>
         </header>
-        
-        <nav class="flex flex-wrap gap-4 mb-10 overflow-x-auto pb-4">
-            <button onclick="changeTab('tab-loja')" class="tab-btn active font-black uppercase" id="btn-loja">🖼️ Loja</button>
-            <button onclick="changeTab('tab-categorias')" class="tab-btn font-black uppercase" id="btn-categorias">📁 Categorias</button>
-            <button onclick="changeTab('tab-produtos')" class="tab-btn font-black uppercase" id="btn-produtos">🛒 Produtos</button>
-            <button onclick="changeTab('tab-relatorios')" class="tab-btn font-black uppercase" id="btn-relatorios">📄 Relatórios</button>
-            <button onclick="changeTab('tab-equipe')" class="tab-btn font-black uppercase" id="btn-equipe">🔒 Equipe</button>
+
+        <nav class="flex gap-8 mb-10 overflow-x-auto pb-2 border-b border-zinc-900">
+            <button onclick="changeTab('tab-loja')" class="tab-btn active py-2 font-black uppercase text-xs" id="btn-loja">🏢 Loja</button>
+            <button onclick="changeTab('tab-categorias')" class="tab-btn py-2 font-black uppercase text-xs" id="btn-categorias">📁 Categorias</button>
+            <button onclick="changeTab('tab-produtos')" class="tab-btn py-2 font-black uppercase text-xs" id="btn-produtos">🛒 Produtos</button>
+            <button onclick="changeTab('tab-equipe')" class="tab-btn py-2 font-black uppercase text-xs" id="btn-equipe">🔒 Equipe</button>
         </nav>
 
-        <div id="tab-loja" class="tab-content space-y-6">
-            <div class="bg-zinc-900 p-10 rounded-[3rem] border border-zinc-800 shadow-xl">
-                 <h3 class="text-amber-500 text-xl font-black uppercase mb-6 italic">Configuração da Loja</h3>
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-                     <div class="flex flex-col items-center p-6 bg-zinc-800 rounded-3xl border border-zinc-700">
-                        <img id="logo-view" src="" class="w-32 h-32 rounded-full object-cover border-4 border-amber-600 mb-4 bg-zinc-900 shadow-lg">
-                        <input type="file" id="logoInput" class="text-xs text-zinc-500 mb-4">
-                        <p class="text-center text-[10px] text-zinc-400 uppercase font-bold">Resolução Recomendada: 512x512px</p>
-                     </div>
-                     <div class="space-y-4">
-                        <input type="text" id="store-name" placeholder="Nome do Estabelecimento" class="w-full p-4 rounded-xl bg-zinc-800 border border-zinc-700 outline-none">
-                        <textarea id="store-desc" placeholder="Slogan ou Descrição" class="w-full p-4 rounded-xl bg-zinc-800 border border-zinc-700 outline-none h-24"></textarea>
-                        <button onclick="salvarLoja()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase shadow-lg">Gravar Identidade</button>
-                     </div>
-                 </div>
-            </div>
-        </div>
-
-        <div id="tab-categorias" class="tab-content hidden space-y-6">
-            <div class="bg-zinc-900 p-10 rounded-[3rem] border border-zinc-800">
-                <h3 class="text-amber-500 text-xl font-black uppercase mb-6 italic">Gestão de Categorias</h3>
-                <div class="flex gap-4">
-                    <input type="hidden" id="cat-edit-id">
-                    <input type="text" id="cat-nome" placeholder="Nova Categoria..." class="flex-1 bg-zinc-800 p-5 rounded-2xl outline-none border border-zinc-700 text-lg">
-                    <button onclick="salvarCategoria()" class="bg-green-600 px-12 rounded-2xl font-black uppercase hover:bg-green-700 transition">Salvar</button>
-                </div>
-                <div id="lista-categorias" class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4"></div>
-            </div>
-        </div>
-
-        <div id="tab-equipe" class="tab-content hidden space-y-6">
-            <div class="bg-zinc-900 p-10 rounded-[3rem] border border-zinc-800 shadow-xl">
-                <h2 class="text-2xl font-black text-amber-500 text-center mb-10 uppercase italic">Gestão de Equipe Point do Café</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-                    <input type="text" id="u-user" placeholder="Nome de Usuário" class="p-5 bg-zinc-800 rounded-2xl border border-zinc-700 outline-none">
-                    <input type="password" id="u-pass" placeholder="Definir Senha" class="p-5 bg-zinc-800 rounded-2xl border border-zinc-700 outline-none">
-                </div>
-
-                <div class="bg-zinc-800 p-8 rounded-3xl border border-zinc-700 mb-8">
-                    <p class="text-amber-500 font-bold uppercase text-xs mb-4">Definir Permissões de Acesso:</p>
-                    <select id="u-type" class="w-full p-4 bg-zinc-900 rounded-xl mb-6 outline-none border border-zinc-700" onchange="togglePerms()">
-                        <option value="admin">ADMINISTRADOR (TOTAL)</option>
-                        <option value="operador">OPERADOR (ACESSO LIMITADO)</option>
-                    </select>
-                    
-                    <div id="perms-box" class="grid grid-cols-2 gap-4 text-xs font-bold uppercase">
-                        <label class="flex items-center gap-3"><input type="checkbox" value="loja" class="perm-check"> Identidade/Logo</label>
-                        <label class="flex items-center gap-3"><input type="checkbox" value="categorias" class="perm-check"> Categorias</label>
-                        <label class="flex items-center gap-3"><input type="checkbox" value="produtos" class="perm-check"> Produtos</label>
-                        <label class="flex items-center gap-3"><input type="checkbox" value="relatorios" class="perm-check"> Relatórios</label>
+        <div id="tab-loja" class="tab-content animate-in fade-in duration-500">
+            <div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-800">
+                <h3 class="text-amber-500 text-lg font-black uppercase mb-6 italic">Configurações Gerais</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="flex flex-col items-center p-6 bg-zinc-800 rounded-2xl border border-zinc-700">
+                        <img id="logo-preview" src="https://via.placeholder.com/150" class="w-32 h-32 rounded-full object-cover border-4 border-amber-600 mb-4">
+                        <input type="text" id="logo-url" placeholder="URL da imagem da logo" class="w-full p-3 bg-zinc-900 rounded-lg text-xs outline-none border border-zinc-700">
+                        <p class="text-[9px] text-zinc-500 mt-2">Dica: Use links do Imgur ou PostImages.</p>
+                    </div>
+                    <div class="space-y-4">
+                        <input type="text" id="st-name" placeholder="Nome da Loja" class="w-full p-4 bg-zinc-800 rounded-xl border border-zinc-700 outline-none">
+                        <textarea id="st-desc" placeholder="Slogan ou Descrição" class="w-full p-4 bg-zinc-800 rounded-xl border border-zinc-700 outline-none h-24"></textarea>
+                        <button onclick="salvarConfigLoja()" class="w-full bg-green-600 py-4 rounded-xl font-black uppercase text-xs shadow-lg hover:bg-green-700 transition-all">✅ Salvar Alterações da Loja</button>
                     </div>
                 </div>
-                
-                <button onclick="salvarUsuario()" class="w-full bg-green-600 py-6 rounded-2xl font-black uppercase text-xl shadow-lg hover:bg-green-700 transition">Salvar Acesso da Equipe</button>
-                <div id="lista-equipe" class="mt-12 space-y-3"></div>
+            </div>
+        </div>
+
+        <div id="tab-categorias" class="tab-content hidden">
+            <div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-800">
+                <h3 class="text-amber-500 text-lg font-black uppercase mb-6 italic">Gerenciar Categorias</h3>
+                <div class="flex gap-4 mb-8">
+                    <input type="text" id="cat-nome" placeholder="Nome da nova categoria..." class="flex-1 bg-zinc-800 p-4 rounded-xl outline-none border border-zinc-700 focus:border-amber-600">
+                    <button onclick="salvarCategoria()" class="bg-green-600 px-8 rounded-xl font-black uppercase text-xs">Adicionar</button>
+                </div>
+                <div id="lista-categorias" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+        </div>
+
+        <div id="tab-produtos" class="tab-content hidden">
+            <div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-800">
+                <h3 class="text-amber-500 text-lg font-black uppercase mb-6 italic">Novo Produto</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <input type="text" id="p-nome" placeholder="Nome do Produto" class="p-4 bg-zinc-800 rounded-xl outline-none border border-zinc-700">
+                    <input type="number" id="p-preco" placeholder="Preço R$" class="p-4 bg-zinc-800 rounded-xl outline-none border border-zinc-700">
+                    <input type="text" id="p-img" placeholder="URL da foto do produto" class="p-4 bg-zinc-800 rounded-xl outline-none border border-zinc-700">
+                    <select id="p-cat-select" class="p-4 bg-zinc-800 rounded-xl outline-none border border-zinc-700 text-zinc-400"></select>
+                </div>
+                <button onclick="salvarProduto()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase text-xs mb-8">Cadastrar Produto</button>
+                <div id="lista-produtos" class="grid grid-cols-1 gap-3"></div>
+            </div>
+        </div>
+
+        <div id="tab-equipe" class="tab-content hidden">
+            <div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-800">
+                <h3 class="text-amber-500 text-lg font-black uppercase mb-6 italic">Equipe e Acessos</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <input type="text" id="u-user" placeholder="Usuário" class="p-4 bg-zinc-800 rounded-xl border border-zinc-700 outline-none">
+                    <input type="password" id="u-pass" placeholder="Senha" class="p-4 bg-zinc-800 rounded-xl border border-zinc-700 outline-none">
+                </div>
+                <button onclick="salvarUsuario()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase text-xs mb-8">Salvar Acesso</button>
+                <div id="lista-equipe" class="space-y-3"></div>
             </div>
         </div>
 
     </div>
 
-    <footer class="p-8 text-center text-zinc-600 text-xs font-bold uppercase tracking-widest mt-auto border-t border-zinc-900">
-        Desenvolvido por <span class="text-amber-600">DPTECH Soluções</span> © 2024
-    </footer>
-
-    <script type="module">
+    <script>
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
 
-        // SISTEMA DE NAVEGAÇÃO
-        window.changeTab = (id) => {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(id).classList.remove('hidden');
-            document.getElementById('btn-' + id.split('-')[1]).classList.add('active');
-            
-            // Recarregar dados específicos da aba
-            if(id === 'tab-categorias') carregarCategorias();
-            if(id === 'tab-equipe') carregarEquipe();
-            if(id === 'tab-loja') carregarLoja();
-        };
-
-        // AUTENTICAÇÃO
-        window.autenticar = async () => {
+        function autenticar() {
             const u = document.getElementById('login-user').value;
             const p = document.getElementById('login-pass').value;
-            
-            // Login mestre (backdoor) ou consulta ao banco
             if(u === 'admin' && p === '123') {
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('painel').classList.remove('hidden');
-                changeTab('tab-loja');
+                carregarTudo();
             } else {
-                alert("Verificando acesso...");
-                // Aqui entraria a lógica de fetch do Firebase para usuarios.json
-            }
-        };
-
-        // GESTÃO DE EQUIPE
-        window.togglePerms = () => {
-            const isOp = document.getElementById('u-type').value === 'operador';
-            document.getElementById('perms-box').style.opacity = isOp ? "1" : "0.3";
-        };
-
-        window.salvarUsuario = async () => {
-            const user = document.getElementById('u-user').value;
-            const pass = document.getElementById('u-pass').value;
-            const type = document.getElementById('u-type').value;
-            const perms = Array.from(document.querySelectorAll('.perm-check:checked')).map(c => c.value);
-
-            if(!user || !pass) return alert("Preencha os campos de acesso!");
-
-            await fetch(`${DB_BASE}usuarios/${Date.now()}.json`, {
-                method: 'PUT',
-                body: JSON.stringify({ user, pass, type, perms })
-            });
-
-            Toastify({text: "Membro da equipe cadastrado!", background: "green"}).showToast();
-            carregarEquipe();
-        };
-
-        async function carregarEquipe() {
-            const res = await fetch(`${DB_BASE}usuarios.json`);
-            const users = await res.json();
-            const list = document.getElementById('lista-equipe');
-            list.innerHTML = "";
-            for(let id in users) {
-                list.innerHTML += `
-                    <div class="card-item p-6 flex justify-between items-center shadow-lg">
-                        <div>
-                            <p class="font-black text-amber-500 uppercase">${users[id].user}</p>
-                            <p class="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">${users[id].type}</p>
-                        </div>
-                        <div class="flex gap-4 items-center">
-                            <button class="text-amber-500 font-black text-[10px] uppercase underline">Editar</button>
-                            <button onclick="removerItem('usuarios/${id}')" class="text-red-500 font-black">X</button>
-                        </div>
-                    </div>`;
+                Toastify({text: "Usuário ou senha incorretos", style: {background: "red"}}).showToast();
             }
         }
 
-        // CATEGORIAS
-        window.salvarCategoria = async () => {
+        function changeTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById('btn-' + tabId.split('-')[1]).classList.add('active');
+        }
+
+        async function carregarTudo() {
+            await carregarConfigLoja();
+            await carregarCategorias();
+            await carregarEquipe();
+            await carregarProdutos();
+        }
+
+        // --- FUNÇÕES DA LOJA ---
+        async function salvarConfigLoja() {
+            const data = {
+                logo: document.getElementById('logo-url').value,
+                storeInfo: {
+                    name: document.getElementById('st-name').value,
+                    description: document.getElementById('st-desc').value
+                }
+            };
+            await fetch(`${DB_BASE}configuracao.json`, { method: 'PUT', body: JSON.stringify(data) });
+            document.getElementById('logo-preview').src = data.logo || 'https://via.placeholder.com/150';
+            Toastify({text: "Loja Atualizada com Sucesso!", style: {background: "green"}}).showToast();
+        }
+
+        async function carregarConfigLoja() {
+            const res = await fetch(`${DB_BASE}configuracao.json`);
+            const data = await res.json();
+            if(data) {
+                document.getElementById('logo-url').value = data.logo || "";
+                document.getElementById('logo-preview').src = data.logo || 'https://via.placeholder.com/150';
+                if(data.storeInfo) {
+                    document.getElementById('st-name').value = data.storeInfo.name || "";
+                    document.getElementById('st-desc').value = data.storeInfo.description || "";
+                }
+            }
+        }
+
+        // --- FUNÇÕES CATEGORIAS ---
+        async function salvarCategoria() {
             const nome = document.getElementById('cat-nome').value;
-            if(!nome) return alert("Digite o nome da categoria!");
-            await fetch(`${DB_BASE}categorias/${Date.now()}.json`, {
-                method: 'PUT',
-                body: JSON.stringify({ nome })
-            });
+            if(!nome) return alert("Digite o nome!");
+            await fetch(`${DB_BASE}categorias.json`, { method: 'POST', body: JSON.stringify({ nome }) });
             document.getElementById('cat-nome').value = "";
             carregarCategorias();
-        };
+            Toastify({text: "Categoria Salva!", style: {background: "green"}}).showToast();
+        }
 
         async function carregarCategorias() {
             const res = await fetch(`${DB_BASE}categorias.json`);
-            const cats = await res.json();
-            const list = document.getElementById('lista-categorias');
-            list.innerHTML = "";
-            for(let id in cats) {
-                list.innerHTML += `
-                    <div class="card-item p-5 flex justify-between items-center">
-                        <span class="font-bold text-sm uppercase">${cats[id].nome}</span>
-                        <button onclick="removerItem('categorias/${id}')" class="text-red-500 font-black">X</button>
+            const data = await res.json();
+            const container = document.getElementById('lista-categorias');
+            const select = document.getElementById('p-cat-select');
+            container.innerHTML = "";
+            select.innerHTML = "<option value=''>Selecione uma Categoria</option>";
+            if(!data) return;
+            Object.keys(data).forEach(id => {
+                container.innerHTML += `
+                    <div class="card-item p-4 flex justify-between items-center">
+                        <span class="font-bold text-xs uppercase">${data[id].nome}</span>
+                        <button onclick="removerItem('categorias/${id}')" class="text-red-500 font-bold">Apagar</button>
                     </div>`;
-            }
+                select.innerHTML += `<option value="${data[id].nome}">${data[id].nome}</option>`;
+            });
         }
 
-        window.removerItem = async (path) => {
-            if(confirm("Deseja excluir permanentemente?")) {
+        // --- FUNÇÕES PRODUTOS ---
+        async function salvarProduto() {
+            const prod = {
+                nome: document.getElementById('p-nome').value,
+                preco: parseFloat(document.getElementById('p-preco').value),
+                img: document.getElementById('p-img').value,
+                categoria: document.getElementById('p-cat-select').value,
+                pausado: false
+            };
+            if(!prod.nome || !prod.preco) return alert("Preencha Nome e Preço!");
+            await fetch(`${DB_BASE}produtos.json`, { method: 'POST', body: JSON.stringify(prod) });
+            Toastify({text: "Produto Cadastrado!", style: {background: "green"}}).showToast();
+            carregarProdutos();
+        }
+
+        async function carregarProdutos() {
+            const res = await fetch(`${DB_BASE}produtos.json`);
+            const data = await res.json();
+            const container = document.getElementById('lista-produtos');
+            container.innerHTML = "";
+            if(!data) return;
+            Object.keys(data).forEach(id => {
+                container.innerHTML += `
+                    <div class="card-item p-4 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <img src="${data[id].img}" class="w-10 h-10 rounded-lg object-cover">
+                            <div>
+                                <p class="text-xs font-bold">${data[id].nome}</p>
+                                <p class="text-[10px] text-zinc-500">R$ ${data[id].preco.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <button onclick="removerItem('produtos/${id}')" class="text-red-500 text-xs">Excluir</button>
+                    </div>`;
+            });
+        }
+
+        // --- FUNÇÕES EQUIPE ---
+        async function salvarUsuario() {
+            const user = document.getElementById('u-user').value;
+            const pass = document.getElementById('u-pass').value;
+            if(!user || !pass) return;
+            await fetch(`${DB_BASE}usuarios.json`, { method: 'POST', body: JSON.stringify({ user, pass }) });
+            document.getElementById('u-user').value = "";
+            document.getElementById('u-pass').value = "";
+            carregarEquipe();
+            Toastify({text: "Novo membro salvo!", style: {background: "green"}}).showToast();
+        }
+
+        async function carregarEquipe() {
+            const res = await fetch(`${DB_BASE}usuarios.json`);
+            const data = await res.json();
+            const container = document.getElementById('lista-equipe');
+            container.innerHTML = "";
+            if(!data) return;
+            Object.keys(data).forEach(id => {
+                container.innerHTML += `
+                    <div class="card-item p-4 flex justify-between items-center">
+                        <span class="text-xs uppercase font-bold">👤 ${data[id].user}</span>
+                        <button onclick="removerItem('usuarios/${id}')" class="text-red-500 text-xs italic">Remover</button>
+                    </div>`;
+            });
+        }
+
+        async function removerItem(path) {
+            if(confirm("Deseja apagar este item permanentemente?")) {
                 await fetch(`${DB_BASE}${path}.json`, { method: 'DELETE' });
-                location.reload();
+                carregarTudo();
             }
         }
-
-        // Inicializar
-        carregarLoja();
     </script>
 </body>
 </html>
