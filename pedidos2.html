@@ -9,20 +9,19 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <style>
         .bg-coffee { background-color: #fffcf7; }
+        input:focus, select:focus { border-color: #d97706 !important; }
         .loading-overlay { background: rgba(255,252,247,0.9); z-index: 100; }
-        input:focus { border-color: #d97706 !important; }
     </style>
 </head>
 <body class="bg-coffee pb-24 font-sans text-gray-900">
     
     <div id="loader" class="fixed inset-0 loading-overlay flex flex-col items-center justify-center">
         <div class="w-10 h-10 border-4 border-amber-600 border-t-transparent rounded-full animate-spin mb-2"></div>
-        <p class="text-amber-900 font-bold text-xs uppercase">Carregando Cardápio...</p>
+        <p class="text-amber-900 font-bold text-xs uppercase italic">Carregando...</p>
     </div>
 
     <header class="bg-white p-6 shadow-sm mb-6 flex flex-col items-center border-b-4 border-amber-600 text-center">
         <h1 class="text-2xl font-black text-amber-900 uppercase italic">Point do Café</h1>
-        <p class="text-amber-700 font-medium text-[10px] uppercase tracking-widest">Sincronizado com a Cozinha</p>
     </header>
 
     <main id="categorias-container" class="max-w-md mx-auto p-4 space-y-4"></main>
@@ -35,30 +34,34 @@
 
     <div id="modal-checkout" class="fixed inset-0 bg-black/70 hidden z-50 p-4 flex items-center justify-center">
         <div class="bg-white w-full max-w-md rounded-3xl p-6 overflow-y-auto max-h-[90vh]">
-            <h2 class="text-xl font-black text-amber-900 uppercase mb-4 italic">Confirmar Pedido</h2>
+            <h2 class="text-xl font-black text-amber-900 uppercase mb-4 italic">Finalizar Pedido</h2>
             
-            <div id="resumo-itens" class="mb-6 space-y-2 text-sm border-b pb-4 text-zinc-600"></div>
+            <div id="resumo-itens" class="mb-4 text-sm border-b pb-4 text-zinc-600"></div>
             
             <div class="space-y-3">
+                <input type="text" id="cli-nome" placeholder="Seu Nome *" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent">
+                <input type="tel" id="cli-zap" placeholder="WhatsApp (Com DDD) *" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent">
+                <input type="text" id="cli-end" placeholder="Endereço de Entrega *" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent">
+                
                 <div>
-                    <label class="text-[10px] font-bold text-zinc-400 uppercase ml-1">Seu Nome</label>
-                    <input type="text" id="cli-nome" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent">
-                </div>
-                <div>
-                    <label class="text-[10px] font-bold text-zinc-400 uppercase ml-1">WhatsApp (Com DDD)</label>
-                    <input type="tel" id="cli-zap" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent">
-                </div>
-                <div>
-                    <label class="text-[10px] font-bold text-zinc-400 uppercase ml-1">Endereço de Entrega</label>
-                    <input type="text" id="cli-end" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent">
-                </div>
-                <div>
-                    <label class="text-[10px] font-bold text-zinc-400 uppercase ml-1">Observação (Opcional)</label>
-                    <textarea id="cli-obs" class="w-full p-4 bg-gray-100 rounded-xl text-sm h-20 outline-none border-2 border-transparent"></textarea>
+                    <label class="text-[10px] font-bold text-zinc-400 uppercase ml-1">Forma de Pagamento *</label>
+                    <select id="cli-pagamento" onchange="verificarTroco(this.value)" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent">
+                        <option value="Pix">Pix</option>
+                        <option value="Cartão de Crédito">Cartão de Crédito</option>
+                        <option value="Cartão de Débito">Cartão de Débito</option>
+                        <option value="Dinheiro">Dinheiro</option>
+                    </select>
                 </div>
 
-                <button onclick="finalizarPedidoAutomatico()" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-xl uppercase mt-4 hover:bg-green-700 transition-all">
-                    🚀 Concluir e Acompanhar
+                <div id="box-troco" class="hidden animate-bounce">
+                    <label class="text-[10px] font-bold text-green-600 uppercase ml-1">Troco para quanto? (Deixe vazio se não precisar)</label>
+                    <input type="text" id="cli-troco" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" class="w-full p-4 bg-green-50 border-2 border-green-200 rounded-xl outline-none">
+                </div>
+
+                <textarea id="cli-obs" placeholder="Observação (Opcional)" class="w-full p-4 bg-gray-100 rounded-xl text-sm h-16 outline-none border-2 border-transparent"></textarea>
+
+                <button onclick="finalizarPedidoAutomatico()" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-xl uppercase mt-2">
+                    🚀 Concluir Pedido
                 </button>
                 <button onclick="document.getElementById('modal-checkout').classList.add('hidden')" class="w-full text-gray-400 font-bold py-2 text-xs uppercase">Voltar</button>
             </div>
@@ -68,6 +71,22 @@
     <script type="module">
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
         let carrinho = [];
+
+        // --- MÁSCARA DE MOEDA EM TEMPO REAL ---
+        window.mascaraMoeda = (i) => {
+            let v = i.value.replace(/\D/g,'');
+            v = (v/100).toFixed(2) + '';
+            v = v.replace(".", ",");
+            v = v.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,");
+            v = v.replace(/(\d)(\d{3}),/g, "$1.$2,");
+            i.value = "R$ " + v;
+        }
+
+        // --- MOSTRAR/ESCONDER TROCO ---
+        window.verificarTroco = (valor) => {
+            const box = document.getElementById('box-troco');
+            box.classList.toggle('hidden', valor !== 'Dinheiro');
+        }
 
         async function init() {
             try {
@@ -89,11 +108,11 @@
                         <div class="flex items-center gap-3">
                             <img src="${produtos[id].img || ''}" class="w-16 h-16 object-cover rounded-xl bg-zinc-100">
                             <div>
-                                <h3 class="font-bold text-amber-900 text-sm uppercase italic leading-none">${produtos[id].nome}</h3>
-                                <p class="text-green-700 font-black text-sm mt-1">R$ ${produtos[id].preco.toFixed(2)}</p>
+                                <h3 class="font-bold text-amber-900 text-sm uppercase italic">${produtos[id].nome}</h3>
+                                <p class="text-green-700 font-black text-sm">R$ ${produtos[id].preco.toFixed(2)}</p>
                             </div>
                         </div>
-                        <button onclick="addCart('${id}', '${produtos[id].nome}', ${produtos[id].preco})" class="bg-amber-600 text-white px-5 py-2 rounded-xl font-black shadow-md hover:scale-105 active:scale-90 transition-all">+</button>
+                        <button onclick="addCart('${id}', '${produtos[id].nome}', ${produtos[id].preco})" class="bg-amber-600 text-white px-5 py-2 rounded-xl font-black shadow-md">+</button>
                     </div>`;
             }
         }
@@ -107,32 +126,27 @@
         };
 
         window.abrirCheckout = () => {
-            document.getElementById('resumo-itens').innerHTML = carrinho.map(i => `<div class="flex justify-between py-1"><span>1x ${i.nome}</span><span class="font-bold">R$ ${i.preco.toFixed(2)}</span></div>`).join('');
+            document.getElementById('resumo-itens').innerHTML = carrinho.map(i => `<div class="flex justify-between py-1"><span>1x ${i.nome}</span><span>R$ ${i.preco.toFixed(2)}</span></div>`).join('');
             document.getElementById('modal-checkout').classList.remove('hidden');
         };
 
-        // LÓGICA DE MEMÓRIA E LINKS MÁGICOS
         function autoPreencher() {
             const params = new URLSearchParams(window.location.search);
-            // Prioridade: 1. URL (Link Mágico) | 2. Memória Local
-            const nome = params.get('nome') || localStorage.getItem('cafe_nome');
-            const tel = params.get('tel') || localStorage.getItem('cafe_tel');
-            const end = localStorage.getItem('cafe_end');
-
-            if(nome) document.getElementById('cli-nome').value = nome;
-            if(tel) document.getElementById('cli-zap').value = tel;
-            if(end) document.getElementById('cli-end').value = end;
+            document.getElementById('cli-nome').value = params.get('nome') || localStorage.getItem('cafe_nome') || "";
+            document.getElementById('cli-zap').value = params.get('tel') || localStorage.getItem('cafe_tel') || "";
+            document.getElementById('cli-end').value = localStorage.getItem('cafe_end') || "";
         }
 
         window.finalizarPedidoAutomatico = async () => {
             const n = document.getElementById('cli-nome').value.trim();
             const z = document.getElementById('cli-zap').value.trim().replace(/\D/g, "");
             const e = document.getElementById('cli-end').value.trim();
+            const pag = document.getElementById('cli-pagamento').value;
+            const troco = document.getElementById('cli-troco').value;
             const obs = document.getElementById('cli-obs').value.trim();
 
-            if(!n || !z || !e) return alert("Por favor, preencha Nome, WhatsApp e Endereço.");
+            if(!n || !z || !e) return alert("Preencha Nome, WhatsApp e Endereço.");
 
-            // Salva na memória do navegador do cliente
             localStorage.setItem('cafe_nome', n);
             localStorage.setItem('cafe_tel', z);
             localStorage.setItem('cafe_end', e);
@@ -141,8 +155,9 @@
             const totalGeral = carrinho.reduce((acc, i) => acc + i.preco, 0);
             
             const pedido = {
-                id: pedidoId, cliente: n, telefone: z, endereco: e, observacao: obs, 
-                itens: carrinho, total: totalGeral, status: 'pendente', 
+                id: pedidoId, cliente: n, telefone: z, endereco: e, 
+                pagamento: pag, troco: pag === 'Dinheiro' ? troco : "Não necessário",
+                observacao: obs, itens: carrinho, total: totalGeral, status: 'pendente', 
                 data: new Date().toISOString(), dataLocal: new Date().toLocaleDateString('pt-BR')
             };
 
