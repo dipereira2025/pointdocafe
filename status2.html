@@ -5,207 +5,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Status do Pedido - Point do Café</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
-    <!-- Toastify JS para notificações não intrusivas -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <style>
-        body { font-family: 'Montserrat', sans-serif; }
-        .step { position: relative; }
-        .step::after { content: ''; position: absolute; left: 19px; top: 40px; height: 40px; width: 2px; background: #e4e4e7; }
+        .step::after { content: ''; position: absolute; left: 19px; top: 40px; height: 40px; width: 2px; background: #e5e7eb; }
         .step:last-child::after { display: none; }
-        .active-dot { background: #d97706; box-shadow: 0 0 15px rgba(217,119,6,0.5); border-color: #d97706 !important; color: white !important; }
-        .loading-spinner { border: 4px solid rgba(255,255,255,.3); border-radius: 50%; border-top: 4px solid #d97706; width: 20px; height: 20px; -webkit-animation: spin 1s linear infinite; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-left: 10px; }
-        @-webkit-keyframes spin { 0% { -webkit-transform: rotate(0deg); } 100% { -webkit-transform: rotate(360deg); } }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .active-dot { background: #d97706 !important; color: white !important; border-color: #d97706 !important; }
+        .active-text { color: #d97706 !important; font-weight: 900; }
     </style>
 </head>
-<body class="bg-zinc-50 flex flex-col items-center justify-center min-h-screen p-6">
-
+<body class="bg-zinc-50 flex flex-col items-center justify-center min-h-screen p-6 text-left">
     <div class="w-full max-w-md bg-white rounded-[3rem] shadow-2xl p-10 border-t-8 border-amber-600">
-        <header class="text-center mb-8">
-            <div id="logo-container" class="w-24 h-24 mx-auto mb-3 hidden">
-                <img id="loja-logo" class="w-full h-full object-contain rounded-full shadow-md" alt="Logo">
-            </div>
-            <h1 class="text-2xl font-black uppercase italic tracking-tighter text-amber-900">Acompanhe seu Pedido</h1>
-            <p id="order-id" class="text-[10px] font-bold text-zinc-400 mt-2 uppercase tracking-widest"></p>
+        <header class="text-center mb-10">
+            <h1 class="text-2xl font-black uppercase italic text-amber-900">Seu Pedido</h1>
+            <p id="order-id" class="text-[10px] font-bold text-zinc-400 mt-2 tracking-widest uppercase">Buscando pedido...</p>
         </header>
 
-        <div id="order-details" class="mb-8 p-4 bg-zinc-100 rounded-xl hidden">
-            <h2 class="text-sm font-black uppercase text-amber-900 mb-2">Detalhes do Pedido</h2>
-            <p class="text-xs text-zinc-700 mb-1">Cliente: <span id="detail-cliente" class="font-bold"></span></p>
-            <p class="text-xs text-zinc-700 mb-1">Total: <span id="detail-total" class="font-bold"></span></p>
-            <div class="text-xs text-zinc-700 mb-1">Itens:
-                <ul id="detail-itens" class="list-disc list-inside ml-2"></ul>
+        <div class="space-y-12 relative">
+            <div id="step-pendente" class="step flex items-center gap-6 relative">
+                <div class="w-10 h-10 rounded-full bg-white border-2 border-zinc-200 flex items-center justify-center font-bold z-10">1</div>
+                <div><h3 class="text-sm uppercase text-zinc-400">Recebido</h3><p class="text-[9px] text-zinc-400">Aguardando confirmação</p></div>
             </div>
-            <p class="text-xs text-zinc-700">Endereço: <span id="detail-endereco"></span></p>
-            <p class="text-xs text-zinc-700">Pagamento: <span id="detail-pagamento"></span></p>
-            <p class="text-xs text-zinc-700">Observações: <span id="detail-observacao"></span></p>
-        </div>
-
-        <div class="space-y-10">
-            <div id="step-pendente" class="step flex items-center gap-6">
-                <div class="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center font-bold text-zinc-400 border-2 border-zinc-200 z-10 transition-all">1</div>
-                <div><h3 class="font-black text-sm uppercase text-zinc-400">Recebido</h3><p class="text-[10px] text-zinc-400">Aguardando confirmação</p></div>
+            <div id="step-preparo" class="step flex items-center gap-6 relative">
+                <div class="w-10 h-10 rounded-full bg-white border-2 border-zinc-200 flex items-center justify-center font-bold z-10">2</div>
+                <div><h3 class="text-sm uppercase text-zinc-400">Em Preparo</h3><p class="text-[9px] text-zinc-400">O barista iniciou o preparo</p></div>
             </div>
-
-            <div id="step-preparo" class="step flex items-center gap-6">
-                <div class="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center font-bold text-zinc-400 border-2 border-zinc-200 z-10 transition-all">2</div>
-                <div><h3 class="font-black text-sm uppercase text-zinc-400">Em Preparo</h3><p class="text-[10px] text-zinc-400">Estamos preparando com carinho</p></div>
-            </div>
-
-            <div id="step-pronto" class="step flex items-center gap-6">
-                <div class="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center font-bold text-zinc-400 border-2 border-zinc-200 z-10 transition-all">3</div>
-                <div><h3 class="font-black text-sm uppercase text-zinc-400">Pronto / Saiu</h3><p class="text-[10px] text-zinc-400">Seu pedido está pronto ou a caminho!</p></div>
+            <div id="step-pronto" class="step flex items-center gap-6 relative">
+                <div class="w-10 h-10 rounded-full bg-white border-2 border-zinc-200 flex items-center justify-center font-bold z-10">3</div>
+                <div><h3 class="text-sm uppercase text-zinc-400">Pronto / Saiu</h3><p class="text-[9px] text-zinc-400">Pedido finalizado!</p></div>
             </div>
         </div>
 
-        <div class="mt-12 text-center">
-            <p class="text-[9px] font-bold text-zinc-300 uppercase mb-4">Esta página atualiza sozinha</p>
-            <a href="pedidos.html" class="bg-zinc-100 px-6 py-3 rounded-2xl text-zinc-500 font-black text-[10px] uppercase">Voltar ao Menu</a>
+        <div class="mt-12 text-center border-t pt-6">
+            <a href="pedidos2.html" class="text-zinc-400 font-bold text-[10px] uppercase">Fazer outro pedido</a>
         </div>
     </div>
 
     <script type="module">
-        // Configurações do Firebase (Substitua com suas próprias URLs e chaves de API)
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
-        const LOGO_URL = DB_BASE + "configuracao/logo.json";
-        const VENDAS_URL = DB_BASE + "vendas/"; // Base para buscar o pedido específico
-
         const urlParams = new URLSearchParams(window.location.search);
         const pedidoId = urlParams.get('id');
 
-        // --- UTILITIES --- //
-        function showToast(message, type = 'success') {
-            Toastify({
-                text: message,
-                duration: 3000,
-                close: true,
-                gravity: "top",
-                position: "right",
-                backgroundColor: type === 'success' ? "linear-gradient(to right, #10B981, #059669)" : "linear-gradient(to right, #EF4444, #DC2626)",
-                stopOnFocus: true,
-            }).showToast();
-        }
-
-        async function fetchData(url) {
+        async function checkStatus() {
+            if(!pedidoId) return;
+            document.getElementById('order-id').innerText = `ID: #${pedidoId}`;
             try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return await response.json();
-            } catch (error) {
-                console.error("Erro na requisição:", error);
-                showToast(`Erro ao carregar dados: ${error.message}`, 'error');
-                return null;
-            }
-        }
-
-        // --- INICIALIZAÇÃO --- //
-        document.addEventListener('DOMContentLoaded', inicializar);
-
-        async function inicializar() {
-            if (!pedidoId) {
-                document.getElementById('order-id').innerText = "ID do pedido não encontrado.";
-                showToast("ID do pedido não encontrado na URL.", 'error');
-                return;
-            }
-
-            document.getElementById('order-id').innerText = `ID: #${pedidoId.slice(-6)}`;
-            await carregarLogo();
-            // Em um ambiente real, você usaria o SDK do Firebase Realtime Database para um listener
-            // Ex: firebase.database().ref(`vendas/${pedidoId}`).on('value', (snapshot) => { ... });
-            // Para este exemplo HTML puro, vamos simular com setInterval
-            setInterval(atualizarStatusEDetalhes, 5000); // Atualiza a cada 5 segundos
-            atualizarStatusEDetalhes(); // Chama uma vez na inicialização
-        }
-
-        async function carregarLogo() {
-            try {
-                const data = await fetchData(LOGO_URL);
+                const res = await fetch(`${DB_BASE}vendas/${pedidoId}.json`);
+                const data = await res.json();
                 if(data) {
-                    document.getElementById('loja-logo').src = data;
-                    document.getElementById('logo-container').classList.remove('hidden');
+                    const status = data.status || 'pendente';
+                    const niveis = { 'pendente': 1, 'preparo': 2, 'pronto': 3 };
+                    const atual = niveis[status];
+                    ['pendente', 'preparo', 'pronto'].forEach((s, i) => {
+                        const el = document.getElementById(`step-${s}`);
+                        if((i + 1) <= atual) {
+                            el.querySelector('div').classList.add('active-dot');
+                            el.querySelector('h3').classList.add('active-text');
+                        }
+                    });
                 }
-            } catch (e) { console.log("Logo não encontrada."); }
+            } catch (e) { console.error(e); }
         }
-
-        let currentStatus = ''; // Para detectar mudanças de status
-
-        async function atualizarStatusEDetalhes() {
-            try {
-                const pedido = await fetchData(`${VENDAS_URL}${pedidoId}.json`);
-
-                if (!pedido) {
-                    showToast("Pedido não encontrado.", 'error');
-                    // Redirecionar ou mostrar mensagem de erro mais proeminente
-                    return;
-                }
-
-                // Atualizar detalhes do pedido
-                renderizarDetalhesPedido(pedido);
-
-                // Atualizar status visual
-                const status = pedido.status || "pendente";
-                const steps = ["pendente", "preparo", "pronto"];
-                const index = steps.indexOf(status);
-
-                steps.forEach((s, i) => {
-                    const el = document.getElementById(`step-${s}`);
-                    const dot = el.querySelector('div');
-                    const text = el.querySelector('h3');
-                    const desc = el.querySelector('p');
-
-                    if(i <= index) {
-                        dot.classList.add('active-dot');
-                        text.classList.remove('text-zinc-400');
-                        text.classList.add('text-amber-900');
-                        desc.classList.remove('text-zinc-400');
-                        desc.classList.add('text-zinc-700');
-                    } else {
-                        dot.classList.remove('active-dot');
-                        text.classList.add('text-zinc-400');
-                        text.classList.remove('text-amber-900');
-                        desc.classList.add('text-zinc-400');
-                        desc.classList.remove('text-zinc-700');
-                    }
-                });
-
-                // Notificação Toast para mudança de status
-                if (status !== currentStatus) {
-                    if (currentStatus !== '') { // Evita notificar no primeiro carregamento
-                        showToast(`Seu pedido agora está: ${status.toUpperCase()}!`, 'info');
-                    }
-                    currentStatus = status;
-                }
-
-            } catch(e) {
-                console.error("Erro ao buscar status e detalhes do pedido:", e);
-                showToast("Erro ao carregar status do pedido. Verifique sua conexão.", 'error');
-            }
-        }
-
-        function renderizarDetalhesPedido(pedido) {
-            document.getElementById('order-details').classList.remove('hidden');
-            document.getElementById('detail-cliente').innerText = pedido.cliente || 'N/A';
-            document.getElementById('detail-total').innerText = `R$ ${pedido.total ? pedido.total.toFixed(2) : '0.00'}`;
-            document.getElementById('detail-endereco').innerText = pedido.endereco || 'N/A';
-            document.getElementById('detail-pagamento').innerText = pedido.pagamento || 'N/A';
-            document.getElementById('detail-observacao').innerText = pedido.observacao || 'Nenhuma';
-
-            const itensList = document.getElementById('detail-itens');
-            itensList.innerHTML = '';
-            if (pedido.itens && pedido.itens.length > 0) {
-                pedido.itens.forEach(item => {
-                    const li = document.createElement('li');
-                    li.innerText = `${item.qty}x ${item.nome} (R$ ${item.preco.toFixed(2)}) ${item.obs ? `[Obs: ${item.obs}]` : ''}`;
-                    itensList.appendChild(li);
-                });
-            } else {
-                itensList.innerHTML = '<li>Nenhum item listado.</li>';
-            }
-        }
+        setInterval(checkStatus, 5000);
+        checkStatus();
     </script>
 </body>
 </html>
