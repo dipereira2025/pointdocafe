@@ -30,17 +30,21 @@
 
     <script type="module">
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
-        let pedidosIDConhecidos = new Set();
         let abaAtual = 'pedidos';
 
         window.mudarAba = (aba) => {
             abaAtual = aba;
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            document.querySelectorAll('.btn-tab').forEach(b => b.classList.remove('active', 'text-zinc-500'));
-            document.querySelectorAll('.btn-tab').forEach(b => b.classList.add('text-zinc-500'));
+            document.querySelectorAll('.btn-tab').forEach(b => {
+                b.classList.remove('active', 'text-zinc-500');
+                b.classList.add('text-zinc-500');
+            });
+
             document.getElementById(`tab-${aba}-btn`).classList.add('active');
             document.getElementById(`tab-${aba}-btn`).classList.remove('text-zinc-500');
             document.getElementById(`aba-${aba}`).classList.remove('hidden');
+            
+            // Força o carregamento ao trocar de aba
             if(aba === 'pedidos') carregar();
             else if(aba === 'concluidos') carregarConcluidos();
             else carregarEstoque();
@@ -52,7 +56,7 @@
                 const res = await fetch(`${DB_BASE}vendas.json`);
                 const vendas = await res.json();
                 const container = document.getElementById('aba-pedidos');
-                if(!vendas) return;
+                if(!vendas) { container.innerHTML = "<p class='text-center py-10 uppercase text-zinc-400 font-bold'>Vazio</p>"; return; }
 
                 const hoje = new Date().toLocaleDateString('pt-BR');
                 let pedidos = Object.keys(vendas).map(id => ({id, ...vendas[id]}))
@@ -65,56 +69,51 @@
                     const diffMin = Math.floor((new Date() - new Date(v.data)) / 1000 / 60);
                     const classeTempo = diffMin > 30 ? "tempo-atrasado" : "tempo-ok";
                     
-                    // LÓGICA CORRIGIDA: Se não tiver status, assume 'pendente'.
-                    let botoes = "";
-                    if (v.status === 'pendente' || !v.status) {
-                        botoes = `<button onclick="mudarStatus('${v.id}', 'preparo')" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black uppercase text-xs">🔥 Iniciar</button>`;
-                    } else {
-                        botoes = `<button onclick="finalizarEAvisar('${v.id}', '${v.telefone}', '${v.cliente}')" class="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black uppercase text-xs">✅ Avisar Pronto</button>`;
-                    }
-
                     container.innerHTML += `
                         <div class="bg-white p-6 rounded-3xl shadow-sm ${classeTempo} border border-zinc-200">
                             <div class="flex justify-between items-center mb-4">
                                 <span class="bg-zinc-800 text-white px-4 py-1 rounded-full font-black text-[10px]">#${v.id.slice(-4)}</span>
-                                <span class="text-[10px] font-black uppercase text-zinc-400">${diffMin} MINUTOS</span>
+                                <span class="text-[10px] font-black uppercase text-zinc-400">${diffMin} MIN</span>
                             </div>
-                            <div class="mb-4">
-                                <p class="text-sm font-black uppercase text-zinc-800">${v.cliente}</p>
-                                <p class="text-[10px] text-zinc-400 font-bold uppercase">${v.endereco || 'Retirada'}</p>
-                            </div>
-                            <div class="mb-6 space-y-1">
-                                ${v.itens ? v.itens.map(i => `<div class="p-2 bg-zinc-50 rounded-lg text-[11px] font-bold uppercase border-l-2 border-zinc-300">1x ${i.nome}</div>`).join('') : ''}
+                            <p class="text-sm font-black uppercase text-zinc-800">${v.cliente}</p>
+                            <div class="my-4 space-y-1">
+                                ${v.itens ? v.itens.map(i => `<div class="p-2 bg-zinc-50 rounded-lg text-[11px] font-bold uppercase">1x ${i.nome}</div>`).join('') : ''}
                             </div>
                             <div class="flex gap-2">
-                                ${botoes}
-                                <button onclick="mudarStatus('${v.id}', 'finalizado')" class="px-4 bg-zinc-100 text-zinc-400 rounded-2xl text-[9px] font-bold uppercase">Arquivar</button>
+                                <button onclick="mudarStatus('${v.id}', 'finalizado')" class="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black uppercase text-xs">Finalizar</button>
                             </div>
                         </div>`;
                 });
             } catch (e) { console.error(e); }
         }
 
-        window.mudarStatus = async (id, s) => { 
-            await fetch(`${DB_BASE}vendas/${id}/status.json`, { method: 'PUT', body: JSON.stringify(s) }); 
-            carregar(); 
-        };
+        async function carregarConcluidos() {
+            if(abaAtual !== 'concluidos') return;
+            try {
+                const res = await fetch(`${DB_BASE}vendas.json`);
+                const vendas = await res.json();
+                const container = document.getElementById('aba-concluidos');
+                container.innerHTML = "";
+                
+                if(!vendas) {
+                    container.innerHTML = "<p class='text-center py-10 uppercase text-zinc-400 font-bold'>Nenhum pedido concluído</p>";
+                    return;
+                }
 
-        window.finalizarEAvisar = async (id, tel, nome) => {
-            if(tel && tel !== "undefined" && tel !== "") {
-                const statusLink = window.location.origin + window.location.pathname.replace('atendimento3.html', 'status2.html') + "?id=" + id;
-                const msg = `Olá *${nome}*! Seu pedido do *Point do Café* está pronto e saiu para entrega! 🛵☕\nAcompanhe aqui: ${statusLink}`;
-                window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
-            }
-            await mudarStatus(id, 'finalizado');
-            Toastify({text: "Pedido Finalizado!", style: {background: "green"}}).showToast();
-        };
+                const hoje = new Date().toLocaleDateString('pt-BR');
+                let pedidos = Object.keys(vendas).map(id => ({id, ...vendas[id]}))
+                    .filter(v => v.dataLocal === hoje && v.status === 'finalizado');
 
-        // Funções de Estoque e Concluídos seguem o padrão anterior...
-        // (Omiti por brevidade, mas devem ser mantidas no seu arquivo)
+                // Ordena do mais recente para o mais antigo nos concluídos
+                pedidos.sort((a, b) => new Date(b.data) - new Date(a.data));
 
-        setInterval(() => { if(abaAtual === 'pedidos') carregar(); }, 5000);
-        carregar();
-    </script>
-</body>
-</html>
+                if(pedidos.length === 0) {
+                    container.innerHTML = "<p class='text-center py-10 uppercase text-zinc-400 font-bold'>Nenhum pedido concluído hoje</p>";
+                    return;
+                }
+
+                pedidos.forEach(v => {
+                    container.innerHTML += `
+                        <div class="bg-white p-4 rounded-2xl border border-zinc-200 opacity-70">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[10px] font-black uppercase text-zinc-800">#${v.id.slice(-
