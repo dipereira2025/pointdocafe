@@ -13,6 +13,7 @@
         .tab-content.hidden { display: none; }
         .btn-tab { transition: 0.3s; border-bottom: 4px solid transparent; }
         .btn-tab.active { border-color: #d97706; color: #d97706; background: #fff; }
+        .pedido-concluido { opacity: 0.6; grayscale: 1; border-left: 4px solid #94a3b8; }
         @media print {
             body * { display: none !important; }
             #secao-impressao, #secao-impressao * { display: block !important; }
@@ -23,8 +24,9 @@
 <body class="bg-zinc-100 font-sans text-left">
 
     <nav class="max-w-2xl mx-auto flex bg-zinc-200 p-1 rounded-2xl mt-4 mb-6 sticky top-4 z-50 shadow-md">
-        <button onclick="mudarAba('pedidos')" id="tab-pedidos-btn" class="btn-tab active flex-1 py-3 font-black uppercase text-xs rounded-xl">📋 Pedidos</button>
-        <button onclick="mudarAba('estoque')" id="tab-estoque-btn" class="btn-tab flex-1 py-3 font-black uppercase text-xs rounded-xl text-zinc-500">🚫 Pausar Itens</button>
+        <button onclick="mudarAba('pedidos')" id="tab-pedidos-btn" class="btn-tab active flex-1 py-3 font-black uppercase text-[10px] rounded-xl">📋 Produção</button>
+        <button onclick="mudarAba('concluidos')" id="tab-concluidos-btn" class="btn-tab flex-1 py-3 font-black uppercase text-[10px] rounded-xl text-zinc-500">✅ Concluídos</button>
+        <button onclick="mudarAba('estoque')" id="tab-estoque-btn" class="btn-tab flex-1 py-3 font-black uppercase text-[10px] rounded-xl text-zinc-500">🚫 Estoque</button>
     </nav>
     
     <header class="max-w-2xl mx-auto flex justify-between items-center mb-6 bg-white p-6 rounded-3xl shadow-sm border-b-4 border-amber-600">
@@ -34,12 +36,9 @@
 
     <main id="aba-pedidos" class="tab-content max-w-2xl mx-auto space-y-4 pb-20"></main>
 
-    <main id="aba-estoque" class="tab-content hidden max-w-2xl mx-auto space-y-3 pb-20">
-        <div class="bg-amber-100 p-4 rounded-2xl mb-4 border border-amber-200">
-            <p class="text-[10px] font-bold uppercase text-amber-800">⚠️ Aviso: Itens pausados aqui sumirão do cardápio do cliente imediatamente.</p>
-        </div>
-        <div id="lista-produtos-estoque" class="space-y-2"></div>
-    </main>
+    <main id="aba-concluidos" class="tab-content hidden max-w-2xl mx-auto space-y-3 pb-20"></main>
+
+    <main id="aba-estoque" class="tab-content hidden max-w-2xl mx-auto space-y-3 pb-20"></main>
 
     <audio id="alerta-sonoro" src="https://www.soundjay.com/buttons/button-2.mp3" preload="auto"></audio>
     <div id="secao-impressao" class="hidden"></div>
@@ -47,44 +46,50 @@
     <script type="module">
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
         let pedidosIDConhecidos = new Set();
+        let abaAtual = 'pedidos';
 
-        // --- SISTEMA DE ABAS ---
         window.mudarAba = (aba) => {
+            abaAtual = aba;
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             document.querySelectorAll('.btn-tab').forEach(b => {
                 b.classList.remove('active');
                 b.classList.add('text-zinc-500');
             });
 
+            const btn = document.getElementById(`tab-${aba}-btn`);
+            btn.classList.add('active');
+            btn.classList.remove('text-zinc-500');
+            document.getElementById(`aba-${aba}`).classList.remove('hidden');
+            
             if(aba === 'pedidos') {
-                document.getElementById('aba-pedidos').classList.remove('hidden');
-                document.getElementById('tab-pedidos-btn').classList.add('active');
-                document.getElementById('tab-pedidos-btn').classList.remove('text-zinc-500');
                 document.getElementById('titulo-aba').innerText = "Fila de Produção";
                 carregar();
+            } else if(aba === 'concluidos') {
+                document.getElementById('titulo-aba').innerText = "Pedidos Finalizados";
+                carregarConcluidos();
             } else {
-                document.getElementById('aba-estoque').classList.remove('hidden');
-                document.getElementById('tab-estoque-btn').classList.add('active');
-                document.getElementById('tab-estoque-btn').classList.remove('text-zinc-500');
                 document.getElementById('titulo-aba').innerText = "Estoque do Dia";
                 carregarEstoque();
             }
         };
 
-        // --- CARREGAR PEDIDOS ---
+        // --- CARREGAR PEDIDOS ATIVOS (MAIS ANTIGOS NO TOPO) ---
         async function carregar() {
+            if(abaAtual !== 'pedidos') return;
             try {
                 const res = await fetch(`${DB_BASE}vendas.json`);
                 const vendas = await res.json();
                 const container = document.getElementById('aba-pedidos');
-                if(!vendas) { container.innerHTML = "<p class='text-center py-10 uppercase font-bold text-zinc-400'>Vazio</p>"; return; }
+                if(!vendas) { container.innerHTML = "<p class='text-center py-10 font-bold text-zinc-400 uppercase'>Sem pedidos ativos</p>"; return; }
 
                 const hoje = new Date().toLocaleDateString('pt-BR');
                 let pedidos = Object.keys(vendas).map(id => ({id, ...vendas[id]}))
                     .filter(v => v.dataLocal === hoje && v.status !== 'finalizado');
 
+                // ORDENAÇÃO: MAIS ANTIGO PARA O MAIS NOVO (Fila correta)
                 pedidos.sort((a, b) => new Date(a.data) - new Date(b.data));
 
+                // Alerta para novos
                 pedidos.forEach(p => { 
                     if (!pedidosIDConhecidos.has(p.id) && p.status === 'pendente') { 
                         pedidosIDConhecidos.add(p.id); 
@@ -100,12 +105,12 @@
                     container.innerHTML += `
                         <div class="bg-white p-6 rounded-3xl shadow-sm ${classeTempo} border border-zinc-200">
                             <div class="flex justify-between items-center mb-4">
-                                <span class="bg-zinc-800 text-white px-4 py-1 rounded-full font-black text-xs">#${v.id.slice(-4)}</span>
-                                <button onclick="imprimir('${v.id}')" class="text-[10px] font-bold text-amber-600 underline">IMPRIMIR</button>
+                                <span class="bg-zinc-800 text-white px-4 py-1 rounded-full font-black text-[10px]">#${v.id.slice(-4)}</span>
+                                <span class="text-[10px] font-bold text-zinc-400 uppercase">${diffMin} MINUTOS NA FILA</span>
                             </div>
                             <div class="mb-4">
-                                <p class="text-sm font-black uppercase text-zinc-900 italic">${v.cliente}</p>
-                                <p class="text-[10px] text-zinc-500 font-bold">${v.endereco}</p>
+                                <p class="text-sm font-black uppercase text-zinc-900">${v.cliente}</p>
+                                <p class="text-[10px] text-zinc-400 font-bold">${v.endereco}</p>
                             </div>
                             <div class="mb-6 space-y-1">
                                 ${v.itens.map(i => `<div class="p-2 bg-zinc-50 rounded-lg text-xs font-bold uppercase">1x ${i.nome}</div>`).join('')}
@@ -113,7 +118,7 @@
                             </div>
                             <div class="flex gap-2">
                                 ${v.status === 'pendente' ? 
-                                    `<button onclick="mudarStatus('${v.id}', 'preparo')" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black uppercase text-xs">🔥 Iniciar</button>` : ''}
+                                    `<button onclick="mudarStatus('${v.id}', 'preparo')" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black uppercase text-xs">🔥 Iniciar Preparo</button>` : ''}
                                 ${v.status === 'preparo' ? 
                                     `<button onclick="finalizarEAvisar('${v.id}', '${v.telefone}', '${v.cliente}')" class="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black uppercase text-xs">✅ Avisar Pronto</button>` : ''}
                             </div>
@@ -122,29 +127,47 @@
             } catch (e) { console.error(e); }
         }
 
-        // --- CARREGAR ESTOQUE ---
+        // --- CARREGAR CONCLUÍDOS (MAIS RECENTES NO TOPO) ---
+        async function carregarConcluidos() {
+            try {
+                const res = await fetch(`${DB_BASE}vendas.json`);
+                const vendas = await res.json();
+                const container = document.getElementById('aba-concluidos');
+                container.innerHTML = "";
+                if(!vendas) return;
+
+                const hoje = new Date().toLocaleDateString('pt-BR');
+                let pedidos = Object.keys(vendas).map(id => ({id, ...vendas[id]}))
+                    .filter(v => v.dataLocal === hoje && v.status === 'finalizado');
+
+                pedidos.sort((a, b) => new Date(b.data) - new Date(a.data));
+
+                pedidos.forEach(v => {
+                    container.innerHTML += `
+                        <div class="bg-white p-4 rounded-2xl border border-zinc-200 pedido-concluido">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-[10px] font-black uppercase">#${v.id.slice(-4)} - ${v.cliente}</span>
+                                <button onclick="imprimir('${v.id}')" class="text-[9px] font-bold text-amber-600 underline">IMPRIMIR 2ª VIA</button>
+                            </div>
+                            <p class="text-[10px] text-zinc-500 font-bold uppercase italic">Finalizado com sucesso</p>
+                        </div>`;
+                });
+            } catch (e) { console.error(e); }
+        }
+
         async function carregarEstoque() {
             try {
                 const res = await fetch(`${DB_BASE}produtos.json`);
                 const produtos = await res.json();
-                const container = document.getElementById('lista-produtos-estoque');
+                const container = document.getElementById('aba-estoque');
                 container.innerHTML = "";
-
                 for(let id in produtos) {
                     const p = produtos[id];
                     container.innerHTML += `
-                        <div class="bg-white p-4 rounded-2xl flex justify-between items-center border ${p.pausado ? 'border-red-200 bg-red-50' : 'border-zinc-200'}">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-zinc-100 flex items-center justify-center text-xl">
-                                    ${p.pausado ? '🚫' : '☕'}
-                                </div>
-                                <div>
-                                    <p class="font-bold text-xs uppercase ${p.pausado ? 'text-red-600 line-through' : 'text-zinc-800'}">${p.nome}</p>
-                                    <p class="text-[9px] font-bold text-zinc-400 uppercase">${p.pausado ? 'Esgotado' : 'Disponível'}</p>
-                                </div>
-                            </div>
+                        <div class="bg-white p-4 rounded-2xl flex justify-between items-center border ${p.pausado ? 'bg-red-50' : 'border-zinc-200'}">
+                            <span class="font-bold text-xs uppercase">${p.nome}</span>
                             <button onclick="togglePausa('${id}', ${p.pausado})" 
-                                class="px-6 py-2 rounded-xl font-black text-[10px] uppercase shadow-sm ${p.pausado ? 'bg-green-600 text-white' : 'bg-red-500 text-white'}">
+                                class="px-6 py-2 rounded-xl font-black text-[10px] uppercase ${p.pausado ? 'bg-green-600' : 'bg-red-500'} text-white">
                                 ${p.pausado ? 'Ativar' : 'Pausar'}
                             </button>
                         </div>`;
@@ -152,12 +175,8 @@
             } catch (e) { console.error(e); }
         }
 
-        window.togglePausa = async (id, statusAtual) => {
-            await fetch(`${DB_BASE}produtos/${id}/pausado.json`, { 
-                method: 'PUT', 
-                body: JSON.stringify(!statusAtual) 
-            });
-            Toastify({text: "Status do item alterado!", style: {background: "#333"}}).showToast();
+        window.togglePausa = async (id, status) => {
+            await fetch(`${DB_BASE}produtos/${id}/pausado.json`, { method: 'PUT', body: JSON.stringify(!status) });
             carregarEstoque();
         };
 
@@ -169,20 +188,22 @@
         window.finalizarEAvisar = async (id, tel, nome) => {
             const statusLink = window.location.origin + window.location.pathname.replace('atendimento3.html', 'status2.html') + "?id=" + id;
             const msg = `Olá *${nome}*! Seu pedido do *Point do Café* está pronto e saiu para entrega! 🛵☕\nAcompanhe aqui: ${statusLink}`;
+            
             window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
             await fetch(`${DB_BASE}vendas/${id}/status.json`, { method: 'PUT', body: JSON.stringify('finalizado') });
-            Toastify({text: "Pedido Concluído!", style: {background: "green"}}).showToast();
+            
+            Toastify({text: "Pedido Finalizado!", style: {background: "green"}}).showToast();
             carregar();
         };
 
         window.imprimir = async (id) => {
             const res = await fetch(`${DB_BASE}vendas/${id}.json`);
             const v = await res.json();
-            document.getElementById('secao-impressao').innerHTML = `<div style="text-align:center; text-transform:uppercase;"><h2>POINT DO CAFÉ</h2><p>PEDIDO #${id.slice(-4)}</p><hr><div style="text-align:left;"><b>CLI:</b> ${v.cliente}<br><b>END:</b> ${v.endereco}<br><hr>${v.itens.map(i => `1x ${i.nome}`).join('<br>')}<hr><b>TOTAL: R$ ${v.total.toFixed(2)}</b></div></div>`;
+            document.getElementById('secao-impressao').innerHTML = `<div style="text-align:center; text-transform:uppercase;"><h2>POINT DO CAFÉ</h2><p>#${v.id.slice(-4)}</p><hr>${v.itens.map(i => `1x ${i.nome}`).join('<br>')}<hr><b>TOTAL: R$ ${v.total.toFixed(2)}</b></div>`;
             window.print();
         };
 
-        setInterval(() => { if(!document.getElementById('aba-pedidos').classList.contains('hidden')) carregar(); }, 5000);
+        setInterval(() => { if(abaAtual === 'pedidos') carregar(); }, 5000);
         setInterval(() => document.getElementById('relogio').innerText = new Date().toLocaleTimeString(), 1000);
         carregar();
     </script>
