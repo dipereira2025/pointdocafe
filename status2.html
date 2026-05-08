@@ -1,106 +1,51 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acompanhe seu Pedido - Point do Café</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .step::after { content: ''; position: absolute; left: 19px; top: 40px; height: 40px; width: 2px; background: #e5e7eb; }
-        .step:last-child::after { display: none; }
-        .active-dot { background: #d97706 !important; color: white !important; border-color: #d97706 !important; box-shadow: 0 0 15px rgba(217, 119, 6, 0.4); }
-        .active-text { color: #d97706 !important; font-weight: 900; }
-        .bg-coffee { background-color: #fffcf7; }
-    </style>
-</head>
-<body class="bg-coffee flex flex-col items-center min-h-screen p-6">
+<script type="module">
+    const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
+    const LOGO_URL = DB_BASE + "configuracao/logo.json"; // Caminho onde o admin salva a logo
+    const urlParams = new URLSearchParams(window.location.search);
+    const pedidoId = urlParams.get('id');
 
-    <div class="w-full max-w-md bg-white rounded-[3rem] shadow-2xl p-8 border-t-8 border-amber-600 mt-4">
-        <header class="text-center mb-10">
-            <img src="https://via.placeholder.com/150x150?text=LOGO+CAFÉ" alt="Logo Point do Café" class="w-24 h-24 mx-auto mb-4 rounded-full object-cover border-4 border-amber-100 shadow-sm">
-            <h1 class="text-2xl font-black uppercase italic text-amber-900 tracking-tight">Point do Café</h1>
-            <div class="inline-block bg-amber-50 px-4 py-1 rounded-full mt-2">
-                <p id="order-id" class="text-[10px] font-black text-amber-700 uppercase tracking-widest">Buscando pedido...</p>
-            </div>
-        </header>
-
-        <div class="space-y-12 relative px-4">
-            <div id="step-pendente" class="step flex items-center gap-6 relative">
-                <div class="w-10 h-10 rounded-full bg-white border-2 border-zinc-200 flex items-center justify-center font-bold z-10 transition-all">1</div>
-                <div>
-                    <h3 class="text-sm uppercase text-zinc-400">Recebido</h3>
-                    <p class="text-[9px] text-zinc-400">Pedido enviado com sucesso</p>
-                </div>
-            </div>
-
-            <div id="step-preparo" class="step flex items-center gap-6 relative">
-                <div class="w-10 h-10 rounded-full bg-white border-2 border-zinc-200 flex items-center justify-center font-bold z-10 transition-all">2</div>
-                <div>
-                    <h3 class="text-sm uppercase text-zinc-400">Em Preparo</h3>
-                    <p class="text-[9px] text-zinc-400">O barista já começou seu café</p>
-                </div>
-            </div>
-
-            <div id="step-pronto" class="step flex items-center gap-6 relative">
-                <div class="w-10 h-10 rounded-full bg-white border-2 border-zinc-200 flex items-center justify-center font-bold z-10 transition-all">3</div>
-                <div>
-                    <h3 class="text-sm uppercase text-zinc-400">Pronto / Saiu</h3>
-                    <p class="text-[9px] text-zinc-400">Tudo pronto para você!</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="mt-12 text-center border-t border-zinc-50 pt-6">
-            <p class="text-zinc-400 text-[10px] uppercase font-medium mb-4">Dúvidas? Chame no WhatsApp</p>
-            <a href="pedidos2.html" class="inline-block bg-zinc-100 hover:bg-zinc-200 text-zinc-600 font-bold text-[10px] uppercase px-6 py-3 rounded-2xl transition-colors">
-                Fazer novo pedido
-            </a>
-        </div>
-    </div>
-
-    <footer class="mt-8 text-center">
-        <p class="text-zinc-400 text-[9px] uppercase tracking-widest font-bold">Desenvolvido por DPTech Solutions</p>
-    </footer>
-
-    <script type="module">
-        const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
-        const urlParams = new URLSearchParams(window.location.search);
-        const pedidoId = urlParams.get('id');
-
-        async function checkStatus() {
-            if(!pedidoId) {
-                document.getElementById('order-id').innerText = "Nenhum pedido encontrado";
-                return;
+    // Função para carregar a logo do Firebase
+    async function carregarLogo() {
+        try {
+            const res = await fetch(LOGO_URL);
+            const logoData = await res.json();
+            if(logoData) {
+                const imgLogo = document.querySelector('header img');
+                imgLogo.src = logoData;
+                imgLogo.classList.remove('hidden');
             }
-            
-            document.getElementById('order-id').innerText = `PEDIDO: #${pedidoId.slice(-6)}`;
-            
-            try {
-                const res = await fetch(`${DB_BASE}vendas/${pedidoId}.json`);
-                const data = await res.json();
-                
-                if(data) {
-                    const status = data.status || 'pendente';
-                    const niveis = { 'pendente': 1, 'preparo': 2, 'pronto': 3 };
-                    const atual = niveis[status];
+        } catch (e) { console.error("Erro ao carregar logo:", e); }
+    }
 
-                    ['pendente', 'preparo', 'pronto'].forEach((s, i) => {
-                        const stepIdx = i + 1;
-                        const el = document.getElementById(`step-${s}`);
-                        if(stepIdx <= atual) {
-                            el.querySelector('div').classList.add('active-dot');
-                            el.querySelector('h3').classList.add('active-text');
-                        }
-                    });
-                }
-            } catch (e) {
-                console.error("Erro ao sincronizar status:", e);
-            }
+    async function checkStatus() {
+        if(!pedidoId) {
+            document.getElementById('order-id').innerText = "Pedido não encontrado";
+            return;
         }
+        document.getElementById('order-id').innerText = `PEDIDO: #${pedidoId.slice(-6)}`;
+        
+        try {
+            const res = await fetch(`${DB_BASE}vendas/${pedidoId}.json`);
+            const data = await res.json();
+            if(data) {
+                const status = data.status || 'pendente';
+                const niveis = { 'pendente': 1, 'preparo': 2, 'pronto': 3 };
+                const atual = niveis[status];
 
-        // Atualização em tempo real a cada 5 segundos
-        setInterval(checkStatus, 5000);
-        checkStatus();
-    </script>
-</body>
-</html>
+                ['pendente', 'preparo', 'pronto'].forEach((s, i) => {
+                    const stepIdx = i + 1;
+                    const el = document.getElementById(`step-${s}`);
+                    if(stepIdx <= atual) {
+                        el.querySelector('div').classList.add('active-dot');
+                        el.querySelector('h3').classList.add('active-text');
+                    }
+                });
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    // Inicialização
+    carregarLogo();
+    setInterval(checkStatus, 5000);
+    checkStatus();
+</script>
