@@ -35,8 +35,13 @@
 
     <div id="modal-checkout" class="fixed inset-0 bg-black/70 hidden z-50 p-4 flex items-center justify-center">
         <div class="bg-white w-full max-w-md rounded-3xl p-6 overflow-y-auto max-h-[90vh]">
-            <h2 class="text-xl font-black text-amber-900 uppercase mb-4">Seu Pedido</h2>
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 class="text-xl font-black text-amber-900 uppercase">Seu Pedido</h2>
+                <button onclick="limparCarrinho()" class="text-[10px] font-black text-red-500 bg-red-50 px-3 py-1 rounded-full uppercase">Limpar</button>
+            </div>
+            
             <div id="resumo-itens" class="mb-6 space-y-2 text-sm border-b pb-4"></div>
+            
             <div class="space-y-3">
                 <input type="text" id="cli-nome" placeholder="Seu Nome *" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-none">
                 <input type="text" id="cli-end" placeholder="Endereço Completo *" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-none">
@@ -64,14 +69,14 @@
 
         async function carregarIdentidade() {
             try {
-                const resLogo = await fetch(`${DB_BASE}configuracao/logo.json`);
-                const logoData = await resLogo.json();
+                const resL = await fetch(`${DB_BASE}configuracao/logo.json`);
+                const logoData = await resL.json();
                 if(logoData) {
                     document.getElementById('store-logo').src = logoData;
                     document.getElementById('logo-container').classList.remove('hidden');
                 }
-                const resInfo = await fetch(`${DB_BASE}configuracao/storeInfo.json`);
-                const info = await resInfo.json();
+                const resI = await fetch(`${DB_BASE}configuracao/storeInfo.json`);
+                const info = await resI.json();
                 if(info) {
                     if(info.name) document.getElementById('header-name').innerText = info.name;
                     if(info.description) document.getElementById('header-desc').innerText = info.description;
@@ -102,10 +107,20 @@
         }
 
         window.toggleTroco = (val) => document.getElementById('cli-troco').classList.toggle('hidden', val !== 'Dinheiro');
+        
         window.addCart = (id, nome, preco) => {
             carrinho.push({id, nome, preco});
             updateCart();
             Toastify({text: "Adicionado!", duration: 1000, style: {background: "#d97706"}}).showToast();
+        };
+
+        window.limparCarrinho = () => {
+            if(confirm("Deseja limpar o carrinho?")) {
+                carrinho = [];
+                updateCart();
+                fecharCheckout();
+                Toastify({text: "Carrinho Vazio", style: {background: "#ef4444"}}).showToast();
+            }
         };
 
         function updateCart() {
@@ -115,26 +130,49 @@
         }
 
         window.abrirCheckout = () => {
+            if(carrinho.length === 0) return alert("Seu carrinho está vazio!");
             document.getElementById('resumo-itens').innerHTML = carrinho.map(i => `<div class="flex justify-between"><span>1x ${i.nome}</span><span>R$ ${i.preco.toFixed(2)}</span></div>`).join('');
             document.getElementById('modal-checkout').classList.remove('hidden');
         };
         window.fecharCheckout = () => document.getElementById('modal-checkout').classList.add('hidden');
 
         window.enviarPedidoFinal = async () => {
-            const n = document.getElementById('cli-nome').value;
-            const e = document.getElementById('cli-end').value;
+            const n = document.getElementById('cli-nome').value.trim();
+            const e = document.getElementById('cli-end').value.trim();
+            const ref = document.getElementById('cli-ref').value.trim();
+            const pgto = document.getElementById('cli-pgto').value;
+            const troco = document.getElementById('cli-troco').value.trim();
+
             if(!n || !e) return alert("Preencha Nome e Endereço");
 
             const pedidoId = "PED-" + Date.now().toString().slice(-6);
             const totalGeral = carrinho.reduce((acc, i) => acc + i.preco, 0);
+            
             const pedido = {
-                id: pedidoId, cliente: n, endereco: e, referencia: document.getElementById('cli-ref').value,
-                pagamento: document.getElementById('cli-pgto').value, troco: document.getElementById('cli-troco').value,
-                itens: carrinho, total: totalGeral, status: 'pendente', data: new Date().toISOString(), dataLocal: new Date().toLocaleDateString('pt-BR')
+                id: pedidoId, cliente: n, endereco: e, referencia: ref,
+                pagamento: pgto, troco: troco,
+                itens: carrinho, total: totalGeral, status: 'pendente', 
+                data: new Date().toISOString(), dataLocal: new Date().toLocaleDateString('pt-BR')
             };
 
             await fetch(`${DB_BASE}vendas/${pedidoId}.json`, { method: 'PUT', body: JSON.stringify(pedido) });
-            let msg = `*NOVO PEDIDO #${pedidoId}*\n*Cliente:* ${n}\n*Total:* R$ ${totalGeral.toFixed(2)}`;
+
+            // FORMATAÇÃO DA MENSAGEM WHATSAPP SOLICITADA
+            let msg = `*NOVO PEDIDO - POINT DO CAFÉ*\n\n`;
+            msg += `*ID:* #${pedidoId}\n`;
+            msg += `*Cliente:* ${n}\n`;
+            msg += `*Endereço:* ${e}\n`;
+            if(ref) msg += `*Referência:* ${ref}\n`;
+            msg += `*Pagamento:* ${pgto}\n`;
+            if(pgto === 'Dinheiro' && troco) msg += `*Troco para:* R$ ${troco}\n`;
+            
+            msg += `\n*ITENS:*\n`;
+            carrinho.forEach(item => {
+                msg += `• 1x ${item.nome} - R$ ${item.preco.toFixed(2)}\n`;
+            });
+            
+            msg += `\n*TOTAL: R$ ${totalGeral.toFixed(2)}*`;
+
             window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
             window.location.href = `status2.html?id=${pedidoId}`;
         };
