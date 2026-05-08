@@ -153,13 +153,12 @@
             let msg = `*RECEBEMOS SEU PEDIDO!* ☕\n\n`;
             msg += `*Nº DO PEDIDO:* #${pedidoId}\n*CLIENTE:* ${n}\n`;
             msg += `----------------------------------\n*ITENS:*\n`;
+            if(obs) msg += `*OBS:* ${obs}\n`;
             carrinho.forEach(item => { msg += `• 1x ${item.nome} - R$ ${item.preco.toFixed(2)}\n`; });
             msg += `\n*TOTAL: R$ ${totalGeral.toFixed(2)}*\n----------------------------------\n`;
             msg += `*ENDEREÇO:* ${e}\n`;
             if(ref) msg += `*REF:* ${ref}\n`;
-            msg += `*PAGAMENTO:* ${pgto}\n`;
-            if(obs) msg += `*OBS:* ${obs}\n`;
-            msg += `----------------------------------\n`;
+            msg += `*PAGAMENTO:* ${pgto}\n`;msg += `----------------------------------\n`;
             msg += `*Acompanhe aqui:* \n${statusLink}`;
 
             window.open(`https://wa.me/${WHATSAPP_LOJA}?text=${encodeURIComponent(msg)}`, '_blank');
