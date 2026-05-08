@@ -3,388 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terminal de Atendimento - DPTech</title>
+    <title>Terminal de Atendimento - Point do Café</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Toastify JS para notificações não intrusivas -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <style>
-        @media print {
-            body * { display: none !important; }
-            #secao-impressao, #secao-impressao * { display: block !important; }
-            #secao-impressao { width: 72mm; font-family: 'Courier New', monospace; font-size: 12pt; }
-            .quebra-pagina { page-break-after: always; border-bottom: 2px dashed #000; margin-bottom: 20px; padding-bottom: 20px; }
-        }
         .status-pendente { border-left: 8px solid #f59e0b; }
+        .status-preparo { border-left: 8px solid #3b82f6; }
         .status-pronto { border-left: 8px solid #10b981; opacity: 0.6; }
-        .aba-atendimento.hidden { display: none; }
-        .loading-spinner { border: 4px solid rgba(255,255,255,.3); border-radius: 50%; border-top: 4px solid #d97706; width: 20px; height: 20px; -webkit-animation: spin 1s linear infinite; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-left: 10px; }
-        @-webkit-keyframes spin { 0% { -webkit-transform: rotate(0deg); } 100% { -webkit-transform: rotate(360deg); } }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-zinc-100 p-4 font-sans text-left">
-
-    <!-- Header Principal -->
     <header class="max-w-2xl mx-auto flex justify-between items-center mb-6 bg-white p-6 rounded-3xl shadow-sm border-b-4 border-amber-600">
-        <div class="flex items-center gap-4">
-            <div id="logo-container" class="w-16 h-16 hidden">
-                <img id="loja-logo" class="w-full h-full object-contain rounded-full shadow-sm" alt="Logotipo da Loja">
-            </div>
-            <div>
-                <h1 class="text-xl font-black text-zinc-800 uppercase italic">Point do Café</h1>
-                <p id="status-rede" class="text-[9px] text-green-600 font-bold uppercase tracking-widest">● Sistema Operacional</p>
-            </div>
-        </div>
-        <div class="text-right">
-            <p id="hora-atual" class="font-bold text-zinc-400 text-xs"></p>
-            <p class="text-[7px] text-zinc-300 font-black uppercase tracking-tighter">DPTech Solutions</p>
-        </div>
+        <h1 class="text-xl font-black uppercase italic">Fila de Pedidos</h1>
+        <div id="relogio" class="font-bold text-zinc-400">00:00:00</div>
     </header>
 
-    <!-- Menu de Navegação do Atendente -->
-    <div class="max-w-2xl mx-auto mb-6 flex bg-white rounded-2xl p-1 shadow-sm border border-zinc-200">
-        <button onclick="mudarAbaAtendimento(\'aba-fila\')" id="btn-aba-fila" class="flex-1 py-3 rounded-xl font-black uppercase text-[10px] bg-zinc-800 text-white transition-all">📋 Fila de Pedidos</button>
-        <button onclick="mudarAbaAtendimento(\'aba-estoque\')" id="btn-aba-estoque" class="flex-1 py-3 rounded-xl font-black uppercase text-[10px] text-zinc-500 transition-all">🚫 Estoque do Dia</button>
-    </div>
-
-    <!-- ABA 1: FILA DE PEDIDOS (KDS) -->
-    <div id="aba-fila" class="aba-atendimento">
-        <div class="max-w-2xl mx-auto mb-4 flex gap-4 text-[9px] font-bold uppercase px-2">
-            <span class="flex items-center gap-1"><div class="w-3 h-3 bg-amber-500 rounded"></div> Pendente</span>
-            <span class="flex items-center gap-1"><div class="w-3 h-3 bg-green-500 rounded"></div> Pronto</span>
-        </div>
-        <main id="lista-pedidos" class="max-w-2xl mx-auto space-y-4 pb-10"></main>
-        <p id="no-orders-message" class="text-center py-20 text-zinc-400 font-bold uppercase hidden">Aguardando Pedidos...</p>
-    </div>
-
-    <!-- ABA 2: GESTÃO DE ESTOQUE (PAUSAR ITENS) -->
-    <div id="aba-estoque" class="aba-atendimento hidden">
-        <div class="max-w-2xl mx-auto bg-white p-6 rounded-3xl shadow-sm border-b-4 border-red-500">
-            <h2 class="text-zinc-800 font-black uppercase text-sm mb-2">Disponibilidade de Itens</h2>
-            <p class="text-[10px] text-zinc-400 mb-6 uppercase font-bold tracking-tight">Desative produtos que acabaram no balcão.</p>
-            <div id="lista-gestao-estoque" class="space-y-3">
-                <!-- Itens carregados via JS -->
-            </div>
-            <p id="no-products-message" class="text-center py-10 text-zinc-400 font-bold uppercase hidden">Nenhum produto cadastrado.</p>
-        </div>
-    </div>
-
-    <!-- Área Oculta de Impressão -->
-    <div id="secao-impressao" class="hidden"></div>
-
-    <!-- Áudio para novos pedidos -->
-    <audio id="new-order-sound" src="https://www.soundjay.com/buttons/button-2.mp3" preload="auto"></audio>
+    <main id="lista-pedidos" class="max-w-2xl mx-auto space-y-4 pb-10"></main>
 
     <script type="module">
-        // Configurações do Firebase (Substitua com suas próprias URLs e chaves de API)
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
-        const LOGO_URL = DB_BASE + "configuracao/logo.json";
-        const PRODUTOS_URL = DB_BASE + "produtos.json";
-        const VENDAS_URL = DB_BASE + "vendas.json";
 
-        let pedidosImpressos = JSON.parse(localStorage.getItem(\'pedidos_impressos\')) || [];
-        let pedidosProntos = JSON.parse(localStorage.getItem(\'pedidos_prontos\')) || {}; // Usar objeto para status no Firebase
-        let lastOrderCount = 0; // Para notificação sonora
-
-        const newOrderSound = document.getElementById(\'new-order-sound\');
-
-        // --- UTILITIES --- //
-        function showToast(message, type = \'success\') {
-            Toastify({
-                text: message,
-                duration: 3000,
-                close: true,
-                gravity: "top",
-                position: "right",
-                backgroundColor: type === \'success\' ? "linear-gradient(to right, #10B981, #059669)" : "linear-gradient(to right, #EF4444, #DC2626)",
-                stopOnFocus: true,
-            }).showToast();
-        }
-
-        function showLoading(elementId) {
-            const element = document.getElementById(elementId);
-            if (element) {
-                element.insertAdjacentHTML(\'beforeend\', \'<span class="loading-spinner"></span>\');
-            }
-        }
-
-        function hideLoading(elementId) {
-            const element = document.getElementById(elementId);
-            if (element) {
-                const spinner = element.querySelector(\'loading-spinner\');
-                if (spinner) spinner.remove();
-            }
-        }
-
-        async function fetchData(url, method = \'GET\', body = null) {
+        async function carregarPedidos() {
             try {
-                const options = { method };
-                if (body) options.body = JSON.stringify(body);
-                const response = await fetch(url, options);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return await response.json();
-            } catch (error) {
-                console.error("Erro na requisição:", error);
-                showToast(`Erro ao carregar dados: ${error.message}`, \'error\');
-                return null;
-            }
-        }
-
-        // --- INICIALIZAÇÃO --- //
-        document.addEventListener(\'DOMContentLoaded\', () => {
-            inicializar();
-            setInterval(() => {
-                document.getElementById(\'hora-atual\').innerText = new Date().toLocaleTimeString(\'pt-BR\');
-            }, 1000);
-        });
-
-        async function inicializar() {
-            await carregarLogo();
-            // Iniciar monitoramento em tempo real para vendas
-            monitorarVendasEmTempoReal();
-            // Carregar estoque quando a aba for ativada
-            // mudarAbaAtendimento(\'aba-fila\'); // Define a aba inicial
-        }
-
-        async function carregarLogo() {
-            try {
-                const data = await fetchData(LOGO_URL);
-                if(data) {
-                    document.getElementById(\'loja-logo\').src = data;
-                    document.getElementById(\'logo-container\').classList.remove(\'hidden\');
-                }
-            } catch (e) { console.log("Sem logo configurada."); }
-        }
-
-        // --- ABA: FILA DE PEDIDOS (KDS) --- //
-        function monitorarVendasEmTempoReal() {
-            // Usando EventSource para simular um listener em tempo real do Firebase
-            // EM UM AMBIENTE REAL, VOCÊ USARIA O SDK DO FIREBASE REALTIME DATABASE
-            // Ex: firebase.database().ref(\'vendas\').on(\'value\', (snapshot) => { ... });
-            const eventSource = new EventSource(VENDAS_URL.replace(\".json\", \'.json?print=pretty&callback=callback\')); // Exemplo de URL para simular stream
-
-            eventSource.onmessage = (event) => {
-                const vendas = JSON.parse(event.data);
-                renderizarPedidos(vendas);
-            };
-
-            eventSource.onerror = (error) => {
-                console.error("EventSource error:", error);
-                showToast("Erro na conexão em tempo real com o banco de dados.", \'error\');
-                eventSource.close();
-                // Tentar reconectar após um tempo
-                setTimeout(monitorarVendasEmTempoReal, 5000);
-            };
-        }
-
-        async function renderizarPedidos(vendas) {
-            const container = document.getElementById(\'lista-pedidos\');
-            const noOrdersMessage = document.getElementById(\'no-orders-message\');
-            const hoje = new Date().toLocaleDateString(\'pt-BR\');
-            let currentOrderCount = 0;
-
-            if (!vendas) {
+                const res = await fetch(`${DB_BASE}vendas.json`);
+                const vendas = await res.json();
+                const container = document.getElementById('lista-pedidos');
                 container.innerHTML = "";
-                noOrdersMessage.classList.remove(\'hidden\');
-                lastOrderCount = 0;
-                return;
-            }
+                if(!vendas) return;
 
-            const todosIds = Object.keys(vendas).filter(id => vendas[id].dataLocal === hoje);
-            currentOrderCount = todosIds.length;
+                const hoje = new Date().toLocaleDateString('pt-BR');
+                for (let id in vendas) {
+                    const v = vendas[id];
+                    if(v.dataLocal !== hoje) continue;
 
-            // Notificação sonora para novos pedidos
-            if (currentOrderCount > lastOrderCount) {
-                newOrderSound.play();
-                showToast("Novo pedido recebido!", \'success\');
-            }
-            lastOrderCount = currentOrderCount;
-
-            const pedidosPendentes = [];
-            const pedidosProntosLista = [];
-
-            for (let id of todosIds) {
-                const v = vendas[id];
-                if (v.status === \'pronto\') {
-                    pedidosProntosLista.push({ id, ...v });
-                } else {
-                    pedidosPendentes.push({ id, ...v });
-                }
-            }
-
-            // Ordenar pedidos pendentes por data de criação (mais antigo primeiro)
-            pedidosPendentes.sort((a, b) => new Date(a.data) - new Date(b.data));
-            // Ordenar pedidos prontos por data de conclusão (mais recente primeiro)
-            pedidosProntosLista.sort((a, b) => new Date(b.data) - new Date(a.data));
-
-            const listaFinal = [...pedidosPendentes, ...pedidosProntosLista];
-
-            let html = "";
-            for (let { id, ...v } of listaFinal) {
-                const numPedido = id.slice(-4);
-                const isPronto = v.status === \'pronto\';
-
-                // Imprimir automaticamente novos pedidos que ainda não foram impressos
-                if (!pedidosImpressos.includes(id) && !isPronto) {
-                    await imprimir(id, v);
-                }
-
-                html += `
-                    <div class="bg-white p-6 rounded-3xl shadow-sm transition-all ${isPronto ? \'status-pronto\' : \'status-pendente\'}">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="flex items-center gap-3">
-                                <span class="bg-zinc-800 text-white px-4 py-1 rounded-full font-black text-xl">#${numPedido}</span>
-                                ${!isPronto ? \'<span class="animate-ping inline-flex h-2 w-2 rounded-full bg-amber-400"></span>\' : \'\'}
+                    container.innerHTML += `
+                        <div class="bg-white p-6 rounded-3xl shadow-sm status-${v.status}">
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="bg-zinc-800 text-white px-4 py-1 rounded-full font-black">#${id.slice(-4)}</span>
+                                <span class="text-xs font-bold text-zinc-500 uppercase">${v.cliente}</span>
                             </div>
-                            <button onclick="reimprimir(\'${id}\')" class="text-[9px] uppercase font-bold text-zinc-300 underline">Reimprimir Vias</button>
-                        </div>
-                        <h2 class="text-xl font-black text-zinc-800 uppercase mb-2">${v.cliente || \'Cliente Desconhecido\'}</h2>
-                        <div class="space-y-1 mb-6 text-lg font-medium text-zinc-700">
-                            ${v.itens.map(i => `<div class="border-b border-zinc-50"><b>${i.qty}x</b> ${i.nome}</div>`).join(\'\')}
-                            ${v.observacao ? `<div class="mt-2 text-red-600 text-[10px] font-bold italic">OBS: ${v.observacao}</div>` : \'\'}
-                        </div>
-                        <button onclick="togglePronto(\'${id}\', \'${isPronto ? \'pendente\' : \'pronto\'}\')" class="w-full py-4 rounded-2xl font-black uppercase text-xs tracking-widest transition-all ${isPronto ? \'bg-zinc-200 text-zinc-500\' : \'bg-green-600 text-white shadow-lg shadow-green-100\'}">
-                            ${isPronto ? \'↩️ Voltar para Fila\' : \'✅ Pedido Pronto\'}
-                        </button>
-                    </div>
-                `;
-            }
-            container.innerHTML = html;
-            if (html === "") {
-                noOrdersMessage.classList.remove(\'hidden\');
-            } else {
-                noOrdersMessage.classList.add(\'hidden\');
-            }
-        }
-
-        async function togglePronto(id, novoStatus) {
-            showLoading(\'lista-pedidos\');
-            const result = await fetchData(DB_BASE + `vendas/${id}/status.json`, \'PUT\', novoStatus);
-            hideLoading(\'lista-pedidos\');
-            if (result !== null) {
-                showToast(`Pedido ${id.slice(-4)} marcado como ${novoStatus}!`, \'success\');
-                // A renderização será atualizada automaticamente pelo listener do Firebase
-            }
-        }
-
-        async function imprimir(id, v) {
-            const numPedido = id.slice(-4);
-            const printArea = document.getElementById(\'secao-impressao\');
-            printArea.innerHTML = `
-                <div class="quebra-pagina" style="text-align: center; text-transform: uppercase;">
-                    <h2 style="margin:0;">COZINHA - POINT DO CAFÉ</h2>
-                    <p style="margin:0; font-size: 24px; font-weight: black;">#${numPedido}</p>
-                    --------------------------------
-                    <div style="text-align: left; margin: 5px 0;">CLIENTE: ${v.cliente || \'N/A\'}<br>HORA: ${new Date(v.data).toLocaleTimeString(\'pt-BR\')}</div>
-                    --------------------------------
-                    <div style="text-align: left; font-size: 16px; font-weight: bold;">
-                        ${v.itens.map(i => `${i.qty}x ${i.nome}`).join(\'<br>\')}
-                    </div>
-                    --------------------------------
-                    ${v.observacao ? `<div style="text-align: left;">OBS: ${v.observacao}</div>` : \'\'}
-                </div>
-                <div style="text-align: center; text-transform: uppercase;">
-                    <h2 style="margin:0;">ENTREGADOR - POINT DO CAFÉ</h2>
-                    <p style="margin:0; font-size: 24px; font-weight: black;">#${numPedido}</p>
-                    --------------------------------
-                    <div style="text-align: left; margin: 5px 0;">
-                        <b>CLIENTE: ${v.cliente || \'N/A\'}</b><br>
-                        ENDEREÇO: ${v.endereco || \'N/A\'}<br>
-                        PGTO: ${v.pagamento || \'N/A\'}<br>
-                        TOTAL: R$ ${v.total ? v.total.toFixed(2) : \'0.00\'}
-                    </div>
-                    --------------------------------
-                    <div style="text-align: center; margin-top: 10px; font-size: 10px;">DPTech Terminal</div>
-                </div>
-            `;
-            window.print();
-            if (!pedidosImpressos.includes(id)) {
-                pedidosImpressos.push(id);
-                localStorage.setItem(\'pedidos_impressos\', JSON.stringify(pedidosImpressos));
-            }
-            showToast(`Comanda do pedido ${numPedido} impressa!`, \'info\');
-        }
-
-        function reimprimir(id) {
-            // Remove o ID da lista de impressos para forçar uma nova impressão na próxima renderização
-            pedidosImpressos = pedidosImpressos.filter(x => x !== id);
-            localStorage.setItem(\'pedidos_impressos\', JSON.stringify(pedidosImpressos));
-            showToast(`Pedido ${id.slice(-4)} será reimpresso.`, \'info\');
-            // A renderização será atualizada automaticamente pelo listener do Firebase, que chamará imprimir novamente
-        }
-
-        // --- ABA: GESTÃO DE ESTOQUE --- //
-        function mudarAbaAtendimento(id) {
-            document.querySelectorAll(\'.aba-atendimento\').forEach(a => a.classList.add(\'hidden\'));
-            document.getElementById(id).classList.remove(\'hidden\');
-            
-            const btnFila = document.getElementById(\'btn-aba-fila\');
-            const btnEstoque = document.getElementById(\'btn-aba-estoque\');
-            
-            if(id === \'aba-fila\') {
-                btnFila.className = \'flex-1 py-3 rounded-xl font-black uppercase text-[10px] bg-zinc-800 text-white\';
-                btnEstoque.className = \'flex-1 py-3 rounded-xl font-black uppercase text-[10px] text-zinc-500\';
-                // monitorarVendasEmTempoReal(); // Já está sempre ativo
-            } else {
-                btnFila.className = \'flex-1 py-3 rounded-xl font-black uppercase text-[10px] text-zinc-500\';
-                btnEstoque.className = \'flex-1 py-3 rounded-xl font-black uppercase text-[10px] bg-zinc-800 text-white\';
-                carregarGestaoEstoque();
-            }
-        }
-
-        async function carregarGestaoEstoque() {
-            showLoading(\'lista-gestao-estoque\');
-            const produtos = await fetchData(PRODUTOS_URL);
-            const container = document.getElementById(\'lista-gestao-estoque\');
-            const noProductsMessage = document.getElementById(\'no-products-message\');
-            let html = "";
-
-            if(!produtos) {
-                container.innerHTML = "";
-                noProductsMessage.classList.remove(\'hidden\');
-                hideLoading(\'lista-gestao-estoque\');
-                return;
-            }
-
-            for (let id in produtos) {
-                const p = produtos[id];
-                const isPausado = p.pausado === true;
-                html += `
-                    <div class="flex justify-between items-center p-4 bg-zinc-50 rounded-2xl border ${isPausado ? \'border-red-200\' : \'border-zinc-100\'}">
-                        <div class="flex items-center gap-3 text-left">
-                            <img src="${p.img || \'https://via.placeholder.com/40\'}" class="w-10 h-10 object-cover rounded-lg ${isPausado ? \'grayscale opacity-50\' : \'\'}" alt="${p.nome}">
-                            <div>
-                                <p class="font-bold text-xs ${isPausado ? \'text-red-400 line-through\' : \'text-zinc-800\'}">${p.nome}</p>
-                                <p class="text-[8px] font-black uppercase ${isPausado ? \'text-red-400\' : \'text-amber-600\'}">${isPausado ? \'Esgotado\' : \'Disponível\'}</p>
+                            <div class="mb-6 space-y-1 font-bold text-zinc-700">
+                                ${v.itens.map(i => `<div class="border-b border-zinc-50">1x ${i.nome}</div>`).join('')}
                             </div>
-                        </div>
-                        <button onclick="toggleEstoque(\'${id}\', ${isPausado})" class="px-4 py-2 rounded-xl font-black text-[9px] uppercase transition-all ${isPausado ? \'bg-green-600 text-white\' : \'bg-red-500 text-white\'}">
-                            ${isPausado ? \'Ativar\' : \'Pausar\'}
-                        </button>
-                    </div>
-                `;
-            }
-            container.innerHTML = html;
-            if (html === "") {
-                noProductsMessage.classList.remove(\'hidden\');
-            } else {
-                noProductsMessage.classList.add(\'hidden\');
-            }
-            hideLoading(\'lista-gestao-estoque\');
+                            <div class="flex gap-2">
+                                ${v.status === 'pendente' ? `<button onclick="mudarStatus('${id}', 'preparo')" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black uppercase text-xs">🔥 Iniciar Preparo</button>` : ''}
+                                ${v.status === 'preparo' ? `<button onclick="mudarStatus('${id}', 'pronto')" class="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black uppercase text-xs">✅ Finalizar</button>` : ''}
+                                ${v.status === 'pronto' ? `<button onclick="mudarStatus('${id}', 'pendente')" class="flex-1 py-4 bg-zinc-200 text-zinc-500 rounded-2xl font-black uppercase text-xs">↩️ Voltar</button>` : ''}
+                            </div>
+                        </div>`;
+                }
+            } catch (e) { console.error(e); }
         }
 
-        async function toggleEstoque(id, statusAtual) {
-            showLoading(\'lista-gestao-estoque\');
-            const result = await fetchData(DB_BASE + `produtos/${id}/pausado.json`, \'PUT\', !statusAtual);
-            hideLoading(\'lista-gestao-estoque\');
-            if (result !== null) {
-                showToast(`Produto ${id.slice(-4)} ${!statusAtual ? \'pausado\' : \'ativado\'}!`, \'success\');
-                carregarGestaoEstoque(); // Recarrega a lista para refletir a mudança
-            }
-        }
+        window.mudarStatus = async (id, status) => {
+            await fetch(`${DB_BASE}vendas/${id}/status.json`, { method: 'PUT', body: JSON.stringify(status) });
+            carregarPedidos();
+        };
+
+        setInterval(carregarPedidos, 5000);
+        setInterval(() => document.getElementById('relogio').innerText = new Date().toLocaleTimeString(), 1000);
+        carregarPedidos();
     </script>
 </body>
 </html>
