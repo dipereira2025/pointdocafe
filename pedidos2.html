@@ -29,9 +29,7 @@
     <div id="modal-checkout" class="fixed inset-0 bg-black/70 hidden z-50 p-4 flex items-center justify-center">
         <div class="bg-white w-full max-w-md rounded-3xl p-6 overflow-y-auto max-h-[90vh]">
             <h2 class="text-xl font-black text-amber-900 uppercase mb-4 italic text-center">Finalizar Pedido</h2>
-            
             <div id="resumo-itens" class="mb-4 text-sm border-b pb-4 text-zinc-600"></div>
-            
             <div class="space-y-3">
                 <input type="text" id="cli-nome" placeholder="Seu Nome *" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent">
                 <input type="tel" id="cli-zap" placeholder="WhatsApp (Com DDD) *" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent">
@@ -49,7 +47,7 @@
 
                 <textarea id="cli-obs" placeholder="Alguma observação?" class="w-full p-4 bg-gray-100 rounded-xl text-sm h-16 outline-none border-2 border-transparent"></textarea>
 
-                <button onclick="finalizarPedidoAutomatico()" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-xl uppercase mt-2">🚀 Concluir Pedido</button>
+                <button onclick="finalizarPedidoEEnviar()" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-xl uppercase mt-2">🚀 Finalizar no WhatsApp</button>
                 <button onclick="document.getElementById('modal-checkout').classList.add('hidden')" class="w-full text-gray-400 font-bold py-2 text-xs uppercase text-center">Voltar</button>
             </div>
         </div>
@@ -57,6 +55,7 @@
 
     <script type="module">
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
+        const WHATSAPP_LOJA = "556191889808"; // Seu número de atendimento
         let carrinho = [];
 
         window.mascaraMoeda = (i) => {
@@ -103,27 +102,50 @@
             document.getElementById('modal-checkout').classList.remove('hidden');
         };
 
-        window.finalizarPedidoAutomatico = async () => {
+        window.finalizarPedidoEEnviar = async () => {
             const n = document.getElementById('cli-nome').value.trim();
             const z = document.getElementById('cli-zap').value.trim().replace(/\D/g, "");
             const e = document.getElementById('cli-end').value.trim();
-            if(!n || !z || !e) return alert("Preencha os campos obrigatórios.");
+            const pag = document.getElementById('cli-pagamento').value;
+            const troco = document.getElementById('cli-troco').value || "Não necessário";
+            const obs = document.getElementById('cli-obs').value.trim();
+
+            if(!n || !z || !e) return alert("Preencha Nome, WhatsApp e Endereço.");
 
             localStorage.setItem('cafe_nome', n); localStorage.setItem('cafe_tel', z); localStorage.setItem('cafe_end', e);
 
             const pedidoId = "PED-" + Date.now().toString().slice(-6);
+            const totalGeral = carrinho.reduce((acc, i) => acc + i.preco, 0);
+
             const pedido = {
-                id: pedidoId, cliente: n, telefone: z, endereco: e, 
-                pagamento: document.getElementById('cli-pagamento').value,
-                troco: document.getElementById('cli-troco').value || "Não necessário",
-                observacao: document.getElementById('cli-obs').value,
-                itens: carrinho, total: carrinho.reduce((acc, i) => acc + i.preco, 0),
-                status: 'pendente', data: new Date().toISOString(), dataLocal: new Date().toLocaleDateString('pt-BR')
+                id: pedidoId, cliente: n, telefone: z, endereco: e, pagamento: pag, troco: troco,
+                observacao: obs, itens: carrinho, total: totalGeral, status: 'pendente',
+                data: new Date().toISOString(), dataLocal: new Date().toLocaleDateString('pt-BR')
             };
 
+            // 1. Salva no Firebase para a cozinha ver
             await fetch(`${DB_BASE}vendas/${pedidoId}.json`, { method: 'PUT', body: JSON.stringify(pedido) });
-            window.location.href = `status2.html?id=${pedidoId}`;
+
+            // 2. Monta a mensagem para o WhatsApp da Loja
+            let msg = `*NOVO PEDIDO: #${pedidoId.slice(-4)}*\n\n`;
+            msg += `*Cliente:* ${n}\n`;
+            msg += `*Endereço:* ${e}\n`;
+            msg += `*Pagamento:* ${pag}\n`;
+            if(pag === 'Dinheiro') msg += `*Troco para:* ${troco}\n`;
+            msg += `\n*ITENS:*\n`;
+            carrinho.forEach(i => msg += `- 1x ${i.nome} (R$ ${i.preco.toFixed(2)})\n`);
+            msg += `\n*TOTAL: R$ ${totalGeral.toFixed(2)}*`;
+            if(obs) msg += `\n\n*OBS:* ${obs}`;
+
+            // 3. Abre o WhatsApp da Loja
+            const urlZap = `https://wa.me/${WHATSAPP_LOJA}?text=${encodeURIComponent(msg)}`;
+            
+            // Pequeno delay para garantir o salvamento no banco antes de sair da página
+            setTimeout(() => {
+                window.location.href = urlZap;
+            }, 500);
         };
+
         init();
     </script>
 </body>
