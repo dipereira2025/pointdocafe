@@ -32,7 +32,7 @@
             <div id="resumo-itens" class="mb-4 text-sm border-b pb-4 text-zinc-600"></div>
             <div class="space-y-3">
                 <input type="text" id="cli-nome" placeholder="Seu Nome *" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent">
-                <input type="tel" id="cli-zap" placeholder="WhatsApp (Com DDD) *" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent">
+                <input type="tel" id="cli-zap" placeholder="Seu WhatsApp (Com DDD) *" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent">
                 <input type="text" id="cli-end" placeholder="Endereço de Entrega *" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent">
                 
                 <select id="cli-pagamento" onchange="const b=document.getElementById('box-troco'); b.classList.toggle('hidden', this.value !== 'Dinheiro')" class="w-full p-4 bg-gray-100 rounded-xl outline-none border-2 border-transparent">
@@ -55,7 +55,7 @@
 
     <script type="module">
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
-        const WHATSAPP_LOJA = "5561999521964"; // Seu número de atendimento
+        const WHATSAPP_LOJA = "5561999521964"; // NÚMERO ATUALIZADO
         let carrinho = [];
 
         window.mascaraMoeda = (i) => {
@@ -123,10 +123,8 @@
                 data: new Date().toISOString(), dataLocal: new Date().toLocaleDateString('pt-BR')
             };
 
-            // 1. Salva no Firebase para a cozinha ver
             await fetch(`${DB_BASE}vendas/${pedidoId}.json`, { method: 'PUT', body: JSON.stringify(pedido) });
 
-            // 2. Monta a mensagem para o WhatsApp da Loja
             let msg = `*NOVO PEDIDO: #${pedidoId.slice(-4)}*\n\n`;
             msg += `*Cliente:* ${n}\n`;
             msg += `*Endereço:* ${e}\n`;
@@ -137,13 +135,8 @@
             msg += `\n*TOTAL: R$ ${totalGeral.toFixed(2)}*`;
             if(obs) msg += `\n\n*OBS:* ${obs}`;
 
-            // 3. Abre o WhatsApp da Loja
             const urlZap = `https://wa.me/${WHATSAPP_LOJA}?text=${encodeURIComponent(msg)}`;
-            
-            // Pequeno delay para garantir o salvamento no banco antes de sair da página
-            setTimeout(() => {
-                window.location.href = urlZap;
-            }, 500);
+            setTimeout(() => { window.location.href = urlZap; }, 500);
         };
 
         init();
