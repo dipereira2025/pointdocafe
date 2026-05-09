@@ -40,21 +40,44 @@
         </div>
 
         <div id="tab-loja" class="tab-content space-y-6">
-            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
-                <h3 class="text-xs font-black uppercase text-amber-500 mb-4 tracking-widest">Identidade e Informações</h3>
-                <div class="space-y-4">
-                    <div class="flex items-center gap-4 bg-zinc-900 p-4 rounded-2xl border border-zinc-700">
-                        <div class="w-16 h-16 rounded-full border-2 border-amber-600 overflow-hidden bg-black flex-shrink-0">
-                            <img id="logo-preview" class="w-full h-full object-cover hidden">
-                        </div>
-                        <input type="text" id="store-logo" placeholder="URL da Logomarca" class="flex-1 bg-transparent text-xs outline-none" oninput="document.getElementById('logo-preview').src=this.value; document.getElementById('logo-preview').classList.remove('hidden')">
-                    </div>
-                    <input type="text" id="store-name" placeholder="Nome da Loja" class="w-full p-4 bg-zinc-700 rounded-xl outline-none text-sm">
-                    <input type="text" id="store-slogan" placeholder="Slogan da Loja" class="w-full p-4 bg-zinc-700 rounded-xl outline-none text-sm">
-                    <input type="text" id="store-address" placeholder="Endereço" class="w-full p-4 bg-zinc-700 rounded-xl outline-none text-sm">
-                    <input type="text" id="store-phone" placeholder="WhatsApp (DDD+Número)" class="w-full p-4 bg-zinc-700 rounded-xl outline-none text-sm">
-                </div>
+    <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700 text-center">
+        <h3 class="text-xs font-black uppercase text-amber-500 mb-4 tracking-widest">Logomarca</h3>
+        <div class="relative w-32 h-32 mx-auto mb-6 bg-zinc-900 rounded-full border-4 border-amber-600 flex items-center justify-center overflow-hidden group">
+            <img id="logo-preview" class="w-full h-full object-cover hidden">
+            <span id="logo-text" class="text-[10px] font-bold text-zinc-500 uppercase">Sem Logo</span>
+        </div>
+        <label for="input-logo" class="cursor-pointer bg-zinc-700 hover:bg-zinc-600 px-6 py-3 rounded-xl font-bold text-[10px] uppercase transition-all inline-block border border-zinc-600">
+            📂 Selecionar Nova Logo
+        </label>
+        <input type="file" id="input-logo" accept="image/*" class="hidden" onchange="previewImagem(this)">
+    </div>
+
+    <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+        <h3 class="text-xs font-black uppercase text-amber-500 mb-4 tracking-widest">Informações Gerais</h3>
+        <div class="space-y-3">
+            <input type="text" id="store-name" placeholder="Nome da Loja" class="w-full p-4 bg-zinc-700 rounded-xl outline-none text-sm">
+            <input type="text" id="store-slogan" placeholder="Slogan" class="w-full p-4 bg-zinc-700 rounded-xl outline-none text-sm">
+            <input type="text" id="store-address" placeholder="Endereço" class="w-full p-4 bg-zinc-700 rounded-xl outline-none text-sm">
+            <input type="text" id="store-phone" placeholder="WhatsApp" class="w-full p-4 bg-zinc-700 rounded-xl outline-none text-sm">
+        </div>
+    </div>
+
+    <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+        <h3 class="text-xs font-black uppercase text-amber-500 mb-4 tracking-widest">Horários</h3>
+        <div class="grid grid-cols-2 gap-4">
+            <input type="time" id="open-time" class="w-full p-4 bg-zinc-700 rounded-xl outline-none text-sm">
+            <input type="time" id="close-time" class="w-full p-4 bg-zinc-700 rounded-xl outline-none text-sm">
+        </div>
+        <div class="mt-4 pt-4 border-t border-zinc-700">
+            <p class="text-[10px] font-bold uppercase text-zinc-400 mb-2">Pausa Almoço</p>
+            <div class="grid grid-cols-2 gap-4">
+                <input type="time" id="lunch-start" class="w-full p-4 bg-zinc-900 border border-zinc-700 rounded-xl outline-none text-sm">
+                <input type="time" id="lunch-end" class="w-full p-4 bg-zinc-900 border border-zinc-700 rounded-xl outline-none text-sm">
             </div>
+        </div>
+        <button onclick="salvarConfigLoja()" class="w-full bg-amber-600 py-4 rounded-2xl font-black uppercase text-xs mt-6 shadow-xl">Salvar Tudo</button>
+    </div>
+</div>
 
             <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
                 <h3 class="text-xs font-black uppercase text-amber-500 mb-4 tracking-widest">Horários de Funcionamento</h3>
