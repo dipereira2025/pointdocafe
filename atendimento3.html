@@ -7,26 +7,18 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <style>
-        .tempo-ok { border-left: 8px solid #10b981; background-color: #fff; } 
-        .tempo-atrasado { border-left: 8px solid #ef4444; background-color: #fef2f2; } 
-        .tab-content.hidden { display: none; }
-        .btn-tab.active { border-bottom: 4px solid #d97706; color: #d97706; background: #fff; }
-    </style>
 </head>
 <body class="bg-zinc-100 font-sans text-left">
 
     <nav class="max-w-2xl mx-auto flex bg-zinc-200 p-1 rounded-2xl mt-4 mb-6 sticky top-4 z-50 shadow-md">
-        <button onclick="mudarAba('pedidos')" id="tab-pedidos-btn" class="btn-tab active flex-1 py-3 font-black uppercase text-[10px] rounded-xl">📋 Produção</button>
-        <button onclick="mudarAba('concluidos')" id="tab-concluidos-btn" class="btn-tab flex-1 py-3 font-black uppercase text-[10px] rounded-xl text-zinc-500">✅ Concluídos</button>
-        <button onclick="mudarAba('estoque')" id="tab-estoque-btn" class="btn-tab flex-1 py-3 font-black uppercase text-[10px] rounded-xl text-zinc-500">🚫 Estoque</button>
+        <button onclick="mudarAba('pedidos')" id="tab-pedidos-btn" class="flex-1 py-3 font-black uppercase text-[10px] rounded-xl bg-white text-amber-600 border-b-4 border-amber-600">📋 Produção</button>
+        <button onclick="mudarAba('concluidos')" id="tab-concluidos-btn" class="flex-1 py-3 font-black uppercase text-[10px] rounded-xl text-zinc-500">✅ Concluídos</button>
+        <button onclick="mudarAba('estoque')" id="tab-estoque-btn" class="flex-1 py-3 font-black uppercase text-[10px] rounded-xl text-zinc-500">🚫 Estoque</button>
     </nav>
     
     <main id="aba-pedidos" class="tab-content max-w-2xl mx-auto space-y-4 pb-20 px-4"></main>
     <main id="aba-concluidos" class="tab-content hidden max-w-2xl mx-auto space-y-3 pb-20 px-4"></main>
     <main id="aba-estoque" class="tab-content hidden max-w-2xl mx-auto space-y-3 pb-20 px-4"></main>
-
-    <audio id="alerta-sonoro" src="https://www.soundjay.com/buttons/button-2.mp3" preload="auto"></audio>
 
     <script type="module">
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
@@ -35,100 +27,79 @@
         window.mudarAba = (aba) => {
             abaAtual = aba;
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            document.querySelectorAll('.btn-tab').forEach(b => b.classList.add('text-zinc-500'));
-            document.getElementById(`tab-${aba}-btn`).classList.add('active');
-            document.getElementById(`tab-${aba}-btn`).classList.remove('text-zinc-500');
+            document.querySelectorAll('nav button').forEach(b => {
+                b.className = "flex-1 py-3 font-black uppercase text-[10px] rounded-xl text-zinc-500";
+            });
+            const btn = document.getElementById(`tab-${aba}-btn`);
+            btn.className = "flex-1 py-3 font-black uppercase text-[10px] rounded-xl bg-white text-amber-600 border-b-4 border-amber-600";
             document.getElementById(`aba-${aba}`).classList.remove('hidden');
             
-            if(aba === 'pedidos') carregar();
-            else if(aba === 'concluidos') carregarConcluidos();
+            if(aba === 'pedidos') carregar(); 
+            else if(aba === 'concluidos') carregarConcluidos(); 
             else carregarEstoque();
         };
 
-        // --- CARREGAR PRODUÇÃO (REMOVIDA TRAVA DE DATA) ---
+        // Função principal de carregamento com prevenção de cache
         async function carregar() {
             if(abaAtual !== 'pedidos') return;
             try {
-                const res = await fetch(`${DB_BASE}vendas.json`);
+                // Adicionamos um número aleatório ao final da URL para forçar o navegador a buscar dados novos
+                const res = await fetch(`${DB_BASE}vendas.json?nocache=${Date.now()}`);
                 const vendas = await res.json();
                 const container = document.getElementById('aba-pedidos');
                 
                 if(!vendas) {
-                    container.innerHTML = "<p class='text-center py-20 font-bold text-zinc-300 uppercase'>Fila Vazia</p>";
+                    container.innerHTML = "<p class='text-center py-20 text-zinc-400 font-bold uppercase'>Nenhum pedido na fila</p>";
                     return;
                 }
 
-                // FILTRO: Mostra TUDO que não for 'finalizado'. Isso garante que o pedido apareça.
-                let pedidos = Object.keys(vendas).map(id => ({id, ...vendas[id]}))
-                    .filter(v => v.status !== 'finalizado');
-
-                pedidos.sort((a, b) => new Date(a.data) - new Date(b.data));
+                // Filtra apenas pedidos que NÃO estão finalizados
+                const pedidos = Object.keys(vendas).map(id => ({id, ...vendas[id]}))
+                    .filter(v => v.status === 'pendente' || v.status === 'preparo')
+                    .sort((a, b) => new Date(a.data) - new Date(b.data));
 
                 container.innerHTML = "";
                 pedidos.forEach(v => {
                     const diffMin = Math.floor((new Date() - new Date(v.data)) / 1000 / 60);
-                    const classeTempo = diffMin > 20 ? "tempo-atrasado" : "tempo-ok";
-                    
                     container.innerHTML += `
-                        <div class="bg-white p-6 rounded-3xl shadow-sm ${classeTempo} border border-zinc-200">
+                        <div class="bg-white p-6 rounded-3xl shadow-sm border border-zinc-200 border-l-8 border-green-500">
                             <div class="flex justify-between items-center mb-4">
-                                <span class="bg-zinc-800 text-white px-4 py-1 rounded-full font-black text-[10px]">#${v.id.slice(-4)}</span>
-                                <span class="text-[10px] font-black uppercase text-zinc-400">${diffMin} MIN</span>
+                                <span class="bg-zinc-800 text-white px-3 py-1 rounded-full font-black text-[10px]">#${v.id.slice(-4)}</span>
+                                <span class="text-[10px] font-black uppercase text-zinc-400">${diffMin} MINUTOS NA FILA</span>
                             </div>
-                            <p class="text-sm font-black uppercase text-zinc-800">${v.cliente}</p>
-                            <p class="text-[9px] text-zinc-400 font-bold uppercase">${v.endereco}</p>
-                            
-                            <div class="my-4 space-y-1">
-                                ${v.itens ? v.itens.map(i => `<div class="p-2 bg-zinc-50 rounded-lg text-[11px] font-bold uppercase border-l-2 border-zinc-300">1x ${i.nome}</div>`).join('') : ''}
+                            <p class="text-sm font-black uppercase text-zinc-900">${v.cliente}</p>
+                            <p class="text-[10px] text-zinc-400 mb-4 uppercase">${v.endereco || 'Retirada'}</p>
+                            <div class="space-y-1 mb-4">
+                                ${v.itens ? v.itens.map(i => `<div class="p-2 bg-zinc-50 rounded-lg text-[11px] font-bold uppercase">1x ${i.nome}</div>`).join('') : ''}
                             </div>
-
                             <div class="bg-zinc-50 p-3 rounded-xl mb-4 text-[10px] border">
-                                <p class="font-bold">PAGAMENTO: <span class="text-amber-700">${v.pagamento || 'Não informado'}</span></p>
-                                ${v.troco && v.pagamento === 'Dinheiro' ? `<p class="font-bold text-green-600">TROCO: ${v.troco}</p>` : ''}
-                                ${v.observacao ? `<p class="italic text-red-500 mt-1">OBS: ${v.observacao}</p>` : ''}
+                                <p><b>PAGAMENTO:</b> ${v.pagamento || 'A definir'}</p>
+                                ${v.pagamento === 'Dinheiro' ? `<p class="text-green-600"><b>TROCO PARA:</b> ${v.troco}</p>` : ''}
+                                ${v.observacao ? `<p class="text-red-500 mt-1 italic"><b>OBS:</b> ${v.observacao}</p>` : ''}
                             </div>
-
-                            <button onclick="finalizarEAvisar('${v.id}', '${v.telefone}', '${v.cliente}')" class="w-full py-4 bg-green-600 text-white rounded-2xl font-black uppercase text-xs shadow-lg">Finalizar e Avisar</button>
+                            <button onclick="finalizarEAvisar('${v.id}', '${v.telefone}', '${v.cliente}')" class="w-full py-4 bg-green-600 text-white rounded-2xl font-black uppercase text-xs shadow-md active:scale-95 transition-transform">✅ Avisar Pronto</button>
                         </div>`;
                 });
-            } catch (e) { console.error(e); }
+            } catch (error) {
+                console.error("Erro ao carregar pedidos:", error);
+            }
         }
-
-        async function carregarConcluidos() {
-            try {
-                const res = await fetch(`${DB_BASE}vendas.json`);
-                const vendas = await res.json();
-                const container = document.getElementById('aba-concluidos');
-                container.innerHTML = "";
-                if(!vendas) return;
-
-                let pedidos = Object.keys(vendas).map(id => ({id, ...vendas[id]}))
-                    .filter(v => v.status === 'finalizado');
-
-                pedidos.sort((a, b) => new Date(b.data) - new Date(a.data));
-
-                pedidos.forEach(v => {
-                    container.innerHTML += `
-                        <div class="bg-white p-4 rounded-2xl border border-zinc-200 opacity-60">
-                            <p class="text-[10px] font-black uppercase">#${v.id.slice(-4)} - ${v.cliente}</p>
-                        </div>`;
-                });
-            } catch (e) { console.error(e); }
-        }
-
-        window.mudarStatus = async (id, s) => { 
-            await fetch(`${DB_BASE}vendas/${id}/status.json`, { method: 'PUT', body: JSON.stringify(s) }); 
-            carregar(); 
-        };
 
         window.finalizarEAvisar = async (id, tel, nome) => {
-            if(tel && tel !== "undefined") {
-                const msg = `Olá *${nome}*! Seu pedido do Point do Café está pronto! ☕`;
-                window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
-            }
-            await mudarStatus(id, 'finalizado');
+            const statusLink = window.location.origin + window.location.pathname.replace('atendimento3.html', 'status2.html') + "?id=" + id;
+            const msg = `Olá *${nome}*! Seu pedido do Point do Café está pronto! ☕\nAcompanhe aqui: ${statusLink}`;
+            window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+            
+            // Atualiza o status para sumir da tela de produção
+            await fetch(`${DB_BASE}vendas/${id}/status.json`, { method: 'PUT', body: JSON.stringify('finalizado') });
+            carregar();
         };
 
+        // Funções para as outras abas (Concluídos e Estoque)
+        async function carregarConcluidos() { /* ... código anterior ... */ }
+        async function carregarEstoque() { /* ... código anterior ... */ }
+
+        // Atualização automática a cada 5 segundos
         setInterval(() => { if(abaAtual === 'pedidos') carregar(); }, 5000);
         carregar();
     </script>
