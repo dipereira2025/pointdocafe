@@ -9,7 +9,6 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <style>
-        .day-btn.active { background-color: #d97706; color: white; border-color: #d97706; }
         .tab-btn.active { border-bottom: 4px solid #d97706; color: #d97706; }
         .tab-content.hidden { display: none; }
         ::-webkit-scrollbar { width: 5px; }
@@ -19,11 +18,10 @@
 <body class="bg-zinc-900 text-zinc-100 p-4 font-sans text-left">
 
     <div id="login" class="max-w-sm mx-auto mt-20 bg-white p-8 rounded-3xl text-zinc-900 shadow-2xl">
-        <h2 class="text-2xl font-black mb-6 text-center text-amber-900 uppercase tracking-tighter">Point Admin</h2>
+        <h2 class="text-2xl font-black mb-6 text-center text-amber-900 uppercase italic">Point Admin</h2>
         <input type="text" id="user-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-4 outline-none" placeholder="Usuário">
         <input type="password" id="pass-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-6 outline-none" placeholder="Senha">
-        <button onclick="handleLogin()" class="w-full bg-amber-900 text-white py-4 rounded-xl font-bold uppercase shadow-lg">Entrar</button>
-        <p id="login-error" class="text-red-500 text-center mt-3 hidden font-bold text-xs uppercase">Acesso Negado</p>
+        <button onclick="handleLogin()" class="w-full bg-amber-900 text-white py-4 rounded-xl font-bold uppercase">Entrar</button>
     </div>
 
     <div id="painel" class="hidden max-w-2xl mx-auto py-4">
@@ -41,234 +39,132 @@
         </div>
 
         <div id="tab-loja" class="tab-content space-y-6">
-            <div class="bg-zinc-800 p-8 rounded-3xl border border-zinc-700">
-                <h3 class="text-lg font-bold mb-4">Informações da Loja</h3>
-                <input type="text" id="store-name" placeholder="Nome da Loja" class="w-full p-4 rounded-xl bg-zinc-700 outline-none mb-3">
-                <input type="text" id="store-phone" placeholder="WhatsApp (DDD + Número)" class="w-full p-4 rounded-xl bg-zinc-700 outline-none mb-3">
-                <button onclick="salvarInfoLoja()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase text-xs">Salvar Informações</button>
+            
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700 text-center">
+                <h3 class="text-xs font-black uppercase text-amber-500 mb-4 tracking-widest">Identidade Visual</h3>
+                <div class="relative w-32 h-32 mx-auto mb-4 bg-zinc-900 rounded-full border-4 border-amber-600 flex items-center justify-center overflow-hidden">
+                    <img id="view-logo" class="w-full h-full object-cover hidden" alt="Logo">
+                    <span id="placeholder-logo" class="text-[10px] font-bold text-zinc-500 uppercase">Sem Logo</span>
+                </div>
+                <input type="text" id="store-logo-url" placeholder="URL da Logomarca" class="w-full p-3 bg-zinc-700 rounded-xl text-xs outline-none mb-2 border border-transparent focus:border-amber-600">
+                <p class="text-[9px] text-zinc-500 uppercase italic">Insira o link da imagem (PNG ou JPG)</p>
             </div>
-        </div>
 
-        <div id="tab-categorias" class="tab-content hidden">
             <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
-                <h3 class="text-lg font-bold mb-4">Categorias</h3>
-                <div class="flex gap-2 mb-6">
-                    <input type="text" id="nova-cat" placeholder="Nova Categoria" class="flex-1 p-4 rounded-xl bg-zinc-700 outline-none text-sm">
-                    <button onclick="adicionarCategoria()" class="bg-green-600 px-6 rounded-xl font-black text-xl">+</button>
+                <h3 class="text-xs font-black uppercase text-amber-500 mb-4 tracking-widest">Dados da Loja</h3>
+                <div class="grid gap-3">
+                    <input type="text" id="store-name" placeholder="Nome da Loja" class="w-full p-4 bg-zinc-700 rounded-xl outline-none text-sm">
+                    <input type="text" id="store-slogan" placeholder="Slogan da Loja" class="w-full p-4 bg-zinc-700 rounded-xl outline-none text-sm">
+                    <input type="text" id="store-address" placeholder="Endereço Completo" class="w-full p-4 bg-zinc-700 rounded-xl outline-none text-sm">
+                    <input type="text" id="store-phone" placeholder="WhatsApp (DDD+Número)" class="w-full p-4 bg-zinc-700 rounded-xl outline-none text-sm">
                 </div>
-                <div id="sortable-list" class="space-y-2 mb-6"></div>
-                <button onclick="salvarOrdemCategorias()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase text-xs">Salvar Ordem</button>
             </div>
-        </div>
 
-        <div id="tab-produtos" class="tab-content hidden space-y-4">
-            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700 space-y-4 shadow-xl">
-                <h3 class="text-lg font-bold mb-4">Novo Produto</h3>
-                <input type="hidden" id="edit-id">
-                <input type="text" id="n" placeholder="Nome do Produto" class="w-full p-4 rounded-xl bg-zinc-700 outline-none">
-                <select id="c" class="w-full p-4 rounded-xl bg-zinc-700 outline-none text-sm"></select>
-                
-                <div class="p-4 bg-zinc-900 rounded-2xl space-y-2">
-                    <label class="text-[9px] font-black text-amber-500 uppercase">Dias de Disponibilidade:</label>
-                    <div class="flex flex-wrap gap-2" id="dias-semana">
-                        <button type="button" data-day="0" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Dom</button>
-                        <button type="button" data-day="1" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Seg</button>
-                        <button type="button" data-day="2" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Ter</button>
-                        <button type="button" data-day="3" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Qua</button>
-                        <button type="button" data-day="4" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Qui</button>
-                        <button type="button" data-day="5" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Sex</button>
-                        <button type="button" data-day="6" class="day-btn border border-zinc-700 px-3 py-2 rounded-lg text-[10px] font-bold">Sáb</button>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <input type="number" id="p" placeholder="Preço R$" class="w-full p-4 rounded-xl bg-zinc-700 outline-none" step="0.01">
-                    <input type="text" id="p-img" placeholder="URL da Imagem" class="w-full p-4 rounded-xl bg-zinc-700 outline-none text-sm">
-                </div>
-                <button onclick="salvarProduto()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase shadow-lg">Salvar Produto</button>
-            </div>
-            <div id="lista-produtos" class="grid gap-2"></div>
-        </div>
-
-        <div id="tab-relatorios" class="tab-content hidden space-y-6">
             <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
-                <h3 class="text-lg font-bold mb-4">Relatório de Hoje</h3>
-                <div class="grid grid-cols-2 gap-4 mb-6 text-center">
-                    <div class="bg-zinc-900 p-5 rounded-2xl">
-                        <p class="text-[9px] text-zinc-500 uppercase font-black">Pedidos</p>
-                        <p id="rel-qtd" class="text-3xl font-black text-white">0</p>
+                <h3 class="text-xs font-black uppercase text-amber-500 mb-4 tracking-widest text-left">Horário de Atendimento</h3>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[9px] font-bold uppercase text-zinc-500 block mb-1">Abre às</label>
+                            <input type="time" id="open-time" class="w-full p-3 bg-zinc-700 rounded-xl outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-bold uppercase text-zinc-500 block mb-1">Fecha às</label>
+                            <input type="time" id="close-time" class="w-full p-3 bg-zinc-700 rounded-xl outline-none text-sm">
+                        </div>
                     </div>
-                    <div class="bg-zinc-900 p-5 rounded-2xl">
-                        <p class="text-[9px] text-zinc-500 uppercase font-black">Faturamento</p>
-                        <p id="rel-total" class="text-3xl font-black text-green-500 text-sm">R$ 0,00</p>
+                    
+                    <div class="pt-4 border-t border-zinc-700">
+                        <label class="text-[10px] font-bold uppercase text-zinc-400 block mb-2 italic text-left">Intervalo de Almoço</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <input type="time" id="lunch-start" class="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-xl outline-none text-sm text-amber-500">
+                            <input type="time" id="lunch-end" class="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-xl outline-none text-sm text-amber-500">
+                        </div>
                     </div>
+
+                    <button onclick="salvarConfigLoja()" class="w-full bg-amber-600 py-4 rounded-2xl font-black uppercase text-xs shadow-xl mt-4">Gravar Dados da Loja</button>
                 </div>
-                <div id="lista-vendas-historico" class="space-y-2 mb-6"></div>
-                <button onclick="excluirTodosPedidos()" class="w-full py-4 bg-red-900/20 text-red-500 rounded-2xl font-black uppercase text-[10px] border border-red-900/50">🗑️ Limpar Banco de Dados</button>
             </div>
         </div>
 
-        <div id="tab-usuarios" class="tab-content hidden space-y-4">
-            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
-                <h3 class="text-lg font-bold mb-4">Gerenciar Equipe</h3>
-                <input type="text" id="new-user" placeholder="Usuário" class="w-full p-4 mb-3 rounded-xl bg-zinc-700 outline-none">
-                <input type="password" id="new-pass" placeholder="Senha" class="w-full p-4 mb-4 rounded-xl bg-zinc-700 outline-none">
-                <button onclick="cadastrarUsuario()" class="w-full bg-green-600 py-4 rounded-xl font-black uppercase text-xs text-left">Criar Acesso</button>
-                <div id="lista-usuarios" class="mt-8 space-y-2 text-left"></div>
-            </div>
-        </div>
+        <div id="tab-categorias" class="tab-content hidden"><div id="sortable-list"></div></div>
+        <div id="tab-produtos" class="tab-content hidden"><div id="lista-produtos"></div></div>
+        <div id="tab-relatorios" class="tab-content hidden"></div>
+        <div id="tab-usuarios" class="tab-content hidden"></div>
+
     </div>
 
     <script type="module">
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
-        let diasSelecionados = [];
 
-        // --- LOGIN ---
+        // LOGIN SIMPLES
         window.handleLogin = () => {
             const u = document.getElementById('user-login').value;
             const p = document.getElementById('pass-login').value;
             if(u === "admin" && p === "Root@8505") {
-                localStorage.setItem('admin_sessao', 'true');
-                location.reload();
-            } else {
-                document.getElementById('login-error').classList.remove('hidden');
+                document.getElementById('login').classList.add('hidden');
+                document.getElementById('painel').classList.remove('hidden');
+                carregarLoja();
             }
         };
-        window.logout = () => { localStorage.removeItem('admin_sessao'); location.reload(); };
 
-        // --- NAVEGAÇÃO ---
+        // TROCA DE ABAS
         window.changeTab = (tabId) => {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active', 'text-zinc-500'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.add('text-zinc-500'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(tabId).classList.remove('hidden');
             document.getElementById('btn-' + tabId.split('-')[1]).classList.add('active');
-            document.getElementById('btn-' + tabId.split('-')[1]).classList.remove('text-zinc-500');
-
-            if(tabId === 'tab-produtos') { carregarCategoriasParaSelect(); listarProdutos(); }
-            if(tabId === 'tab-relatorios') carregarRelatorio();
-            if(tabId === 'tab-categorias') carregarCategorias();
-            if(tabId === 'tab-usuarios') listarUsuarios();
         };
 
-        // --- CATEGORIAS ---
-        async function carregarCategorias() {
-            const res = await fetch(`${DB_BASE}categorias.json`);
-            const data = await res.json() || [];
-            const list = document.getElementById('sortable-list');
-            list.innerHTML = data.map(c => `<div class="bg-zinc-700 p-4 rounded-xl flex justify-between items-center handle" data-id="${c}"><span>☰ ${c}</span><button onclick="removerCategoria('${c}')" class="text-red-500 font-bold">X</button></div>`).join('');
-            new Sortable(list, { animation: 150, handle: '.handle' });
-        }
-        window.adicionarCategoria = async () => {
-            const n = document.getElementById('nova-cat').value.trim();
-            if(!n) return;
-            let data = await (await fetch(`${DB_BASE}categorias.json`)).json() || [];
-            if(!data.includes(n)) {
-                data.push(n);
-                await fetch(`${DB_BASE}categorias.json`, { method: 'PUT', body: JSON.stringify(data) });
-                document.getElementById('nova-cat').value = "";
-                carregarCategorias();
+        // CARREGAR DADOS DA LOJA
+        async function carregarLoja() {
+            const res = await fetch(`${DB_BASE}configuracao.json`);
+            const data = await res.json();
+            if(data) {
+                document.getElementById('store-name').value = data.nome || "";
+                document.getElementById('store-slogan').value = data.slogan || "";
+                document.getElementById('store-address').value = data.endereco || "";
+                document.getElementById('store-phone').value = data.whatsapp || "";
+                document.getElementById('store-logo-url').value = data.logo || "";
+                document.getElementById('open-time').value = data.abre || "08:00";
+                document.getElementById('close-time').value = data.fecha || "18:00";
+                document.getElementById('lunch-start').value = data.almoçoInicio || "12:00";
+                document.getElementById('lunch-end').value = data.almoçoFim || "13:30";
+                
+                if(data.logo) {
+                    document.getElementById('view-logo').src = data.logo;
+                    document.getElementById('view-logo').classList.remove('hidden');
+                    document.getElementById('placeholder-logo').classList.add('hidden');
+                }
             }
-        };
-        window.salvarOrdemCategorias = async () => {
-            const ordem = Array.from(document.querySelectorAll('#sortable-list > div')).map(i => i.dataset.id);
-            await fetch(`${DB_BASE}categorias.json`, { method: 'PUT', body: JSON.stringify(ordem) });
-            Toastify({text: "Ordem salva!"}).showToast();
-        };
-
-        // --- PRODUTOS ---
-        document.querySelectorAll('.day-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const d = btn.dataset.day;
-                if(diasSelecionados.includes(d)) diasSelecionados = diasSelecionados.filter(x => x !== d);
-                else diasSelecionados.push(d);
-                btn.classList.toggle('active');
-            });
-        });
-
-        async function carregarCategoriasParaSelect() {
-            const data = await (await fetch(`${DB_BASE}categorias.json`)).json() || [];
-            document.getElementById('c').innerHTML = data.map(c => `<option value="${c}">${c}</option>`).join('');
         }
 
-        window.salvarProduto = async () => {
-            const id = document.getElementById('edit-id').value || Date.now();
-            const prod = {
-                nome: document.getElementById('n').value,
-                categoria: document.getElementById('c').value,
-                preco: parseFloat(document.getElementById('p').value),
-                img: document.getElementById('p-img').value,
-                dias: diasSelecionados,
-                pausado: false
+        // SALVAR DADOS DA LOJA
+        window.salvarConfigLoja = async () => {
+            const config = {
+                nome: document.getElementById('store-name').value,
+                slogan: document.getElementById('store-slogan').value,
+                endereco: document.getElementById('store-address').value,
+                whatsapp: document.getElementById('store-phone').value,
+                logo: document.getElementById('store-logo-url').value,
+                abre: document.getElementById('open-time').value,
+                fecha: document.getElementById('close-time').value,
+                almoçoInicio: document.getElementById('lunch-start').value,
+                almoçoFim: document.getElementById('lunch-end').value
             };
-            await fetch(`${DB_BASE}produtos/${id}.json`, { method: 'PUT', body: JSON.stringify(prod) });
-            Toastify({text: "Produto Salvo!", style: {background: "green"}}).showToast();
-            listarProdutos();
-        };
 
-        async function listarProdutos() {
-            const data = await (await fetch(`${DB_BASE}produtos.json`)).json();
-            const list = document.getElementById('lista-produtos');
-            list.innerHTML = "";
-            for(let id in data) {
-                list.innerHTML += `
-                    <div class="bg-zinc-800 p-4 rounded-2xl flex justify-between items-center border border-zinc-700">
-                        <div class="flex items-center gap-3">
-                            <img src="${data[id].img}" class="w-10 h-10 rounded-lg object-cover">
-                            <div><p class="font-bold text-xs uppercase">${data[id].nome}</p><p class="text-[9px] text-green-500">R$ ${data[id].preco.toFixed(2)}</p></div>
-                        </div>
-                        <button onclick="removerProduto('${id}')" class="text-red-500 font-bold">X</button>
-                    </div>`;
-            }
-        }
-
-        // --- RELATÓRIOS ---
-        async function carregarRelatorio() {
-            const res = await fetch(`${DB_BASE}vendas.json`);
-            const vendas = await res.json();
-            const container = document.getElementById('lista-vendas-historico');
-            container.innerHTML = "";
-            if(!vendas) return;
-            const hoje = new Date().toLocaleDateString('pt-BR');
-            const pedidos = Object.keys(vendas).map(id => ({id, ...vendas[id]})).filter(v => v.dataLocal === hoje);
-            let total = 0;
-            pedidos.forEach(v => {
-                total += (v.total || 0);
-                container.innerHTML += `<div class="bg-zinc-900 p-3 rounded-xl border border-zinc-800 flex justify-between items-center text-[10px]">
-                    <span>${v.cliente}</span><span class="text-green-500 font-black">R$ ${v.total.toFixed(2)}</span>
-                </div>`;
+            await fetch(`${DB_BASE}configuracao.json`, { 
+                method: 'PUT', 
+                body: JSON.stringify(config) 
             });
-            document.getElementById('rel-qtd').innerText = pedidos.length;
-            document.getElementById('rel-total').innerText = `R$ ${total.toFixed(2)}`;
-        }
 
-        window.excluirTodosPedidos = async () => {
-            if(confirm("Deseja LIMPAR todo o histórico de vendas?")) {
-                await fetch(`${DB_BASE}vendas.json`, { method: 'DELETE' });
-                carregarRelatorio();
-            }
+            Toastify({text: "Dados atualizados!", style: {background: "green"}}).showToast();
+            carregarLoja();
         };
 
-        // --- EQUIPE ---
-        window.cadastrarUsuario = async () => {
-            const u = document.getElementById('new-user').value;
-            const p = document.getElementById('new-pass').value;
-            await fetch(`${DB_BASE}usuarios/${Date.now()}.json`, { method: 'PUT', body: JSON.stringify({user:u, pass:p}) });
-            listarUsuarios();
-        };
-        async function listarUsuarios() {
-            const data = await (await fetch(`${DB_BASE}usuarios.json`)).json();
-            const list = document.getElementById('lista-usuarios');
-            list.innerHTML = "";
-            for(let id in data) list.innerHTML += `<div class="bg-zinc-700 p-3 rounded-lg text-xs flex justify-between"><span>👤 ${data[id].user}</span></div>`;
-        }
+        // Sair
+        window.logout = () => location.reload();
 
-        // --- INIT ---
-        if(localStorage.getItem('admin_sessao') === 'true') {
-            document.getElementById('login').classList.add('hidden');
-            document.getElementById('painel').classList.remove('hidden');
-            changeTab('tab-loja');
-        }
     </script>
 </body>
 </html>
