@@ -3,153 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Point do Café</title>
+    <title>Admin Master - Point do Café</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <style>
+        .day-btn.active { background-color: #d97706; color: white; border-color: #d97706; }
+        .tab-btn.active { border-bottom: 4px solid #d97706; color: #d97706; }
+        .tab-content.hidden { display: none; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
+    </style>
 </head>
-<body class="bg-zinc-50 font-sans pb-20">
+<body class="bg-zinc-900 text-zinc-100 p-4 font-sans text-left">
 
-    <header class="bg-white p-6 shadow-sm mb-6 border-b-4 border-amber-600">
-        <h1 class="text-xl font-black text-amber-900 uppercase italic text-center">Painel Administrativo</h1>
-    </header>
+    <div id="login" class="max-w-sm mx-auto mt-20 bg-white p-8 rounded-3xl text-zinc-900 shadow-2xl">
+        <h2 class="text-2xl font-black mb-6 text-center text-amber-900 uppercase tracking-tighter text-left">Point Admin</h2>
+        <input type="text" id="user-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-4 outline-none" placeholder="Usuário">
+        <input type="password" id="pass-login" class="w-full p-4 border-2 border-amber-100 rounded-xl mb-6 outline-none" placeholder="Senha">
+        <button onclick="handleLogin()" class="w-full bg-amber-900 text-white py-4 rounded-xl font-bold uppercase">Entrar</button>
+        <p id="login-error" class="text-red-500 text-center mt-3 hidden text-xs font-bold uppercase">Acesso Negado</p>
+    </div>
 
-    <nav class="max-w-md mx-auto flex bg-zinc-200 p-1 rounded-2xl mb-6 shadow-inner">
-        <button onclick="mudarAbaAdmin('produtos')" id="btn-tab-produtos" class="flex-1 py-3 font-black uppercase text-[10px] rounded-xl bg-white text-amber-600 shadow-sm">📦 Produtos</button>
-        <button onclick="mudarAbaAdmin('relatorio')" id="btn-tab-relatorio" class="flex-1 py-3 font-black uppercase text-[10px] rounded-xl text-zinc-500">📊 Relatórios</button>
-    </nav>
-
-    <main id="aba-produtos" class="max-w-md mx-auto px-4 space-y-6">
-        <section class="bg-white p-6 rounded-3xl shadow-sm border border-zinc-200">
-            <h2 class="font-black uppercase text-xs mb-4 text-zinc-400">Novo Produto</h2>
-            <div class="space-y-3">
-                <input type="text" id="p-nome" placeholder="Nome do Produto" class="w-full p-4 bg-zinc-100 rounded-2xl outline-none border-2 border-transparent focus:border-amber-500 text-sm">
-                <input type="number" id="p-preco" placeholder="Preço (Ex: 15.50)" class="w-full p-4 bg-zinc-100 rounded-2xl outline-none border-2 border-transparent focus:border-amber-500 text-sm">
-                <input type="text" id="p-img" placeholder="Link da Imagem" class="w-full p-4 bg-zinc-100 rounded-2xl outline-none border-2 border-transparent focus:border-amber-500 text-sm">
-                <button onclick="salvarProduto()" class="w-full py-4 bg-amber-600 text-white font-black rounded-2xl uppercase text-xs shadow-lg">Cadastrar Produto</button>
-            </div>
-        </section>
-
-        <section id="lista-produtos-admin" class="space-y-3"></section>
-    </main>
-
-    <main id="aba-relatorio" class="hidden max-w-md mx-auto px-4">
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-zinc-200 mb-6">
-            <h2 class="text-[10px] font-black uppercase text-zinc-400 mb-4">Resumo de Hoje</h2>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-zinc-50 p-4 rounded-2xl text-center">
-                    <p class="text-[9px] font-bold text-zinc-400 uppercase">Vendas</p>
-                    <p id="rel-qtd" class="text-2xl font-black text-zinc-800">0</p>
-                </div>
-                <div class="bg-zinc-50 p-4 rounded-2xl text-center border-l-4 border-green-500">
-                    <p class="text-[9px] font-bold text-zinc-400 uppercase">Faturamento</p>
-                    <p id="rel-total" class="text-xl font-black text-green-600 text-xs">R$ 0,00</p>
-                </div>
-            </div>
-            
-            <button onclick="excluirTodosPedidos()" class="w-full mt-10 py-4 bg-red-50 text-red-600 rounded-2xl font-black uppercase text-[10px] border border-red-100 hover:bg-red-600 hover:text-white transition-all">
-                🗑️ Limpar Banco de Pedidos
-            </button>
+    <div id="painel" class="hidden max-w-2xl mx-auto py-4">
+        <div class="flex justify-between items-center mb-6 px-2">
+            <span class="text-[10px] text-amber-500 font-black uppercase tracking-widest">Point do Café - Gestão</span>
+            <button onclick="logout()" class="text-red-500 text-[10px] font-black uppercase underline">Sair</button>
         </div>
-        <div id="lista-vendas-detalhe" class="space-y-2"></div>
-    </main>
+        
+        <div class="flex justify-around mb-8 border-b border-zinc-800 font-bold uppercase text-[8px] tracking-widest overflow-x-auto">
+            <button onclick="changeTab('tab-loja')" class="tab-btn pb-2 px-2 active" id="btn-loja">Loja</button>
+            <button onclick="changeTab('tab-categorias')" class="tab-btn pb-2 px-2" id="btn-categorias">Categorias</button>
+            <button onclick="changeTab('tab-produtos')" class="tab-btn pb-2 px-2" id="btn-produtos">Produtos</button>
+            <button onclick="changeTab('tab-relatorios')" class="tab-btn pb-2 px-2" id="btn-relatorios">Relatórios</button>
+            <button onclick="changeTab('tab-usuarios')" class="tab-btn pb-2 px-2" id="btn-usuarios">Equipe</button>
+        </div>
+
+        <div id="tab-loja" class="tab-content space-y-6">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+                <h3 class="text-xs font-bold mb-4 uppercase text-amber-500">Informações da Loja</h3>
+                <input type="text" id="store-name" placeholder="Nome da Loja" class="w-full p-4 rounded-xl bg-zinc-700 outline-none border-none mb-3 text-sm">
+                <textarea id="store-description" placeholder="Descrição" class="w-full p-4 rounded-xl bg-zinc-700 outline-none border-none mb-3 text-sm"></textarea>
+                <input type="text" id="store-phone" placeholder="WhatsApp de Atendimento" class="w-full p-4 rounded-xl bg-zinc-700 outline-none border-none mb-3 text-sm">
+                <button onclick="salvarInfoLoja()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase text-xs">Salvar Informações</button>
+            </div>
+        </div>
+
+        <div id="tab-categorias" class="tab-content hidden">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+                <h3 class="text-xs font-bold mb-4 uppercase text-amber-500">Categorias</h3>
+                <div class="flex gap-2 mb-6">
+                    <input type="text" id="nova-cat" placeholder="Nova Categoria" class="flex-1 p-4 rounded-xl bg-zinc-700 outline-none text-sm">
+                    <button onclick="adicionarCategoria()" class="bg-green-600 px-6 rounded-xl font-black text-xl">+</button>
+                </div>
+                <div id="sortable-list" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <div id="tab-produtos" class="tab-content hidden space-y-4">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700 space-y-4 shadow-xl">
+                <h3 class="text-xs font-bold mb-4 uppercase text-amber-500">Cadastrar Produto</h3>
+                <input type="hidden" id="edit-id">
+                <input type="text" id="n" placeholder="Nome do Produto" class="w-full p-4 rounded-xl bg-zinc-700 outline-none text-sm">
+                <select id="c" class="w-full p-4 rounded-xl bg-zinc-700 outline-none text-sm"></select>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="number" id="p" placeholder="Preço R$" class="w-full p-4 rounded-xl bg-zinc-700 outline-none text-sm" step="0.01">
+                    <input type="text" id="p-img" placeholder="Link da Imagem" class="w-full p-4 rounded-xl bg-zinc-700 outline-none text-sm">
+                </div>
+                <button onclick="salvarProduto()" class="w-full bg-amber-600 py-4 rounded-xl font-black uppercase text-xs">Salvar Produto</button>
+            </div>
+            <div id="lista-produtos" class="grid gap-2"></div>
+        </div>
+
+        <div id="tab-relatorios" class="tab-content hidden space-y-6">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+                <h3 class="text-xs font-bold mb-4 uppercase text-amber-500 text-center">Resumo de Hoje</h3>
+                <div class="grid grid-cols-2 gap-4 mb-6 text-center">
+                    <div class="bg-zinc-900 p-5 rounded-2xl">
+                        <p class="text-[8px] text-zinc-500 uppercase font-black">Vendas</p>
+                        <p id="rel-qtd" class="text-2xl font-black text-white">0</p>
+                    </div>
+                    <div class="bg-zinc-900 p-5 rounded-2xl">
+                        <p class="text-[8px] text-zinc-500 uppercase font-black">Faturamento</p>
+                        <p id="rel-total" class="text-xl font-black text-green-500">R$ 0,00</p>
+                    </div>
+                </div>
+                <button onclick="excluirTodosPedidos()" class="w-full py-3 bg-red-900/30 text-red-500 rounded-xl font-black text-[9px] uppercase border border-red-900/50">🗑️ Limpar Banco de Dados</button>
+                <div id="lista-vendas-historico" class="mt-6 space-y-2"></div>
+            </div>
+        </div>
+
+        <div id="tab-usuarios" class="tab-content hidden space-y-4">
+            <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700">
+                <h3 class="text-xs font-bold mb-4 uppercase text-amber-500 text-center">Gerenciar Acessos</h3>
+                <input type="text" id="new-user" placeholder="Usuário" class="w-full p-4 mb-3 rounded-xl bg-zinc-700 outline-none text-sm">
+                <input type="password" id="new-pass" placeholder="Senha" class="w-full p-4 mb-4 rounded-xl bg-zinc-700 outline-none text-sm">
+                <button onclick="cadastrarUsuario()" class="w-full bg-green-600 py-4 rounded-xl font-black uppercase text-xs">Criar Usuário</button>
+                <div id="lista-usuarios" class="mt-8 space-y-2"></div>
+            </div>
+        </div>
+
+        <footer class="mt-12 text-center opacity-30">
+            <p class="text-[8px] font-bold uppercase tracking-[3px]">Powered by Point do Café</p>
+        </footer>
+    </div>
 
     <script type="module">
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
 
-        // Troca de Abas
-        window.mudarAbaAdmin = (aba) => {
-            if(aba === 'produtos') {
-                document.getElementById('aba-produtos').classList.remove('hidden');
-                document.getElementById('aba-relatorio').classList.add('hidden');
-                document.getElementById('btn-tab-produtos').className = "flex-1 py-3 font-black uppercase text-[10px] rounded-xl bg-white text-amber-600 shadow-sm";
-                document.getElementById('btn-tab-relatorio').className = "flex-1 py-3 font-black uppercase text-[10px] rounded-xl text-zinc-500";
+        // --- LOGIN ---
+        window.handleLogin = () => {
+            const u = document.getElementById('user-login').value;
+            const p = document.getElementById('pass-login').value;
+            if(u === "admin" && p === "Root@8505") {
+                localStorage.setItem('point_sessao', 'true');
+                location.reload();
             } else {
-                document.getElementById('aba-produtos').classList.add('hidden');
-                document.getElementById('aba-relatorio').classList.remove('hidden');
-                document.getElementById('btn-tab-relatorio').className = "flex-1 py-3 font-black uppercase text-[10px] rounded-xl bg-white text-amber-600 shadow-sm";
-                document.getElementById('btn-tab-produtos').className = "flex-1 py-3 font-black uppercase text-[10px] rounded-xl text-zinc-500";
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        };
+
+        window.logout = () => {
+            localStorage.removeItem('point_sessao');
+            location.reload();
+        };
+
+        // --- ABAS ---
+        window.changeTab = (tabId) => {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById('btn-' + tabId.split('-')[1]).classList.add('active');
+            
+            if(tabId === 'tab-produtos') listarProdutos();
+            if(tabId === 'tab-relatorios') carregarRelatorio();
+            if(tabId === 'tab-categorias') carregarCategorias();
+            if(tabId === 'tab-usuarios') listarUsuarios();
+        };
+
+        // --- PRODUTOS ---
+        window.salvarProduto = async () => {
+            const n = document.getElementById('n').value;
+            const p = parseFloat(document.getElementById('p').value);
+            const id = document.getElementById('edit-id').value || Date.now();
+            const prod = { 
+                nome: n, 
+                preco: p, 
+                categoria: document.getElementById('c').value,
+                img: document.getElementById('p-img').value,
+                pausado: false 
+            };
+            await fetch(`${DB_BASE}produtos/${id}.json`, { method: 'PUT', body: JSON.stringify(prod) });
+            listarProdutos();
+            document.getElementById('n').value = ""; document.getElementById('p').value = "";
+        };
+
+        async function listarProdutos() {
+            const res = await fetch(`${DB_BASE}produtos.json`);
+            const data = await res.json();
+            const list = document.getElementById('lista-produtos');
+            list.innerHTML = "";
+            for(let id in data) {
+                list.innerHTML += `
+                    <div class="bg-zinc-800 p-4 rounded-2xl flex justify-between items-center border border-zinc-700">
+                        <span class="text-xs font-bold uppercase">${data[id].nome}</span>
+                        <button onclick="removerProduto('${id}')" class="text-red-500 font-bold text-xs uppercase">Excluir</button>
+                    </div>`;
+            }
+            // Atualiza o select de categorias
+            const resC = await fetch(`${DB_BASE}categorias.json`);
+            const cats = await resC.json();
+            document.getElementById('c').innerHTML = cats ? cats.map(c => `<option value="${c}">${c}</option>`).join('') : '';
+        }
+
+        window.removerProduto = async (id) => {
+            if(confirm("Excluir?")) {
+                await fetch(`${DB_BASE}produtos/${id}.json`, { method: 'DELETE' });
+                listarProdutos();
+            }
+        };
+
+        // --- RELATÓRIOS ---
+        async function carregarRelatorio() {
+            const res = await fetch(`${DB_BASE}vendas.json`);
+            const vendas = await res.json();
+            const container = document.getElementById('lista-vendas-historico');
+            container.innerHTML = "";
+            if(!vendas) return;
+
+            const hoje = new Date().toLocaleDateString('pt-BR');
+            const pedidos = Object.keys(vendas).map(id => ({id, ...vendas[id]})).filter(v => v.dataLocal === hoje);
+            
+            let total = 0;
+            pedidos.forEach(v => {
+                total += (v.total || 0);
+                container.innerHTML += `<div class="bg-zinc-900 p-3 rounded-xl border border-zinc-800 text-[10px] flex justify-between items-center">
+                    <span>${v.cliente}</span><span class="font-black text-green-500">R$ ${v.total.toFixed(2)}</span>
+                </div>`;
+            });
+            document.getElementById('rel-qtd').innerText = pedidos.length;
+            document.getElementById('rel-total').innerText = `R$ ${total.toFixed(2)}`;
+        }
+
+        window.excluirTodosPedidos = async () => {
+            if(confirm("APAGAR TUDO?")) {
+                await fetch(`${DB_BASE}vendas.json`, { method: 'DELETE' });
                 carregarRelatorio();
             }
         };
 
-        // Funções de Produtos
-        window.salvarProduto = async () => {
-            const nome = document.getElementById('p-nome').value;
-            const preco = parseFloat(document.getElementById('p-preco').value);
-            const img = document.getElementById('p-img').value;
-            if(!nome || !preco) return alert("Preencha nome e preço!");
-
-            const id = Date.now();
-            await fetch(`${DB_BASE}produtos/${id}.json`, { method: 'PUT', body: JSON.stringify({nome, preco, img, pausado: false}) });
-            location.reload();
-        };
-
-        async function carregarProdutos() {
-            const res = await fetch(`${DB_BASE}produtos.json`);
-            const produtos = await res.json();
-            const container = document.getElementById('lista-produtos-admin');
-            container.innerHTML = "";
-            for(let id in produtos) {
-                container.innerHTML += `
-                    <div class="bg-white p-4 rounded-2xl flex justify-between items-center border border-zinc-200">
-                        <div class="flex items-center gap-3">
-                            <img src="${produtos[id].img}" class="w-10 h-10 rounded-lg object-cover bg-zinc-100">
-                            <div>
-                                <p class="font-bold text-xs uppercase">${produtos[id].nome}</p>
-                                <p class="text-[10px] text-green-600 font-black">R$ ${produtos[id].preco.toFixed(2)}</p>
-                            </div>
-                        </div>
-                        <button onclick="excluirProduto('${id}')" class="text-red-400 p-2 italic text-[10px] font-bold">Excluir</button>
-                    </div>`;
-            }
+        // --- INICIALIZAÇÃO ---
+        if(localStorage.getItem('point_sessao') === 'true') {
+            document.getElementById('login').classList.add('hidden');
+            document.getElementById('painel').classList.remove('hidden');
+            listarProdutos();
         }
-
-        window.excluirProduto = async (id) => {
-            if(confirm("Excluir este produto?")) {
-                await fetch(`${DB_BASE}produtos/${id}.json`, { method: 'DELETE' });
-                carregarProdutos();
-            }
-        };
-
-        // Funções de Relatório (Restauradas aqui)
-        async function carregarRelatorio() {
-            const res = await fetch(`${DB_BASE}vendas.json`);
-            const vendas = await res.json();
-            const container = document.getElementById('lista-vendas-detalhe');
-            container.innerHTML = "";
-            if(!vendas) {
-                document.getElementById('rel-qtd').innerText = "0";
-                document.getElementById('rel-total').innerText = "R$ 0,00";
-                return;
-            }
-
-            const hoje = new Date().toLocaleDateString('pt-BR');
-            const pedidos = Object.keys(vendas).map(id => ({id, ...vendas[id]}))
-                .filter(v => v.dataLocal === hoje);
-
-            let faturamento = 0;
-            pedidos.forEach(v => {
-                faturamento += (v.total || 0);
-                container.innerHTML += `
-                    <div class="bg-white p-3 rounded-2xl border border-zinc-100 flex justify-between items-center">
-                        <span class="text-[9px] font-bold uppercase text-zinc-500">#${v.id.slice(-4)} - ${v.cliente}</span>
-                        <span class="text-[10px] font-black text-zinc-800">R$ ${(v.total || 0).toFixed(2)}</span>
-                    </div>`;
-            });
-
-            document.getElementById('rel-qtd').innerText = pedidos.length;
-            document.getElementById('rel-total').innerText = `R$ ${faturamento.toFixed(2)}`;
-        }
-
-        window.excluirTodosPedidos = async () => {
-            if(!confirm("Deseja apagar TODO o histórico de vendas/pedidos?")) return;
-            await fetch(`${DB_BASE}vendas.json`, { method: 'DELETE' });
-            Toastify({text: "Histórico apagado!", style: {background: "red"}}).showToast();
-            carregarRelatorio();
-        };
-
-        carregarProdutos();
     </script>
 </body>
 </html>
