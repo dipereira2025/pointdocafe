@@ -2,223 +2,243 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atendimento Point do Café</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cardápio - Point do Café</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Montserrat', sans-serif; }
-        @media print {
-            @page { margin: 0; }
-            body * { display: none !important; }
-            #secao-impressao, #secao-impressao * { display: block !important; }
-            #secao-impressao { width: 100%; max-width: 80mm; font-family: monospace; font-size: 10pt; padding: 5mm; color: black; }
-            .quebra-pagina { page-break-after: always; border-bottom: 2px dashed #000; margin-bottom: 10mm; padding-bottom: 5mm; }
-        }
-        .status-pendente { border-left: 10px solid #f59e0b; }
-        .status-preparo { border-left: 10px solid #3b82f6; }
-        .status-pronto { border-left: 10px solid #10b981; opacity: 0.7; }
+        body { font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .cart-float { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .hidden { display: none; }
+        ::-webkit-scrollbar { width: 0; }
     </style>
 </head>
-<body class="bg-zinc-100 p-4">
+<body class="bg-zinc-50 text-zinc-800">
 
-    <a href="central.html" class="fixed top-4 left-4 z-[100] bg-white/90 text-zinc-800 px-5 py-2.5 rounded-full text-[10px] font-black uppercase shadow-2xl border border-zinc-200">
-        ⬅️ Central
-    </a>
-
-    <audio id="som-alerta" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
-
-    <header class="max-w-2xl mx-auto text-center mb-6 mt-12">
-        <h1 class="text-3xl font-black text-zinc-900 uppercase italic">Painel de Atendimento</h1>
-        <div id="badge-impressao" class="mt-2"></div>
+    <header class="bg-white pt-10 pb-8 px-4 text-center border-b-8 border-[#d97706] shadow-md">
+        <div id="logo-header" class="w-24 h-24 bg-zinc-50 mx-auto rounded-full mb-4 overflow-hidden border-4 border-[#f3e8d2] flex items-center justify-center">
+            <img id="img-logo" src="" class="hidden w-full h-full object-cover">
+            <span id="placeholder-logo" class="text-[10px] font-bold text-zinc-300 uppercase italic">Point do Café</span>
+        </div>
+        <h1 class="text-3xl font-black text-[#4b2c20] uppercase tracking-tighter italic">Point do Café</h1>
     </header>
 
-    <div class="max-w-2xl mx-auto mb-6 flex bg-white rounded-2xl p-1 shadow-sm border border-zinc-200">
-        <button onclick="mudarAba('aba-fila')" id="btn-fila" class="flex-1 py-4 rounded-xl font-black uppercase text-[10px] bg-zinc-800 text-white transition-all">📋 Pedidos</button>
-        <button onclick="mudarAba('aba-estoque')" id="btn-estoque" class="flex-1 py-4 rounded-xl font-black uppercase text-[10px] text-zinc-500 transition-all">🚫 Pausar Itens</button>
+    <main id="etapa-cardapio" class="max-w-md mx-auto p-4 pb-32">
+        <div id="categorias-container" class="space-y-8">
+            <div class="text-center py-20">
+                <div class="animate-spin inline-block w-10 h-10 border-4 border-[#d97706] border-t-transparent rounded-full"></div>
+                <p class="text-xs font-bold text-zinc-400 mt-4 uppercase">Carregando Cardápio...</p>
+            </div>
+        </div>
+    </main>
+
+    <div id="cart-bar" class="hidden fixed bottom-8 left-0 right-0 px-6 z-40">
+        <button onclick="irParaCheckout()" class="cart-float w-full max-w-md mx-auto bg-[#22c55e] text-white py-6 rounded-[2rem] font-black uppercase text-sm shadow-xl flex justify-between px-10 items-center">
+            <div class="flex items-center gap-3">
+                <span class="bg-[#166534] px-3 py-1 rounded-full text-[10px]" id="cart-count">0</span>
+                <span>Ver Pedido</span>
+            </div>
+            <span id="cart-total-bar">R$ 0,00</span>
+        </button>
     </div>
 
-    <div id="aba-fila" class="aba-atendimento">
-        <main id="lista-pedidos" class="max-w-2xl mx-auto space-y-4 pb-20"></main>
-    </div>
+    <div id="etapa-checkout" class="hidden fixed inset-0 bg-white z-50 overflow-y-auto p-6">
+        <div class="max-w-md mx-auto">
+            <button onclick="voltarParaCardapio()" class="text-[#d97706] font-black text-xs uppercase mb-6 flex items-center gap-2">⬅️ Voltar ao Cardápio</button>
+            <h2 class="text-2xl font-black text-[#4b2c20] uppercase mb-8 tracking-tighter">Finalizar Pedido</h2>
+            
+            <div class="space-y-6">
+                <input type="text" id="c-nome" placeholder="Seu Nome" class="w-full p-5 bg-zinc-100 rounded-2xl outline-none font-bold">
+                <select id="c-entrega" onchange="recalcularResumo()" class="w-full p-5 bg-zinc-100 rounded-2xl outline-none font-bold text-[#d97706]">
+                    <option value="retirada">🛍️ Vou retirar no local (Grátis)</option>
+                    <option value="entrega">🚚 Quero Entrega (+ R$ 5,00)</option>
+                </select>
+                <div id="div-endereco" class="hidden">
+                    <input type="text" id="c-endereco" placeholder="Endereço Completo" class="w-full p-5 bg-zinc-100 rounded-2xl outline-none">
+                </div>
+                <select id="c-pgto" onchange="verificarTroco()" class="w-full p-5 bg-zinc-100 rounded-2xl outline-none font-bold text-[#d97706]">
+                    <option value="Pix">Pix</option>
+                    <option value="Cartão">Cartão na Entrega</option>
+                    <option value="Dinheiro">Dinheiro</option>
+                </select>
+                <div id="div-troco" class="hidden">
+                    <input type="number" id="c-troco" placeholder="Troco para quanto?" class="w-full p-5 bg-amber-50 border-2 border-amber-200 rounded-2xl outline-none font-bold">
+                </div>
+                <textarea id="c-obs" placeholder="Alguma observação?" class="w-full p-5 bg-zinc-100 rounded-2xl outline-none text-sm h-24"></textarea>
 
-    <div id="aba-estoque" class="aba-atendimento hidden">
-        <div class="max-w-2xl mx-auto bg-white p-8 rounded-[2.5rem] shadow-sm border border-zinc-100">
-            <h2 class="text-[#4b2c20] font-black mb-6 uppercase text-sm tracking-widest border-b pb-4">Controle de Disponibilidade</h2>
-            <div id="lista-gestao-estoque" class="space-y-3"></div>
+                <div class="p-8 bg-zinc-50 rounded-[2rem] border border-zinc-100">
+                    <div class="flex justify-between font-black text-2xl text-[#4b2c20]">
+                        <span>TOTAL:</span>
+                        <span id="resumo-total">R$ 0,00</span>
+                    </div>
+                </div>
+                <button onclick="confirmarPedidoFinal()" class="w-full bg-[#22c55e] text-white py-6 rounded-[2rem] font-black uppercase shadow-xl">Confirmar Pedido</button>
+            </div>
         </div>
     </div>
 
-    <div id="secao-impressao" class="hidden"></div>
-
     <script>
         const DB_BASE = "https://pointdocafe-default-rtdb.firebaseio.com/";
-        const urlParams = new URLSearchParams(window.location.search);
-        const PODE_IMPRIMIR = urlParams.get('print') === 'true';
+        const diaHoje = new Date().getDay().toString(); // 0-Dom, 1-Seg, etc.
+        let produtosLocal = [];
 
-        let pedidosImpressosLocal = JSON.parse(localStorage.getItem('pedidos_impressos')) || [];
-        let dadosVendasLocal = {};
-
-        function inicializar() {
-            const badge = document.getElementById('badge-impressao');
-            badge.innerHTML = PODE_IMPRIMIR 
-                ? '<span class="bg-green-600 text-white text-[10px] px-4 py-1 rounded-full font-black">🖨️ MODO IMPRESSORA ATIVO</span>' 
-                : '<span class="bg-zinc-400 text-white text-[10px] px-4 py-1 rounded-full font-black">👁️ APENAS TELA</span>';
-            
-            monitorar();
-            setInterval(monitorar, 8000); 
+        async function init() {
+            await carregarLogo();
+            await loadMenu();
         }
 
-        async function monitorar() {
+        async function carregarLogo() {
             try {
-                const res = await fetch(DB_BASE + "vendas.json");
-                const vendas = await res.json();
-                if (!vendas) return;
-
-                dadosVendasLocal = vendas; // Armazena para reimpressão
-                const hoje = new Date().toLocaleDateString('pt-BR');
-                const idsDoDia = Object.keys(vendas).filter(id => vendas[id].dataLocal === hoje);
-                
-                let novoPedido = false;
-                for (let id of idsDoDia) {
-                    if (!pedidosImpressosLocal.includes(id)) {
-                        novoPedido = true;
-                        if (PODE_IMPRIMIR) await imprimir(id, vendas[id]);
-                        pedidosImpressosLocal.push(id);
-                        localStorage.setItem('pedidos_impressos', JSON.stringify(pedidosImpressosLocal));
-                    }
+                const res = await fetch(DB_BASE + "configuracao/logo.json");
+                const logo = await res.json();
+                if(logo) {
+                    document.getElementById('img-logo').src = logo;
+                    document.getElementById('img-logo').classList.remove('hidden');
+                    document.getElementById('placeholder-logo').classList.add('hidden');
                 }
-                if(novoPedido) document.getElementById('som-alerta').play().catch(() => {});
-                renderizarFila(vendas, idsDoDia);
-                
-                if (!document.getElementById('aba-estoque').classList.contains('hidden')) carregarEstoque();
-            } catch (e) { console.error(e); }
+            } catch(e) {}
         }
 
-        function renderizarFila(vendas, ids) {
-            const container = document.getElementById('lista-pedidos');
-            const listaOrdenada = ids.sort((a, b) => {
-                const ordem = { "pendente": 1, "preparo": 2, "pronto": 3 };
-                return (ordem[vendas[a].status] || 1) - (ordem[vendas[b].status] || 1);
-            });
-
-            container.innerHTML = listaOrdenada.map(id => {
-                const v = vendas[id];
-                const status = v.status || "pendente";
-                const corStatus = status === "pronto" ? "status-pronto" : (status === "preparo" ? "status-preparo" : "status-pendente");
+        async function loadMenu() {
+            try {
+                const [resProd, resCat] = await Promise.all([
+                    fetch(DB_BASE + "produtos.json"),
+                    fetch(DB_BASE + "categorias.json")
+                ]);
                 
-                return `
-                    <div class="bg-white p-6 rounded-[2rem] shadow-md ${corStatus}">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <span class="bg-zinc-900 text-white px-3 py-1 rounded-lg font-black text-xs">#${id.slice(-4)}</span>
-                                <p class="text-[9px] font-black uppercase text-amber-600 mt-2">${status}</p>
+                const dataProd = await resProd.json();
+                const categoriasOrder = await resCat.json() || [];
+                
+                if(!dataProd) return;
+
+                // Transforma em array e já filtra por Disponibilidade e Pausa
+                produtosLocal = Object.keys(dataProd).map(key => ({ id: key, ...dataProd[key], qty: 0 }))
+                    .filter(p => {
+                        const naoPausado = p.pausado !== true;
+                        // Regra: Se "dias" estiver vazio, disponível todo dia. Se tiver algo, confere se hoje está incluso.
+                        const disponivelHoje = !p.dias || p.dias.length === 0 || p.dias.includes(diaHoje);
+                        return naoPausado && disponivelHoje;
+                    });
+
+                let html = "";
+
+                // Percorre as categorias cadastradas no admin para manter a ordem
+                categoriasOrder.forEach(catNome => {
+                    const itensDaCategoria = produtosLocal.filter(p => p.categoria === catNome);
+                    
+                    if(itensDaCategoria.length > 0) {
+                        html += `
+                        <div class="mb-10">
+                            <h2 class="text-[11px] font-black uppercase text-[#d97706] tracking-[3px] mb-6 flex items-center gap-4">
+                                ${catNome} <span class="h-[1px] bg-zinc-200 flex-1"></span>
+                            </h2>
+                            <div class="grid gap-4">
+                                ${itensDaCategoria.map(p => `
+                                    <div class="bg-white p-4 rounded-[1.8rem] shadow-sm border border-zinc-100 flex items-center gap-4">
+                                        <img src="${p.img}" class="w-20 h-20 object-cover rounded-2xl shadow-inner bg-zinc-50">
+                                        <div class="flex-1">
+                                            <h3 class="font-bold text-sm text-[#4b2c20] leading-tight mb-1">${p.nome}</h3>
+                                            <p class="text-[10px] text-zinc-400 mb-2 line-clamp-1">${p.descricao || ''}</p>
+                                            <span class="text-[#22c55e] font-black text-sm">R$ ${(p.precoPromo || p.preco).toFixed(2)}</span>
+                                        </div>
+                                        <div class="flex items-center gap-2 bg-zinc-50 p-1 rounded-2xl border border-zinc-100">
+                                            <button onclick="updateQty('${p.id}', -1)" class="w-8 h-8 font-black text-zinc-300">-</button>
+                                            <span id="qty-${p.id}" class="font-black text-xs w-4 text-center">0</span>
+                                            <button onclick="updateQty('${p.id}', 1)" class="w-8 h-8 font-black text-[#d97706]">+</button>
+                                        </div>
+                                    </div>
+                                `).join('')}
                             </div>
-                            <button onclick="reimprimir('${id}')" class="bg-zinc-100 hover:bg-zinc-200 p-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-1 transition-all">
-                                🖨️ Re-imprimir
-                            </button>
-                        </div>
-                        
-                        <h2 class="text-xl font-black text-zinc-800 uppercase">${v.cliente}</h2>
-                        <p class="text-[10px] font-bold text-zinc-400 mb-4 tracking-widest">${v.tipoEntrega === 'entrega' ? '🚚 ENTREGA' : '🛍️ RETIRADA'}</p>
-                        
-                        <div class="space-y-2 mb-6 border-y border-zinc-50 py-4">
-                            ${v.itens.map(i => `<div class="flex justify-between text-sm font-bold text-zinc-700"><span>${i.qty}x ${i.nome}</span></div>`).join('')}
-                        </div>
+                        </div>`;
+                    }
+                });
 
-                        ${v.troco ? `<div class="mb-4 p-3 bg-amber-50 rounded-xl border border-amber-100 text-[10px] font-black text-amber-800">💸 LEVAR TROCO PARA R$ ${v.troco}</div>` : ''}
-
-                        <div class="grid grid-cols-2 gap-2">
-                            <button onclick="atualizarStatus('${id}', 'preparo')" class="py-4 rounded-2xl font-black text-[10px] uppercase bg-blue-100 text-blue-700">👨‍🍳 Preparar</button>
-                            <button onclick="atualizarStatus('${id}', 'pronto')" class="py-4 rounded-2xl font-black text-[10px] uppercase bg-green-600 text-white">✅ Pronto</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+                document.getElementById('categorias-container').innerHTML = html || '<p class="text-center text-zinc-400 font-bold py-10">Nenhum produto disponível hoje.</p>';
+            } catch(e) { console.error("Erro ao carregar cardápio:", e); }
         }
 
-        async function carregarEstoque() {
-            const res = await fetch(DB_BASE + "produtos.json");
-            const prods = await res.json();
-            const list = document.getElementById('lista-gestao-estoque');
-            if(!prods) return;
-
-            list.innerHTML = Object.keys(prods).map(id => {
-                const p = prods[id];
-                const isPausado = p.pausado === true;
-                return `
-                    <div class="flex justify-between items-center p-4 bg-zinc-50 rounded-2xl border ${isPausado ? 'border-red-100 bg-red-50' : 'border-zinc-100'}">
-                        <div class="flex items-center gap-3 text-left">
-                            <img src="${p.img}" class="w-10 h-10 object-cover rounded-lg ${isPausado ? 'grayscale' : ''}">
-                            <span class="text-xs font-black uppercase ${isPausado ? 'text-red-400' : 'text-zinc-700'}">${p.nome}</span>
-                        </div>
-                        <button onclick="toggleEstoque('${id}', ${isPausado})" class="px-5 py-2 rounded-xl font-black text-[9px] uppercase transition-all ${isPausado ? 'bg-green-600 text-white' : 'bg-red-500 text-white'}">
-                            ${isPausado ? 'Ativar' : 'Pausar'}
-                        </button>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        async function toggleEstoque(id, statusAtual) {
-            await fetch(`${DB_BASE}produtos/${id}/pausado.json`, { method: 'PUT', body: JSON.stringify(!statusAtual) });
-            carregarEstoque();
-        }
-
-        async function atualizarStatus(id, novoStatus) {
-            await fetch(`${DB_BASE}vendas/${id}/status.json`, { method: 'PUT', body: JSON.stringify(novoStatus) });
-            monitorar();
-        }
-
-        function reimprimir(id) {
-            const pedido = dadosVendasLocal[id];
-            if(pedido) imprimir(id, pedido);
-        }
-
-        async function imprimir(id, v) {
-            const num = id.slice(-4);
-            const area = document.getElementById('secao-impressao');
-            const subtotal = v.itens.reduce((acc, i) => acc + (i.preco * i.qty), 0);
+        function updateQty(id, delta) {
+            const p = produtosLocal.find(x => x.id === id);
+            if(!p) return;
+            p.qty = Math.max(0, p.qty + delta);
+            document.getElementById(`qty-${id}`).innerText = p.qty;
             
-            area.innerHTML = `
-                <div class="quebra-pagina">
-                    <center><h2>POINT DO CAFÉ</h2><p>COZINHA - PEDIDO #${num}</p></center><hr>
-                    <b>CLIENTE: ${v.cliente}</b><br>
-                    TIPO: ${v.tipoEntrega === 'entrega' ? 'ENTREGA' : 'RETIRADA'}<br><hr>
-                    ${v.itens.map(i => `<b>${i.qty}x</b> ${i.nome}`).join('<br>')}<hr>
-                    ${v.obs ? `OBS: ${v.obs}` : ''}
-                </div>
-                <div>
-                    <center><h2>POINT DO CAFÉ</h2><p>ENTREGA/CLIENTE - #${num}</p></center><hr>
-                    CLIENTE: ${v.cliente}<br>
-                    PGTO: ${v.pagamento}<br>
-                    END: ${v.endereco || 'Retirada'}<br>
-                    ${v.troco ? `<b>TROCO PARA: R$ ${v.troco}</b><br>` : ''}<hr>
-                    <b>TOTAL: R$ ${v.total.toFixed(2)}</b>
-                </div>
-            `;
-            window.print();
-        }
-
-        function mudarAba(abaId) {
-            document.querySelectorAll('.aba-atendimento').forEach(a => a.classList.add('hidden'));
-            document.getElementById(abaId).classList.remove('hidden');
+            const totalItens = produtosLocal.reduce((acc, x) => acc + x.qty, 0);
+            const totalValor = produtosLocal.reduce((acc, x) => acc + (x.qty * (x.precoPromo || x.preco)), 0);
             
-            const btnFila = document.getElementById('btn-fila');
-            const btnEstoque = document.getElementById('btn-estoque');
-
-            if(abaId === 'aba-estoque') {
-                btnEstoque.className = "flex-1 py-4 rounded-xl font-black uppercase text-[10px] bg-zinc-800 text-white transition-all";
-                btnFila.className = "flex-1 py-4 rounded-xl font-black uppercase text-[10px] text-zinc-500 transition-all";
-                carregarEstoque();
+            const bar = document.getElementById('cart-bar');
+            if(totalItens > 0) {
+                bar.classList.remove('hidden');
+                document.getElementById('cart-count').innerText = totalItens;
+                document.getElementById('cart-total-bar').innerText = `R$ ${totalValor.toFixed(2)}`;
             } else {
-                btnFila.className = "flex-1 py-4 rounded-xl font-black uppercase text-[10px] bg-zinc-800 text-white transition-all";
-                btnEstoque.className = "flex-1 py-4 rounded-xl font-black uppercase text-[10px] text-zinc-500 transition-all";
+                bar.classList.add('hidden');
             }
         }
 
-        inicializar();
+        function irParaCheckout() {
+            document.getElementById('etapa-cardapio').classList.add('hidden');
+            document.getElementById('cart-bar').classList.add('hidden');
+            document.getElementById('etapa-checkout').classList.remove('hidden');
+            recalcularResumo();
+            window.scrollTo(0,0);
+        }
+
+        function voltarParaCardapio() {
+            document.getElementById('etapa-checkout').classList.add('hidden');
+            document.getElementById('etapa-cardapio').classList.remove('hidden');
+            document.getElementById('cart-bar').classList.remove('hidden');
+        }
+
+        function recalcularResumo() {
+            const subtotal = produtosLocal.reduce((acc, x) => acc + (x.qty * (x.precoPromo || x.preco)), 0);
+            const tipoEntrega = document.getElementById('c-entrega').value;
+            const taxa = tipoEntrega === 'entrega' ? 5.00 : 0.00;
+            const total = subtotal + taxa;
+
+            document.getElementById('resumo-total').innerText = `R$ ${total.toFixed(2)}`;
+            document.getElementById('div-endereco').classList.toggle('hidden', tipoEntrega !== 'entrega');
+        }
+
+        function verificarTroco() {
+            const pgto = document.getElementById('c-pgto').value;
+            document.getElementById('div-troco').classList.toggle('hidden', pgto !== 'Dinheiro');
+        }
+
+        async function confirmarPedidoFinal() {
+            const nome = document.getElementById('c-nome').value;
+            if(!nome) return alert("Por favor, informe seu nome!");
+
+            const idVenda = Date.now();
+            const itensSelecionados = produtosLocal.filter(p => p.qty > 0).map(p => ({
+                nome: p.nome,
+                qty: p.qty,
+                preco: (p.precoPromo || p.preco)
+            }));
+
+            const subtotal = itensSelecionados.reduce((acc, i) => acc + (i.preco * i.qty), 0);
+            const tipoEntrega = document.getElementById('c-entrega').value;
+            const total = tipoEntrega === 'entrega' ? subtotal + 5.00 : subtotal;
+
+            const pedido = {
+                cliente: nome,
+                endereco: document.getElementById('c-endereco').value || 'Retirada',
+                pagamento: document.getElementById('c-pgto').value,
+                troco: document.getElementById('c-troco').value || null,
+                tipoEntrega: tipoEntrega,
+                obs: document.getElementById('c-obs').value,
+                total: total,
+                status: "pendente",
+                dataLocal: new Date().toLocaleDateString('pt-BR'),
+                itens: itensSelecionados
+            };
+
+            await fetch(`${DB_BASE}vendas/${idVenda}.json`, { method: 'PUT', body: JSON.stringify(pedido) });
+            window.location.href = `status.html?id=${idVenda}`;
+        }
+
+        init();
     </script>
 </body>
 </html>
