@@ -19,20 +19,15 @@
         .status-preparo { border-left: 10px solid #3b82f6; }
         .status-pronto { border-left: 10px solid #10b981; opacity: 0.7; }
         
-        /* Cores dos tipos de entrega/consumo */
         .tipo-loja { border-top: 8px solid #3b82f6; }
         .tipo-entrega { border-top: 8px solid #ef4444; }
         .tipo-marmita { border-top: 8px solid #10b981; }
 
-        /* Animação para pedidos atrasados */
         @keyframes piscarAlerta {
             0%, 100% { background-color: #ffffff; border-right: 0px solid transparent; }
             50% { background-color: #fee2e2; border-right: 10px solid #ef4444; }
         }
-        .pedido-atrasado {
-            animation: piscarAlerta 1.5s infinite;
-        }
-
+        .pedido-atrasado { animation: piscarAlerta 1.5s infinite; }
         .hidden { display: none; }
     </style>
 </head>
@@ -42,7 +37,6 @@
         ⬅️ Central
     </a>
 
-    <!-- Alertas Sonoros -->
     <audio id="som-alerta" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
     <audio id="som-atraso" src="https://assets.mixkit.co/active_storage/sfx/911/911-preview.mp3" preload="auto" loop></audio>
 
@@ -51,18 +45,16 @@
         <div id="badge-impressao" class="mt-2"></div>
     </header>
 
-    <!-- LEGENDA DO SISTEMA -->
+    <!-- LEGENDA -->
     <section class="max-w-2xl mx-auto mb-6 bg-white p-4 rounded-2xl shadow-sm border border-zinc-200 text-[11px] font-bold text-zinc-600">
         <p class="text-center text-[10px] uppercase tracking-wider text-zinc-400 mb-3 font-black">Legenda do Terminal</p>
         <div class="grid grid-cols-2 gap-4">
-            <!-- Tipos -->
             <div class="space-y-1.5 border-r border-zinc-100 pr-2">
                 <span class="block text-[9px] uppercase text-zinc-400 font-black">Destino do Pedido:</span>
                 <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-blue-500 block"></span> Comer na Loja</div>
                 <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-red-500 block"></span> Entrega (Motoboy)</div>
                 <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-green-500 block"></span> Marmita</div>
             </div>
-            <!-- Tempos -->
             <div class="space-y-1.5 pl-2">
                 <span class="block text-[9px] uppercase text-zinc-400 font-black">Tempo de Espera:</span>
                 <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-green-100 border border-green-400 block"></span> Normal (Até 20 min)</div>
@@ -72,18 +64,22 @@
         </div>
     </section>
 
+    <!-- ABAS -->
     <div class="max-w-2xl mx-auto mb-6 flex bg-white rounded-2xl p-1 shadow-sm border border-zinc-200">
         <button onclick="mudarAba('aba-fila')" id="btn-fila" class="flex-1 py-3 rounded-xl font-black uppercase text-[10px] bg-zinc-800 text-white">📋 Fila de Pedidos</button>
         <button onclick="mudarAba('aba-estoque')" id="btn-estoque" class="flex-1 py-3 rounded-xl font-black uppercase text-[10px] text-zinc-500">🚫 Gestão Estoque</button>
     </div>
 
+    <!-- ABA FILA -->
     <div id="aba-fila" class="aba-atendimento">
         <main id="lista-pedidos" class="max-w-2xl mx-auto space-y-4 pb-20"></main>
     </div>
 
+    <!-- ABA ESTOQUE -->
     <div id="aba-estoque" class="aba-atendimento hidden">
-        <div class="max-w-2xl mx-auto bg-white p-6 rounded-3xl shadow-sm">
-            <div id="lista-gestao-estoque" class="space-y-3"></div>
+        <div class="max-w-2xl mx-auto bg-white p-6 rounded-3xl shadow-sm border border-zinc-200">
+            <h2 class="text-lg font-black text-zinc-800 uppercase mb-4 tracking-tight">Disponibilidade de Itens</h2>
+            <div id="lista-gestao-estoque" class="space-y-3 divide-y divide-zinc-100"></div>
         </div>
     </div>
 
@@ -96,6 +92,7 @@
 
         let pedidosImpressosLocal = JSON.parse(localStorage.getItem('pedidos_impressos')) || [];
         let alarmesSilenciados = [];
+        let abaAtiva = 'aba-fila';
 
         function inicializar() {
             const badge = document.getElementById('badge-impressao');
@@ -103,35 +100,43 @@
                 ? '<span class="bg-green-600 text-white text-[10px] px-4 py-1 rounded-full font-black">🖨️ IMPRESSÃO ATIVA</span>' 
                 : '<span class="bg-zinc-400 text-white text-[10px] px-4 py-1 rounded-full font-black">👁️ APENAS TELA</span>';
             
-            monitorar();
-            // Atualiza a cada 5 segundos para manter os cronômetros precisos na tela
-            setInterval(monitorar, 5000); 
+            sincronizarDados();
+            setInterval(sincronizarDados, 5000); 
         }
 
-        async function monitorar() {
+        // Concentra as chamadas de atualização do Firebase
+        async function sincronizarDados() {
+            if (abaAtiva === 'aba-fila') {
+                await monitorarPedidos();
+            } else if (abaAtiva === 'aba-estoque') {
+                await monitorarEstoque();
+            }
+        }
+
+        /* --- LOGICA DE PEDIDOS --- */
+        async function monitorarPedidos() {
             try {
                 const res = await fetch(DB_BASE + "vendas.json");
                 const vendas = await res.json();
-                if (!vendas) return;
+                if (!vendas) {
+                    document.getElementById('lista-pedidos').innerHTML = '<p class="text-center text-zinc-400 text-xs py-8">Nenhum pedido hoje.</p>';
+                    return;
+                }
 
                 const hoje = new Date().toLocaleDateString('pt-BR');
                 const idsDoDia = Object.keys(vendas).filter(id => vendas[id].dataLocal === hoje);
                 
                 let novoPedido = false;
-
                 for (let id of idsDoDia) {
                     if (!pedidosImpressosLocal.includes(id)) {
                         novoPedido = true;
-                        if (PODE_IMPRIMIR) {
-                            await imprimir(id, vendas[id]);
-                        }
+                        if (PODE_IMPRIMIR) await imprimir(id, vendas[id]);
                         pedidosImpressosLocal.push(id);
                         localStorage.setItem('pedidos_impressos', JSON.stringify(pedidosImpressosLocal));
                     }
                 }
 
                 if(novoPedido) document.getElementById('som-alerta').play().catch(() => {});
-                
                 renderizarFila(vendas, idsDoDia);
             } catch (e) { console.error(e); }
         }
@@ -151,44 +156,29 @@
                 const status = v.status || "pendente";
                 const corStatus = status === "pronto" ? "status-pronto" : (status === "preparo" ? "status-preparo" : "status-pendente");
                 
-                // Configuração das Cores por Tipo
                 const tipo = (v.tipoEntrega || 'loja').toLowerCase();
                 let classeTipoCor = "tipo-loja";
                 let textoTipo = "📦 LOJA";
 
-                if (tipo === 'entrega') {
-                    classeTipoCor = "tipo-entrega";
-                    textoTipo = "🚚 ENTREGA";
-                } else if (tipo === 'marmita') {
-                    classeTipoCor = "tipo-marmita";
-                    textoTipo = "🍱 MARMITA";
-                }
+                if (tipo === 'entrega') { classeTipoCor = "tipo-entrega"; textoTipo = "🚚 ENTREGA"; }
+                else if (tipo === 'marmita') { classeTipoCor = "tipo-marmita"; textoTipo = "🍱 MARMITA"; }
 
-                // Cálculo Dinâmico do Temporizador/Cronômetro
-                let classeAtraso = "";
-                let badgeTempo = "";
+                let classeAtraso = ""; let badgeTempo = "";
 
                 if (status !== "pronto" && v.hora) {
                     const [horas, minutos] = v.hora.split(':');
                     const horaPedido = new Date();
                     horaPedido.setHours(parseInt(horas), parseInt(minutos), 0);
-
                     const diferencaMinutos = Math.floor((agora - horaPedido) / 60000);
 
-                    // Estilização baseada nas faixas de tempo da legenda
                     if (diferencaMinutos >= 40) {
                         classeAtraso = "pedido-atrasado";
                         badgeTempo = `<span class="bg-red-600 text-white text-[10px] px-2.5 py-1 rounded-md font-black animate-pulse">⏰ CRÍTICO: ${diferencaMinutos} MIN</span>`;
-                        
-                        if (!alarmesSilenciados.includes(id)) {
-                            algumPedidoEstourado = true;
-                        }
+                        if (!alarmesSilenciados.includes(id)) algumPedidoEstourado = true;
                     } else if (diferencaMinutos >= 21) {
                         badgeTempo = `<span class="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] px-2.5 py-1 rounded-md font-black">⏱️ ATENÇÃO: ${diferencaMinutos} MIN</span>`;
                     } else {
-                        // Evita exibir valores negativos caso o relógio do servidor/cliente divirjam por segundos
-                        const minExibidos = diferencaMinutos < 0 ? 0 : diferencaMinutos;
-                        badgeTempo = `<span class="bg-green-100 text-green-800 border border-green-300 text-[10px] px-2.5 py-1 rounded-md font-black">⏱️ Há ${minExibidos} min</span>`;
+                        badgeTempo = `<span class="bg-green-100 text-green-800 border border-green-300 text-[10px] px-2.5 py-1 rounded-md font-black">⏱️ Há ${diferencaMinutos < 0 ? 0 : diferencaMinutos} min</span>`;
                     }
                 } else if (status === "pronto") {
                     badgeTempo = `<span class="bg-zinc-100 text-zinc-500 text-[10px] px-2.5 py-1 rounded-md font-bold">✓ Concluído</span>`;
@@ -203,24 +193,19 @@
                                 <span class="text-[10px] font-bold uppercase ${status === 'pronto' ? 'text-green-600' : 'text-amber-600'}">${status}</span>
                             </div>
                         </div>
-                        
                         <div class="flex justify-between items-start mb-2">
                             <h2 class="text-xl font-black text-zinc-800 uppercase">${v.cliente}</h2>
                             <span class="text-xs font-black px-2 py-1 rounded bg-zinc-100 text-zinc-800">${textoTipo}</span>
                         </div>
-                        
                         <p class="text-xs text-zinc-400 mb-4">Entrada: ${v.hora || '--:--'}</p>
-                        
                         <div class="space-y-2 mb-6">
                             ${v.itens.map(i => `<div class="flex justify-between border-b border-zinc-100 pb-1 font-medium"><span>${i.qty}x ${i.nome}</span></div>`).join('')}
                         </div>
-
                         ${v.troco ? `<div class="mb-4 p-3 bg-amber-50 rounded-xl border border-amber-100 text-xs font-bold text-amber-800">💸 LEVAR TROCO PARA R$ ${parseFloat(v.troco).toFixed(2)}</div>` : ''}
-
                         <div class="grid grid-cols-2 gap-2">
-                            ${classeAtraso ? `<button onclick="silenciarAlarmePedido('${id}')" class="col-span-2 py-2 rounded-xl font-bold text-[10px] uppercase bg-zinc-200 text-zinc-700 hover:bg-zinc-300 transition-colors">🔕 Silenciar Alarme</button>` : ''}
-                            <button onclick="atualizarStatus('${id}', 'preparo')" class="py-3 rounded-xl font-black text-[10px] uppercase bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors">👨‍🍳 Preparar</button>
-                            <button onclick="atualizarStatus('${id}', 'pronto')" class="py-3 rounded-xl font-black text-[10px] uppercase bg-green-600 text-white hover:bg-green-700 transition-colors">✅ Pronto</button>
+                            ${classeAtraso ? `<button onclick="silenciarAlarmePedido('${id}')" class="col-span-2 py-2 rounded-xl font-bold text-[10px] uppercase bg-zinc-200 text-zinc-700 hover:bg-zinc-300">🔕 Silenciar Alarme</button>` : ''}
+                            <button onclick="atualizarStatus('${id}', 'preparo')" class="py-3 rounded-xl font-black text-[10px] uppercase bg-blue-100 text-blue-700">👨‍🍳 Preparar</button>
+                            <button onclick="atualizarStatus('${id}', 'pronto')" class="py-3 rounded-xl font-black text-[10px] uppercase bg-green-600 text-white">✅ Pronto</button>
                         </div>
                     </div>
                 `;
@@ -228,36 +213,86 @@
 
             container.innerHTML = html;
 
-            // Gerenciador do Alarme Sonoro de Atraso Geral
             const somAtraso = document.getElementById('som-atraso');
-            if (algumPedidoEstourado) {
-                somAtraso.play().catch(() => {});
-            } else {
-                somAtraso.pause();
-                somAtraso.currentTime = 0;
-            }
+            if (algumPedidoEstourado) somAtraso.play().catch(() => {});
+            else { somAtraso.pause(); somAtraso.currentTime = 0; }
         }
 
         function silenciarAlarmePedido(id) {
-            if (!alarmesSilenciados.includes(id)) {
-                alarmesSilenciados.push(id);
-                monitorar(); 
-            }
+            if (!alarmesSilenciados.includes(id)) { alarmesSilenciados.push(id); monitorarPedidos(); }
         }
 
         async function atualizarStatus(id, novoStatus) {
-            await fetch(`${DB_BASE}vendas/${id}/status.json`, {
-                method: 'PUT',
-                body: JSON.stringify(novoStatus)
-            });
-            
-            if (novoStatus === 'pronto') {
-                alarmesSilenciados = alarmesSilenciados.filter(item => item !== id);
-            }
-
-            monitorar();
+            await fetch(`${DB_BASE}vendas/${id}/status.json`, { method: 'PUT', body: JSON.stringify(novoStatus) });
+            if (novoStatus === 'pronto') alarmesSilenciados = alarmesSilenciados.filter(item => item !== id);
+            monitorarPedidos();
         }
 
+        /* --- LÓGICA DA GESTÃO DE ESTOQUE --- */
+        async function monitorarEstoque() {
+            try {
+                const res = await fetch(DB_BASE + "produtos.json");
+                const produtos = await res.json();
+                if (!produtos) {
+                    document.getElementById('lista-gestao-estoque').innerHTML = '<p class="text-zinc-400 text-xs text-center py-4">Nenhum produto cadastrado no banco.</p>';
+                    return;
+                }
+                renderizarEstoque(produtos);
+            } catch (e) { console.error("Erro ao carregar estoque:", e); }
+        }
+
+        function renderizarEstoque(produtos) {
+            const container = document.getElementById('lista-gestao-estoque');
+            const diasSemana = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"];
+            const hojeIndex = new Date().getDay();
+            const diaAtualNome = diasSemana[hojeIndex]; // Identifica o dia de hoje
+
+            let html = Object.keys(produtos).map(id => {
+                const prod = produtos[id];
+                
+                // Trata a propriedade de disponibilidade. Se não existir, assume disponível.
+                const disponivel = prod.disponivel !== false;
+                
+                // Validação de dias de disponibilidade (Ex: se prod.dias for ["segunda", "quarta"])
+                // Se o produto não tiver restrição de dias, assume que está disponível sempre.
+                const disponivelNoDia = prod.dias ? prod.dias.includes(diaAtualNome) : true;
+
+                return `
+                    <div class="flex items-center justify-between py-3 ${!disponivelNoDia ? 'opacity-40' : ''}">
+                        <div>
+                            <h3 class="font-bold text-zinc-800 text-sm uppercase">${prod.nome}</h3>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="text-[10px] font-medium text-zinc-400">R$ ${parseFloat(prod.preco || 0).toFixed(2)}</span>
+                                ${!disponivelNoDia ? `<span class="bg-zinc-200 text-zinc-700 text-[9px] px-1.5 py-0.5 rounded font-bold">Fora do dia de venda</span>` : ''}
+                            </div>
+                        </div>
+                        
+                        <button 
+                            onclick="alternarDisponibilidade('${id}', ${disponivel})" 
+                            class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors ${
+                                disponivel 
+                                ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                                : 'bg-red-100 text-red-700 hover:bg-red-200'
+                            }">
+                            ${disponivel ? '🟢 Disponível' : '🔴 Indisponível'}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = html;
+        }
+
+        async function alternarDisponibilidade(id, statusAtual) {
+            // Inverte o estado atual no Firebase
+            await fetch(`${DB_BASE}produtos/${id}/disponivel.json`, {
+                method: 'PUT',
+                body: JSON.stringify(!statusAtual)
+            });
+            monitorarEstoque();
+        }
+
+        /* --- IMPRESSÃO E ABAS --- */
         async function imprimir(id, v) {
             const num = id.slice(-4);
             const area = document.getElementById('secao-impressao');
@@ -265,42 +300,24 @@
             
             area.innerHTML = `
                 <div class="quebra-pagina">
-                    <center>
-                        <h2 style="margin:0">POINT DO CAFÉ</h2>
-                        <p>COZINHA - PEDIDO #${num}</p>
-                    </center>
-                    <hr>
-                    <b>CLIENTE: ${v.cliente}</b><br>
-                    TIPO: ${(v.tipoEntrega || 'LOJA').toUpperCase()}<br>
-                    <hr>
+                    <center><h2>POINT DO CAFÉ</h2><p>COZINHA - PEDIDO #${num}</p></center><hr>
+                    <b>CLIENTE: ${v.cliente}</b><br>TIPO: ${(v.tipoEntrega || 'LOJA').toUpperCase()}<br><hr>
                     ${v.itens.map(i => `<b>${i.qty}x</b> ${i.nome}`).join('<br>')}
-                    <hr>
-                    ${v.obs ? `OBS: ${v.obs}<br>` : ''}
-                </div>
-                <div>
-                    <center>
-                        <h2 style="margin:0">POINT DO CAFÉ</h2>
-                        <p>ENTREGA/CLIENTE - #${num}</p>
-                    </center>
-                    <hr>
-                    CLIENTE: ${v.cliente}<br>
-                    ENDEREÇO: ${v.endereco || 'N/A'}<br>
-                    PGTO: ${v.pagamento}<br>
-                    ${v.troco ? `<b>TROCO PARA: R$ ${v.troco}</b><br>` : ''}
-                    <hr>
-                    VALOR PROD: R$ ${subtotal.toFixed(2)}<br>
-                    TAXA ENTREGA: ${v.tipoEntrega === 'entrega' ? 'R$ 5.00' : 'R$ 0.00'}<br>
-                    <b>TOTAL: R$ ${v.total.toFixed(2)}</b>
+                    <hr>${v.obs ? `OBS: ${v.obs}<br>` : ''}
                 </div>
             `;
             window.print();
         }
 
         function mudarAba(id) {
+            abaAtiva = id;
             document.querySelectorAll('.aba-atendimento').forEach(a => a.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
+            
             document.getElementById('btn-fila').className = id === 'aba-fila' ? 'flex-1 py-3 rounded-xl font-black uppercase text-[10px] bg-zinc-800 text-white' : 'flex-1 py-3 rounded-xl font-black uppercase text-[10px] text-zinc-500';
             document.getElementById('btn-estoque').className = id === 'aba-estoque' ? 'flex-1 py-3 rounded-xl font-black uppercase text-[10px] bg-zinc-800 text-white' : 'flex-1 py-3 rounded-xl font-black uppercase text-[10px] text-zinc-500';
+            
+            sincronizarDados();
         }
 
         inicializar();
