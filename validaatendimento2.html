@@ -18,6 +18,21 @@
         .status-pendente { border-left: 10px solid #f59e0b; }
         .status-preparo { border-left: 10px solid #3b82f6; }
         .status-pronto { border-left: 10px solid #10b981; opacity: 0.7; }
+        
+        /* Cores dos tipos de entrega/consumo */
+        .tipo-loja { border-top: 8px solid #3b82f6; }
+        .tipo-entrega { border-top: 8px solid #ef4444; }
+        .tipo-marmita { border-top: 8px solid #10b981; }
+
+        /* Animação para pedidos atrasados */
+        @keyframes piscarAlerta {
+            0%, 100% { background-color: #ffffff; border-right: 0px solid transparent; }
+            50% { background-color: #fee2e2; border-right: 10px solid #ef4444; }
+        }
+        .pedido-atrasado {
+            animation: piscarAlerta 1.5s infinite;
+        }
+
         .hidden { display: none; }
     </style>
 </head>
@@ -27,7 +42,10 @@
         ⬅️ Central
     </a>
 
+    <!-- Áudio de novos pedidos -->
     <audio id="som-alerta" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+    <!-- Áudio de estouro de tempo (Alarme repetitivo) -->
+    <audio id="som-atraso" src="https://assets.mixkit.co/active_storage/sfx/911/911-preview.mp3" preload="auto" loop></audio>
 
     <header class="max-w-2xl mx-auto text-center mb-6 mt-12">
         <h1 class="text-3xl font-black text-zinc-900 uppercase italic">Cozinha & Entrega</h1>
@@ -57,6 +75,7 @@
         const PODE_IMPRIMIR = urlParams.get('print') === 'true';
 
         let pedidosImpressosLocal = JSON.parse(localStorage.getItem('pedidos_impressos')) || [];
+        let alarmesSilenciados = [];
 
         function inicializar() {
             const badge = document.getElementById('badge-impressao');
@@ -65,7 +84,8 @@
                 : '<span class="bg-zinc-400 text-white text-[10px] px-4 py-1 rounded-full font-black">👁️ APENAS TELA</span>';
             
             monitorar();
-            setInterval(monitorar, 10000);
+            // Reduzido para 5 segundos para atualizar o contador de minutos mais frequentemente na tela
+            setInterval(monitorar, 5000); 
         }
 
         async function monitorar() {
@@ -103,19 +123,71 @@
                 return ordem[vendas[a].status || "pendente"] - ordem[vendas[b].status || "pendente"];
             });
 
-            container.innerHTML = listaOrdenada.map(id => {
+            let algumPedidoEstourado = false;
+            const agora = new Date();
+
+            const html = listaOrdenada.map(id => {
                 const v = vendas[id];
                 const status = v.status || "pendente";
+                
+                // 1. Definição da cor do Status lateral
                 const corStatus = status === "pronto" ? "status-pronto" : (status === "preparo" ? "status-preparo" : "status-pendente");
                 
+                // 2. Definição da cor por Tipo de Pedido (Borda Superior)
+                // Espera valores como: 'loja', 'entrega', 'marmita' em v.tipoEntrega ou v.tipoPedido
+                const tipo = (v.tipoEntrega || 'loja').toLowerCase();
+                let classeTipoCor = "tipo-loja";
+                let textoTipo = "📦 LOJA";
+
+                if (tipo === 'entrega') {
+                    classeTipoCor = "tipo-entrega";
+                    textoTipo = "🚚 ENTREGA";
+                } else if (tipo === 'marmita') {
+                    classeTipoCor = "tipo-marmita";
+                    textoTipo = "🍱 MARMITA";
+                }
+
+                // 3. Cálculo do Temporizador de 40 Minutos
+                let classeAtraso = "";
+                let badgeTempo = "";
+
+                if (status !== "pronto" && v.hora) {
+                    const [horas, minutos] = v.hora.split(':');
+                    const horaPedido = new Date();
+                    horaPedido.setHours(parseInt(horas), parseInt(minutos), 0);
+
+                    // Diferença em minutos
+                    const diferencaMinutos = Math.floor((agora - horaPedido) / 60000);
+
+                    if (diferencaMinutos >= 40) {
+                        classeAtraso = "pedido-atrasado";
+                        badgeTempo = `<span class="bg-red-600 text-white text-[10px] px-2 py-1 rounded font-black animate-pulse">⏰ ATRASADO (${diferencaMinutos} min)</span>`;
+                        
+                        // Verifica se este pedido específico não foi silenciado manualmente pelo usuário nesta sessão
+                        if (!alarmesSilenciados.includes(id)) {
+                            algumPedidoEstourado = true;
+                        }
+                    } else {
+                        badgeTempo = `<span class="bg-zinc-100 text-zinc-600 text-[10px] px-2 py-1 rounded font-bold">⏱️ ${diferencaMinutos} min decorridos</span>`;
+                    }
+                }
+
                 return `
-                    <div class="bg-white p-6 rounded-3xl shadow-md transition-all ${corStatus}">
+                    <div class="bg-white p-6 rounded-3xl shadow-md transition-all ${corStatus} ${classeTipoCor} ${classeAtraso}">
                         <div class="flex justify-between items-center mb-4">
                             <span class="bg-zinc-900 text-white px-3 py-1 rounded-lg font-black text-sm">#${id.slice(-4)}</span>
-                            <span class="text-[10px] font-bold uppercase ${status === 'pronto' ? 'text-green-600' : 'text-amber-600'}">${status}</span>
+                            <div class="flex items-center gap-2">
+                                ${badgeTempo}
+                                <span class="text-[10px] font-bold uppercase ${status === 'pronto' ? 'text-green-600' : 'text-amber-600'}">${status}</span>
+                            </div>
                         </div>
-                        <h2 class="text-xl font-black text-zinc-800 uppercase">${v.cliente}</h2>
-                        <p class="text-xs text-zinc-400 mb-4">${v.tipoEntrega === 'entrega' ? '🚚 ENTREGA' : '🛍️ RETIRADA'}</p>
+                        
+                        <div class="flex justify-between items-start mb-2">
+                            <h2 class="text-xl font-black text-zinc-800 uppercase">${v.cliente}</h2>
+                            <span class="text-xs font-black px-2 py-1 rounded bg-zinc-100 text-zinc-800">${textoTipo}</span>
+                        </div>
+                        
+                        <p class="text-xs text-zinc-400 mb-4">Horário do Pedido: ${v.hora || '--:--'}</p>
                         
                         <div class="space-y-2 mb-6">
                             ${v.itens.map(i => `<div class="flex justify-between border-b border-zinc-100 pb-1 font-medium"><span>${i.qty}x ${i.nome}</span></div>`).join('')}
@@ -124,12 +196,32 @@
                         ${v.troco ? `<div class="mb-4 p-3 bg-amber-50 rounded-xl border border-amber-100 text-xs font-bold text-amber-800">💸 LEVAR TROCO PARA R$ ${parseFloat(v.troco).toFixed(2)}</div>` : ''}
 
                         <div class="grid grid-cols-2 gap-2">
+                            ${classeAtraso ? `<button onclick="silenciarAlarmePedido('${id}')" class="col-span-2 py-2 rounded-xl font-bold text-[10px] uppercase bg-zinc-200 text-zinc-700 hover:bg-zinc-300">🔕 Silenciar Alarme deste Pedido</button>` : ''}
                             <button onclick="atualizarStatus('${id}', 'preparo')" class="py-3 rounded-xl font-black text-[10px] uppercase bg-blue-100 text-blue-700">👨‍🍳 Preparar</button>
                             <button onclick="atualizarStatus('${id}', 'pronto')" class="py-3 rounded-xl font-black text-[10px] uppercase bg-green-600 text-white">✅ Pronto</button>
                         </div>
                     </div>
                 `;
             }).join('');
+
+            container.innerHTML = html;
+
+            // Controle do áudio de atraso geral
+            const somAtraso = document.getElementById('som-atraso');
+            if (algumPedidoEstourado) {
+                somAtraso.play().catch(() => {});
+            } else {
+                somAtraso.pause();
+                somAtraso.currentTime = 0;
+            }
+        }
+
+        function silenciarAlarmePedido(id) {
+            if (!alarmesSilenciados.includes(id)) {
+                alarmesSilenciados.push(id);
+                // Força atualização da tela para parar o som imediatamente
+                monitorar(); 
+            }
         }
 
         async function atualizarStatus(id, novoStatus) {
@@ -137,6 +229,12 @@
                 method: 'PUT',
                 body: JSON.stringify(novoStatus)
             });
+            
+            // Se o pedido foi concluído, remove ele da lista de silenciados
+            if (novoStatus === 'pronto') {
+                alarmesSilenciados = alarmesSilenciados.filter(item => item !== id);
+            }
+
             monitorar();
         }
 
@@ -153,7 +251,7 @@
                     </center>
                     <hr>
                     <b>CLIENTE: ${v.cliente}</b><br>
-                    TIPO: ${v.tipoEntrega === 'entrega' ? 'ENTREGA' : 'RETIRADA'}<br>
+                    TIPO: ${(v.tipoEntrega || 'LOJA').toUpperCase()}<br>
                     <hr>
                     ${v.itens.map(i => `<b>${i.qty}x</b> ${i.nome}`).join('<br>')}
                     <hr>
@@ -171,7 +269,7 @@
                     ${v.troco ? `<b>TROCO PARA: R$ ${v.troco}</b><br>` : ''}
                     <hr>
                     VALOR PROD: R$ ${subtotal.toFixed(2)}<br>
-                    TAXA ENTREGA: R$ ${v.tipoEntrega === 'entrega' ? '5.00' : '0.00'}<br>
+                    TAXA ENTREGA: ${v.tipoEntrega === 'entrega' ? 'R$ 5.00' : 'R$ 0.00'}<br>
                     <b>TOTAL: R$ ${v.total.toFixed(2)}</b>
                 </div>
             `;
