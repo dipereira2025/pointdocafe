@@ -52,7 +52,7 @@
                 <input type="text" id="c-nome" placeholder="Seu Nome" class="w-full p-5 bg-zinc-100 rounded-2xl outline-none font-bold">
                 <select id="c-entrega" onchange="recalcularResumo()" class="w-full p-5 bg-zinc-100 rounded-2xl outline-none font-bold text-[#d97706]">
                     <option value="retirada">🛍️ Vou retirar no local (Grátis)</option>
-                    <option value="entrega">🚚 Quero Entrega (+ R$ 5,00)</option>
+                    <option value="entrega">🚚 Quero Entrega (+ R$ 7,00)</option>
                 </select>
                 <div id="div-endereco" class="hidden">
                     <input type="text" id="c-endereco" placeholder="Endereço Completo" class="w-full p-5 bg-zinc-100 rounded-2xl outline-none">
@@ -116,7 +116,6 @@
                 produtosLocal = Object.keys(dataProd).map(key => ({ id: key, ...dataProd[key], qty: 0 }))
                     .filter(p => {
                         const naoPausado = p.pausado !== true;
-                        // Regra: Se "dias" estiver vazio, disponível todo dia. Se tiver algo, confere se hoje está incluso.
                         const disponivelHoje = !p.dias || p.dias.length === 0 || p.dias.includes(diaHoje);
                         return naoPausado && disponivelHoje;
                     });
@@ -219,7 +218,8 @@
 
             const subtotal = itensSelecionados.reduce((acc, i) => acc + (i.preco * i.qty), 0);
             const tipoEntrega = document.getElementById('c-entrega').value;
-            const total = tipoEntrega === 'entrega' ? subtotal + 5.00 : subtotal;
+            const taxa = tipoEntrega === 'entrega' ? 5.00 : 0.00;
+            const total = subtotal + taxa;
 
             const pedido = {
                 cliente: nome,
@@ -234,7 +234,47 @@
                 itens: itensSelecionados
             };
 
+            // 1. Salva no banco de dados (Firebase)
             await fetch(`${DB_BASE}vendas/${idVenda}.json`, { method: 'PUT', body: JSON.stringify(pedido) });
+
+            // 2. Monta o texto do resumo estruturado para o WhatsApp
+            let textoWhats = `*☕ NOVO PEDIDO - Point do Café*\n`;
+            textoWhats += `*Pedido Nº:* ${idVenda}\n`;
+            textoWhats += `-----------------------------------\n\n`;
+            textoWhats += `👤 *Cliente:* ${pedido.cliente}\n\n`;
+            
+            textoWhats += `🛒 *Itens do Pedido:*\n`;
+            pedido.itens.forEach(item => {
+                textoWhats += `• ${item.qty}x ${item.nome} (R$ ${(item.preco * item.qty).toFixed(2)})\n`;
+            });
+            textoWhats += `\n`;
+
+            textoWhats += `📦 *Forma de Entrega:* ${pedido.tipoEntrega === 'entrega' ? '🚚 Entrega' : '🛍️ Retirada'}\n`;
+            if (pedido.tipoEntrega === 'entrega') {
+                textoWhats += `📍 *Endereço:* ${pedido.endereco}\n`;
+            }
+            
+            textoWhats += `💳 *Forma de Pagamento:* ${pedido.pagamento}\n`;
+            if (pedido.pagamento === 'Dinheiro' && pedido.troco) {
+                textoWhats += `💵 *Troco para:* R$ ${parseFloat(pedido.troco).toFixed(2)}\n`;
+            }
+
+            if (pedido.obs) {
+                textoWhats += `📝 *Obs:* ${pedido.obs}\n`;
+            }
+
+            textoWhats += `\n-----------------------------------\n`;
+            textoWhats += `💰 *Subtotal:* R$ ${subtotal.toFixed(2)}\n`;
+            if (taxa > 0) textoWhats += `🛵 *Taxa de Entrega:* R$ ${taxa.toFixed(2)}\n`;
+            textoWhats += `*TOTAL: R$ ${total.toFixed(2)}*\n`;
+
+            // 3. Define o número de telefone da sua loja (DDD + Número, apenas números)
+            const numeroLoja = "5561999521964"; // <-- INSIRA O WHATSAPP DA SUA LOJA AQUI (Ex: 5511999999999)
+            
+            const urlWhats = `https://api.whatsapp.com/send?phone=${numeroLoja}&text=${encodeURIComponent(textoWhats)}`;
+            
+            // Abre o WhatsApp e depois encaminha a página atual para a tela de status
+            window.open(urlWhats, '_blank');
             window.location.href = `status.html?id=${idVenda}`;
         }
 
