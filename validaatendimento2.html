@@ -42,15 +42,35 @@
         ⬅️ Central
     </a>
 
-    <!-- Áudio de novos pedidos -->
+    <!-- Alertas Sonoros -->
     <audio id="som-alerta" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
-    <!-- Áudio de estouro de tempo (Alarme repetitivo) -->
     <audio id="som-atraso" src="https://assets.mixkit.co/active_storage/sfx/911/911-preview.mp3" preload="auto" loop></audio>
 
-    <header class="max-w-2xl mx-auto text-center mb-6 mt-12">
+    <header class="max-w-2xl mx-auto text-center mb-4 mt-12">
         <h1 class="text-3xl font-black text-zinc-900 uppercase italic">Cozinha & Entrega</h1>
         <div id="badge-impressao" class="mt-2"></div>
     </header>
+
+    <!-- LEGENDA DO SISTEMA -->
+    <section class="max-w-2xl mx-auto mb-6 bg-white p-4 rounded-2xl shadow-sm border border-zinc-200 text-[11px] font-bold text-zinc-600">
+        <p class="text-center text-[10px] uppercase tracking-wider text-zinc-400 mb-3 font-black">Legenda do Terminal</p>
+        <div class="grid grid-cols-2 gap-4">
+            <!-- Tipos -->
+            <div class="space-y-1.5 border-r border-zinc-100 pr-2">
+                <span class="block text-[9px] uppercase text-zinc-400 font-black">Destino do Pedido:</span>
+                <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-blue-500 block"></span> Comer na Loja</div>
+                <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-red-500 block"></span> Entrega (Motoboy)</div>
+                <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-green-500 block"></span> Marmita</div>
+            </div>
+            <!-- Tempos -->
+            <div class="space-y-1.5 pl-2">
+                <span class="block text-[9px] uppercase text-zinc-400 font-black">Tempo de Espera:</span>
+                <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-green-100 border border-green-400 block"></span> Normal (Até 20 min)</div>
+                <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-amber-100 border border-amber-400 block"></span> Atenção (21 a 39 min)</div>
+                <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-red-600 block animate-pulse"></span> Alerta / Crítico (40+ min)</div>
+            </div>
+        </div>
+    </section>
 
     <div class="max-w-2xl mx-auto mb-6 flex bg-white rounded-2xl p-1 shadow-sm border border-zinc-200">
         <button onclick="mudarAba('aba-fila')" id="btn-fila" class="flex-1 py-3 rounded-xl font-black uppercase text-[10px] bg-zinc-800 text-white">📋 Fila de Pedidos</button>
@@ -84,7 +104,7 @@
                 : '<span class="bg-zinc-400 text-white text-[10px] px-4 py-1 rounded-full font-black">👁️ APENAS TELA</span>';
             
             monitorar();
-            // Reduzido para 5 segundos para atualizar o contador de minutos mais frequentemente na tela
+            // Atualiza a cada 5 segundos para manter os cronômetros precisos na tela
             setInterval(monitorar, 5000); 
         }
 
@@ -129,12 +149,9 @@
             const html = listaOrdenada.map(id => {
                 const v = vendas[id];
                 const status = v.status || "pendente";
-                
-                // 1. Definição da cor do Status lateral
                 const corStatus = status === "pronto" ? "status-pronto" : (status === "preparo" ? "status-preparo" : "status-pendente");
                 
-                // 2. Definição da cor por Tipo de Pedido (Borda Superior)
-                // Espera valores como: 'loja', 'entrega', 'marmita' em v.tipoEntrega ou v.tipoPedido
+                // Configuração das Cores por Tipo
                 const tipo = (v.tipoEntrega || 'loja').toLowerCase();
                 let classeTipoCor = "tipo-loja";
                 let textoTipo = "📦 LOJA";
@@ -147,7 +164,7 @@
                     textoTipo = "🍱 MARMITA";
                 }
 
-                // 3. Cálculo do Temporizador de 40 Minutos
+                // Cálculo Dinâmico do Temporizador/Cronômetro
                 let classeAtraso = "";
                 let badgeTempo = "";
 
@@ -156,20 +173,25 @@
                     const horaPedido = new Date();
                     horaPedido.setHours(parseInt(horas), parseInt(minutos), 0);
 
-                    // Diferença em minutos
                     const diferencaMinutos = Math.floor((agora - horaPedido) / 60000);
 
+                    // Estilização baseada nas faixas de tempo da legenda
                     if (diferencaMinutos >= 40) {
                         classeAtraso = "pedido-atrasado";
-                        badgeTempo = `<span class="bg-red-600 text-white text-[10px] px-2 py-1 rounded font-black animate-pulse">⏰ ATRASADO (${diferencaMinutos} min)</span>`;
+                        badgeTempo = `<span class="bg-red-600 text-white text-[10px] px-2.5 py-1 rounded-md font-black animate-pulse">⏰ CRÍTICO: ${diferencaMinutos} MIN</span>`;
                         
-                        // Verifica se este pedido específico não foi silenciado manualmente pelo usuário nesta sessão
                         if (!alarmesSilenciados.includes(id)) {
                             algumPedidoEstourado = true;
                         }
+                    } else if (diferencaMinutos >= 21) {
+                        badgeTempo = `<span class="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] px-2.5 py-1 rounded-md font-black">⏱️ ATENÇÃO: ${diferencaMinutos} MIN</span>`;
                     } else {
-                        badgeTempo = `<span class="bg-zinc-100 text-zinc-600 text-[10px] px-2 py-1 rounded font-bold">⏱️ ${diferencaMinutos} min decorridos</span>`;
+                        // Evita exibir valores negativos caso o relógio do servidor/cliente divirjam por segundos
+                        const minExibidos = diferencaMinutos < 0 ? 0 : diferencaMinutos;
+                        badgeTempo = `<span class="bg-green-100 text-green-800 border border-green-300 text-[10px] px-2.5 py-1 rounded-md font-black">⏱️ Há ${minExibidos} min</span>`;
                     }
+                } else if (status === "pronto") {
+                    badgeTempo = `<span class="bg-zinc-100 text-zinc-500 text-[10px] px-2.5 py-1 rounded-md font-bold">✓ Concluído</span>`;
                 }
 
                 return `
@@ -187,7 +209,7 @@
                             <span class="text-xs font-black px-2 py-1 rounded bg-zinc-100 text-zinc-800">${textoTipo}</span>
                         </div>
                         
-                        <p class="text-xs text-zinc-400 mb-4">Horário do Pedido: ${v.hora || '--:--'}</p>
+                        <p class="text-xs text-zinc-400 mb-4">Entrada: ${v.hora || '--:--'}</p>
                         
                         <div class="space-y-2 mb-6">
                             ${v.itens.map(i => `<div class="flex justify-between border-b border-zinc-100 pb-1 font-medium"><span>${i.qty}x ${i.nome}</span></div>`).join('')}
@@ -196,9 +218,9 @@
                         ${v.troco ? `<div class="mb-4 p-3 bg-amber-50 rounded-xl border border-amber-100 text-xs font-bold text-amber-800">💸 LEVAR TROCO PARA R$ ${parseFloat(v.troco).toFixed(2)}</div>` : ''}
 
                         <div class="grid grid-cols-2 gap-2">
-                            ${classeAtraso ? `<button onclick="silenciarAlarmePedido('${id}')" class="col-span-2 py-2 rounded-xl font-bold text-[10px] uppercase bg-zinc-200 text-zinc-700 hover:bg-zinc-300">🔕 Silenciar Alarme deste Pedido</button>` : ''}
-                            <button onclick="atualizarStatus('${id}', 'preparo')" class="py-3 rounded-xl font-black text-[10px] uppercase bg-blue-100 text-blue-700">👨‍🍳 Preparar</button>
-                            <button onclick="atualizarStatus('${id}', 'pronto')" class="py-3 rounded-xl font-black text-[10px] uppercase bg-green-600 text-white">✅ Pronto</button>
+                            ${classeAtraso ? `<button onclick="silenciarAlarmePedido('${id}')" class="col-span-2 py-2 rounded-xl font-bold text-[10px] uppercase bg-zinc-200 text-zinc-700 hover:bg-zinc-300 transition-colors">🔕 Silenciar Alarme</button>` : ''}
+                            <button onclick="atualizarStatus('${id}', 'preparo')" class="py-3 rounded-xl font-black text-[10px] uppercase bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors">👨‍🍳 Preparar</button>
+                            <button onclick="atualizarStatus('${id}', 'pronto')" class="py-3 rounded-xl font-black text-[10px] uppercase bg-green-600 text-white hover:bg-green-700 transition-colors">✅ Pronto</button>
                         </div>
                     </div>
                 `;
@@ -206,7 +228,7 @@
 
             container.innerHTML = html;
 
-            // Controle do áudio de atraso geral
+            // Gerenciador do Alarme Sonoro de Atraso Geral
             const somAtraso = document.getElementById('som-atraso');
             if (algumPedidoEstourado) {
                 somAtraso.play().catch(() => {});
@@ -219,7 +241,6 @@
         function silenciarAlarmePedido(id) {
             if (!alarmesSilenciados.includes(id)) {
                 alarmesSilenciados.push(id);
-                // Força atualização da tela para parar o som imediatamente
                 monitorar(); 
             }
         }
@@ -230,7 +251,6 @@
                 body: JSON.stringify(novoStatus)
             });
             
-            // Se o pedido foi concluído, remove ele da lista de silenciados
             if (novoStatus === 'pronto') {
                 alarmesSilenciados = alarmesSilenciados.filter(item => item !== id);
             }
